@@ -8,15 +8,16 @@ This is a Java implementation of the Telehash protocol.
 possible structure and design.**
 
 Goals:
+
 1. Implement the Telehash protocol.
 2. The target platforms being considered are Android mobile devices and
-conventional JVM environments.
+   conventional JVM environments.
 3. Care should be taken to keep the library's footprint as small as
-possible, so it can run efficiently on mobile devices with limited
-capability.
+   possible, so it can run efficiently on mobile devices with limited
+   capability.
 4. Platform-specific details (crypto, networking, storage) should be
-selectable and extendable by the application to provide maximum
-flexibility.
+   selectable and extendable by the application to provide maximum
+   flexibility.
 
 The crypto work is based on Dennis Kubes's work in his telehash-java repo:
 https://github.com/kubes/telehash-java
@@ -45,6 +46,7 @@ Dependencies
 --------------------
 
 Bouncy Castle
+
 http://central.maven.org/maven2/org/bouncycastle/bcprov-jdk16/1.40/bcprov-jdk16-1.40.jar
 
 Bouncy Castle provides the basic cryptographic primitives.  A version of
@@ -54,6 +56,7 @@ Android's bundled Bouncy Castle library is suitable, robust, and available
 on relevant Android releases.  
 
 org.json
+
 http://search.maven.org/remotecontent?filepath=org/codeartisans/org.json/20131017/org.json-20131017.jar
 
 The org.json library is a simple JSON parser.  It is not as feature-rich
@@ -83,14 +86,16 @@ These functions are:
 4. JSON encode/decode (?)
 
 Storage:
-    - load the identity (telehash.pub, telehash.key)
-    - save the identity (telehash.pub, telehash.key)
-    - load the pre-authorized seeds, if present (telehash-seeds.json)
-    - optional:
-        - load the acquired seeds (?)
-        - save the acquired seeds (?)
+
+* load the identity (telehash.pub, telehash.key)
+* save the identity (telehash.pub, telehash.key)
+* load the pre-authorized seeds, if present (telehash-seeds.json)
+* optional:
+    * load the acquired seeds (?)
+    * save the acquired seeds (?)
 
 For now, just have the switch take identity/seeds as arguments.
+
 1. BasicSeed loads from files
 2. Switch(KeyPair identityKeyPair, Set<Node> seeds);
 3. Switch must randomize seed ordering
@@ -99,8 +104,9 @@ TODO
 --------------------
 
 Evaluate Android's built-in Bouncy Castle.
-    - robust/secure?
-    - supports all needed ciphers/etc. in the minimum supported version of Android?
+
+* robust/secure?
+* supports all needed ciphers/etc. in the minimum supported version of Android?
 
 Specialized exception classes.
 
