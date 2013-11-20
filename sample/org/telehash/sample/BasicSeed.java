@@ -10,6 +10,7 @@ import org.telehash.core.Util;
 public class BasicSeed {
     
     private static final String IDENTITY_BASE_FILENAME = "telehash-seed";
+    private static final int PORT = 5001;
     
     public static final void main(String[] args) {
 
@@ -34,7 +35,23 @@ public class BasicSeed {
         }
 
         // launch the switch
-        Switch telehashSwitch = new Switch(identity, null);
-        telehashSwitch.loop();        
+        Switch telehashSwitch = new Switch(identity, null, PORT);
+        try {
+            telehashSwitch.start();
+        } catch (TelehashException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // allow the switch to run for 30 seconds
+        try {
+            Thread.sleep(30000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+        // stop the switch
+        telehashSwitch.stop();
     }
 }

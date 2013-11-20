@@ -86,6 +86,9 @@ public class CryptoImpl implements Crypto {
             throw new IOException("Empty PEM file.");
         } else if (object instanceof Key) {
             return (Key)object;
+        } else if (object instanceof KeyPair) {
+            // extract the private key from a key pair
+            return ((KeyPair)object).getPrivate();
         } else {
             throw new IOException(
                     "Unknown object type \""+object.getClass()+"\" read from PEM file."
