@@ -2,11 +2,6 @@ package org.telehash.storage.impl;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +13,9 @@ import org.telehash.core.Identity;
 import org.telehash.core.Node;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
+import org.telehash.crypto.Crypto;
+import org.telehash.crypto.RSAPrivateKey;
+import org.telehash.crypto.RSAPublicKey;
 import org.telehash.network.Endpoint;
 import org.telehash.storage.Storage;
 
@@ -46,26 +44,11 @@ public class StorageImpl implements Storage {
         String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;
         
         // read keys
-        PrivateKey privateKey;
-        PublicKey publicKey;
-        try {
-            Key key;
-            key = Util.getCryptoInstance().readKeyFromFile(privateKeyFilename);
-            if (key instanceof PrivateKey) {
-                privateKey = (PrivateKey)key;
-            } else {
-                throw new TelehashException("invalid private key");
-            }
-            key = Util.getCryptoInstance().readKeyFromFile(publicKeyFilename);
-            if (key instanceof PublicKey) {
-                publicKey = (PublicKey)key;
-            } else {
-                throw new TelehashException("invalid public key");
-            }
-        } catch (IOException e) {
-            throw new TelehashException("error reading key(s)", e);
-        }
-        return new Identity(new KeyPair(publicKey, privateKey));        
+        RSAPrivateKey privateKey =
+                Util.getCryptoInstance().readRSAPrivateKeyFromFile(privateKeyFilename);
+        RSAPublicKey publicKey =
+                Util.getCryptoInstance().readRSAPublicKeyFromFile(publicKeyFilename);
+        return new Identity(Util.getCryptoInstance().createRSAKeyPair(publicKey, privateKey));        
     }
 
     /**
@@ -94,17 +77,10 @@ public class StorageImpl implements Storage {
     public void writeIdentity(Identity identity, String identityBaseFilename)
             throws TelehashException {
         String privateKeyFilename = identityBaseFilename + PRIVATE_KEY_FILENAME_SUFFIX;
-        String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;  
-        try {
-            Util.getCryptoInstance().writeKeyToFile(privateKeyFilename, identity.getPrivateKey());
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
-        try {
-            Util.getCryptoInstance().writeKeyToFile(publicKeyFilename, identity.getPublicKey());
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
+        String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;
+        Crypto crypto = Util.getCryptoInstance();
+        crypto.writeRSAPublicKeyToFile(publicKeyFilename, identity.getPublicKey());
+        crypto.writeRSAPrivateKeyToFile(privateKeyFilename, identity.getPrivateKey());
     }
 
     /**
@@ -156,7 +132,7 @@ public class StorageImpl implements Storage {
             if (publicKeyBuffer == null) {
                 throw new TelehashException("cannot parse public key hex string");
             }
-            PublicKey publicKey = Util.getCryptoInstance().derToRSAPublicKey(publicKeyBuffer);
+            RSAPublicKey publicKey = Util.getCryptoInstance().decodeRSAPublicKey(publicKeyBuffer);
             Endpoint endpoint = Util.getNetworkInstance().parseEndpoint(endpointString);
             Node node = new Node(publicKey, endpoint);
             nodes.add(node);

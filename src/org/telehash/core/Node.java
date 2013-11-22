@@ -1,7 +1,6 @@
 package org.telehash.core;
 
-import java.security.PublicKey;
-
+import org.telehash.crypto.RSAPublicKey;
 import org.telehash.network.Endpoint;
 
 /**
@@ -9,17 +8,17 @@ import org.telehash.network.Endpoint;
  * endpoint.
  */
 public class Node {
-    private PublicKey mPublicKey;
+    private RSAPublicKey mPublicKey;
     private Endpoint mEndpoint;
     
     // TODO: java identity
     
-    public Node(PublicKey publicKey, Endpoint endpoint) {
+    public Node(RSAPublicKey publicKey, Endpoint endpoint) {
         mPublicKey = publicKey;
         mEndpoint = endpoint;
     }
 
-    public PublicKey getPublicKey() {
+    public RSAPublicKey getPublicKey() {
         return mPublicKey;
     }
     

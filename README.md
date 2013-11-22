@@ -47,7 +47,7 @@ Dependencies
 
 Bouncy Castle
 
-http://central.maven.org/maven2/org/bouncycastle/bcprov-jdk16/1.40/bcprov-jdk16-1.40.jar
+http://www.bouncycastle.org/download/bcprov-jdk15on-149.jar
 
 Bouncy Castle provides the basic cryptographic primitives.  A version of
 Bouncy Castle is included within Android, which may reduce the Telehash
@@ -109,4 +109,6 @@ Evaluate Android's built-in Bouncy Castle.
 * supports all needed ciphers/etc. in the minimum supported version of Android?
 
 Specialized exception classes.
+
+What are the best practices for storing/managing private keys?
 

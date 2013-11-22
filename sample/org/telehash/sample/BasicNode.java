@@ -1,20 +1,19 @@
 package org.telehash.sample;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.Key;
-import java.security.PublicKey;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.telehash.core.Identity;
 import org.telehash.core.Node;
 import org.telehash.core.Packet;
+import org.telehash.core.PacketFactory;
 import org.telehash.core.Switch;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
+import org.telehash.crypto.RSAPublicKey;
 import org.telehash.network.impl.InetEndpoint;
 
 public class BasicNode {
@@ -47,16 +46,13 @@ public class BasicNode {
         }
         
         // read the public key of the seed
-        Key seedKey;
+        RSAPublicKey seedPublicKey;
         try {
-            seedKey = Util.getCryptoInstance().readKeyFromFile(SEED_PUBLIC_KEY_FILENAME);
-        } catch (IOException e) {
+            seedPublicKey =
+                    Util.getCryptoInstance().readRSAPublicKeyFromFile(SEED_PUBLIC_KEY_FILENAME);
+        } catch (TelehashException e) {
             throw new RuntimeException(e);
         }
-        if (!(seedKey instanceof PublicKey)) {
-            throw new RuntimeException("seed key is not a public key.");
-        }
-        PublicKey seedPublicKey = (PublicKey)seedKey;
         
         // formulate a node object to represent the seed
         InetAddress localhost;
@@ -69,6 +65,8 @@ public class BasicNode {
         Set<Node> seeds = new HashSet<Node>();
         seeds.add(seed);
 
+if (true) { return; }
+        
         // launch the switch
         Switch telehashSwitch = new Switch(identity, seeds, PORT);
         try {
@@ -80,6 +78,13 @@ public class BasicNode {
 
         // send packet
         System.out.println("node sending packet to seed.");
+        PacketFactory packetFactory = new PacketFactory();
+        try {
+            packetFactory.createOpenPacket(seed);
+        } catch (TelehashException e1) {
+            e1.printStackTrace();
+            return;
+        }
         telehashSwitch.sendPacket(new Packet());
         
         // pause 1 second

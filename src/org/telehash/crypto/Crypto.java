@@ -1,9 +1,5 @@
 package org.telehash.crypto;
 
-import java.io.IOException;
-import java.security.Key;
-import java.security.PublicKey;
-
 import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
 
@@ -14,6 +10,15 @@ import org.telehash.core.TelehashException;
  * provide their own.
  */
 public interface Crypto {
+    
+    /**
+     * Generate a cryptographically secure pseudo-random array of byte values.
+     * 
+     * @param size The number of random bytes to produce.
+     * @return The array of random byte values.
+     */
+    public byte[] getRandomBytes(int size);
+    
     /**
      * Return a SHA-256 digest of the provided byte buffer.
      * 
@@ -31,22 +36,64 @@ public interface Crypto {
     public Identity generateIdentity();
     
     /**
-     * Read a PEM-formatted key from a file.
+     * Generate a fresh elliptic curve key pair
+     * @throws TelehashException 
+     */
+    public ECKeyPair generateECCKeyPair() throws TelehashException;
+    
+    /**
+     * Encrypt data with an RSA public key
+     * @throws TelehashException 
+     */
+    public byte[] encryptRSA(RSAPublicKey key, byte[] buffer) throws TelehashException;
+
+    /**
+     * Decrypt data with an RSA private key
+     * @throws TelehashException 
+     */
+    public byte[] decryptRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
+
+    /**
+     * Read a PEM-formatted RSA public key from a file.
      * 
      * @param filename The filename of the file containing the PEM-formatted key.
      * @return The key.
-     * @throws IOException If a problem occurs while reading the file.
+     * @throws TelehashException If a problem occurs while reading the file.
      */
-    public Key readKeyFromFile(String filename) throws IOException;
+    public RSAPublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException;
 
     /**
-     * Write a PEM-formatted key to a file.
+     * Read a PEM-formatted RSA private key from a file.
+     * 
+     * @param filename The filename of the file containing the PEM-formatted key.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    public RSAPrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException;
+
+    /**
+     * Write a PEM-formatted RSA public key to a file.
      * 
      * @param filename The filename of the file to write.
      * @param key The key to write.
-     * @throws IOException If a problem occurs while reading the file.
+     * @throws TelehashException If a problem occurs while reading the file.
      */
-    public void writeKeyToFile(String filename, Key key) throws IOException;
+    public void writeRSAPublicKeyToFile(
+            String filename,
+            RSAPublicKey key
+    ) throws TelehashException;
+
+    /**
+     * Write a PEM-formatted RSA private key to a file.
+     * 
+     * @param filename The filename of the file to write.
+     * @param key The key to write.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    public void writeRSAPrivateKeyToFile(
+            String filename,
+            RSAPrivateKey key
+    ) throws TelehashException;
 
     /**
      * Decode a DER-encoded public key into a standard Java PublicKey object.
@@ -55,5 +102,22 @@ public interface Crypto {
      * @return The decoded public key.
      * @throws TelehashException If the DER buffer cannot be parsed.
      */
-    public PublicKey derToRSAPublicKey(byte[] buffer) throws TelehashException;
+    public RSAPublicKey decodeRSAPublicKey(byte[] buffer) throws TelehashException;
+
+    /**
+     * Decode a DER-encoded private key into a standard Java PublicKey object.
+     * 
+     * @param buffer The byte buffer containing the DER-encoded key.
+     * @return The decoded private key.
+     * @throws TelehashException If the DER buffer cannot be parsed.
+     */
+    public RSAPrivateKey decodeRSAPrivateKey(byte[] buffer) throws TelehashException;
+    
+    /**
+     * Create a new RSAKeyPair from the provided public and private key.
+     * @param privateKey
+     * @param publicKey
+     * @return The newly created RSAKeyPair object.
+     */
+    public RSAKeyPair createRSAKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey);
 }
