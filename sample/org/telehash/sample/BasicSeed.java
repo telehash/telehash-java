@@ -21,8 +21,8 @@ public class BasicSeed {
         } catch (TelehashException e) {
             if (e.getCause() instanceof FileNotFoundException) {
                 // no identity found -- create a new one.
-                identity = Util.getCryptoInstance().generateIdentity();
                 try {
+                    identity = Util.getCryptoInstance().generateIdentity();
                     Util.getStorageInstance().writeIdentity(identity, IDENTITY_BASE_FILENAME);
                 } catch (TelehashException e1) {
                     e1.printStackTrace();

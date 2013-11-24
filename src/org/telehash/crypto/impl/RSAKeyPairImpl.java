@@ -10,11 +10,6 @@ public class RSAKeyPairImpl implements RSAKeyPair {
     private RSAPublicKeyImpl mPublicKey;
     private RSAPrivateKeyImpl mPrivateKey;
     
-    public RSAKeyPairImpl(AsymmetricCipherKeyPair keyPair) {
-        mPublicKey = new RSAPublicKeyImpl(keyPair.getPublic());
-        mPrivateKey = new RSAPrivateKeyImpl(keyPair.getPrivate());
-    }
-    
     public RSAKeyPairImpl(RSAPublicKeyImpl publicKey, RSAPrivateKeyImpl privateKey) {
         mPublicKey = publicKey;
         mPrivateKey = privateKey;

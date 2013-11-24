@@ -25,18 +25,6 @@ public class RSAPublicKeyImpl implements RSAPublicKey {
     }
     
     public RSAPublicKeyImpl(byte[] derBuffer) throws TelehashException {
-        ASN1Primitive obj;
-        ASN1InputStream bIn = new ASN1InputStream(new ByteArrayInputStream(derBuffer));
-        try {
-            obj = bIn.readObject();
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-            return;
-        }
-        System.out.println("RSAPublicKeyImpl dump:");
-        System.out.println(ASN1Dump.dumpAsString(obj));
-        
         try {
             mKey = PublicKeyFactory.createKey(derBuffer);
         } catch (IOException e) {

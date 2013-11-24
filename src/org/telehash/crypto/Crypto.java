@@ -32,8 +32,9 @@ public interface Crypto {
      * newly provisioned Telehash node.
      * 
      * @return The new identity.
+     * @throws TelehashException 
      */
-    public Identity generateIdentity();
+    public Identity generateIdentity() throws TelehashException;
     
     /**
      * Generate a fresh elliptic curve key pair

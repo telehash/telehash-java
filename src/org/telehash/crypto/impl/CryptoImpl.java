@@ -18,7 +18,9 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
+import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -94,9 +96,10 @@ public class CryptoImpl implements Crypto {
      * newly provisioned Telehash node.
      * 
      * @return The new identity.
+     * @throws TelehashException 
      */
     @Override
-    public Identity generateIdentity() {
+    public Identity generateIdentity() throws TelehashException {
         // generate a 2048 bit key pair
         RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
         generator.init(
@@ -109,7 +112,17 @@ public class CryptoImpl implements Crypto {
                 )
             );
         AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-        return new Identity(new RSAKeyPairImpl(keyPair));
+        AsymmetricKeyParameter publicKey = keyPair.getPublic();
+        AsymmetricKeyParameter privateKey = keyPair.getPrivate();
+        if (! (privateKey instanceof RSAPrivateCrtKeyParameters)) {
+            throw new TelehashException("generated key is not an RSA private key.");
+        }
+        return new Identity(
+                new RSAKeyPairImpl(
+                        new RSAPublicKeyImpl(publicKey),
+                        new RSAPrivateKeyImpl((RSAPrivateCrtKeyParameters)privateKey)
+                )
+        );
     }
 
     /**
@@ -219,7 +232,11 @@ public class CryptoImpl implements Crypto {
                         pemObject.getType() + "\""
                 );
             }
-            return new RSAPrivateKeyImpl(PrivateKeyFactory.createKey(pemObject.getContent()));
+            AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pemObject.getContent());
+            if (! (key instanceof RSAPrivateCrtKeyParameters)) {
+                throw new TelehashException("parsed key was not a proper RSA private key.");
+            }
+            return new RSAPrivateKeyImpl((RSAPrivateCrtKeyParameters)key);
         } catch (IOException e) {
             throw new TelehashException(e);
         }

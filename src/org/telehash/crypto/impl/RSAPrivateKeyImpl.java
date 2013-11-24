@@ -20,9 +20,9 @@ import org.telehash.crypto.RSAPrivateKey;
 
 public class RSAPrivateKeyImpl implements RSAPrivateKey {
 
-    AsymmetricKeyParameter mKey;
+    RSAPrivateCrtKeyParameters mKey;
     
-    public RSAPrivateKeyImpl(AsymmetricKeyParameter key) {
+    public RSAPrivateKeyImpl(RSAPrivateCrtKeyParameters key) {
         mKey = key;
     }
     
@@ -61,7 +61,6 @@ public class RSAPrivateKeyImpl implements RSAPrivateKey {
 
     @Override
     public byte[] getDEREncoded() throws TelehashException {
-        System.out.println("encoding private key from class: "+mKey.getClass().getName());
         RSAPrivateCrtKeyParameters param = (RSAPrivateCrtKeyParameters)mKey;
         org.bouncycastle.asn1.pkcs.RSAPrivateKey asn1Key;
         asn1Key =
@@ -76,20 +75,6 @@ public class RSAPrivateKeyImpl implements RSAPrivateKey {
                     param.getQInv()
                 );
 
-        // dump
-        /*
-        try {
-            ASN1InputStream in = new ASN1InputStream(new ByteArrayInputStream(asn1Key.getEncoded("DER")));
-            ASN1Primitive obj = in.readObject();
-            System.out.println("---- RSAPrivateKeyImpl dump:");
-            System.out.println(ASN1Dump.dumpAsString(obj));
-            System.out.println("----");
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        */
-        
         try {
             return asn1Key.getEncoded("DER");
         } catch (IOException e) {
