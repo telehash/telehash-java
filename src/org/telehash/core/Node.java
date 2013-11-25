@@ -25,4 +25,8 @@ public class Node {
     public Endpoint getEndpoint() {
         return mEndpoint;
     }
+    
+    public byte[] getHashName() throws TelehashException {
+        return Util.getCryptoInstance().sha256Digest(mPublicKey.getDEREncoded());
+    }
 }

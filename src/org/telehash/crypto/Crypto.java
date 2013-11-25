@@ -55,6 +55,14 @@ public interface Crypto {
     public byte[] decryptRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
 
     /**
+     * Sign a data buffer with an RSA private key using the SHA-256 digest, and
+     * PKCSv1.5 padding.
+     * 
+     * @throws TelehashException
+     */
+    public byte[] signRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
+    
+    /**
      * Read a PEM-formatted RSA public key from a file.
      * 
      * @param filename The filename of the file containing the PEM-formatted key.
@@ -151,4 +159,37 @@ public interface Crypto {
             ECPublicKey remotePublicKey,
             ECPrivateKey localPrivateKey
     );
+    
+    /**
+     * Encrypt the provided plaintext using AES-256-CTR with the provided
+     * initialization vector (IV) and key.
+     * 
+     * @param plainText The plaintext to encrypt.
+     * @param iv The initialization vector.
+     * @param key The encryption key.
+     * @return The resulting ciphertext.
+     * @throws TelehashException If a problem occurred.
+     */
+    public byte[] encryptAES256CTR(
+            byte[] plainText, 
+            byte[] iv,
+            byte[] key
+    ) throws TelehashException;
+    
+    /**
+     * Decrypt the provided ciphertext using AES-256-CTR with the provided
+     * initialization vector (IV) and key.
+     * 
+     * @param plainText The ciphertext to decrypt.
+     * @param iv The initialization vector.
+     * @param key The encryption key.
+     * @return The resulting plaintext.
+     * @throws TelehashException If a problem occurred.
+     */
+    public byte[] decryptAES256CTR(
+            byte[] cipherText, 
+            byte[] iv,
+            byte[] key
+    ) throws TelehashException;
+
 }

@@ -65,8 +65,6 @@ public class BasicNode {
         Set<Node> seeds = new HashSet<Node>();
         seeds.add(seed);
 
-if (true) { return; }
-        
         // launch the switch
         Switch telehashSwitch = new Switch(identity, seeds, PORT);
         try {
@@ -78,7 +76,7 @@ if (true) { return; }
 
         // send packet
         System.out.println("node sending packet to seed.");
-        PacketFactory packetFactory = new PacketFactory();
+        PacketFactory packetFactory = new PacketFactory(identity);
         try {
             packetFactory.createOpenPacket(seed);
         } catch (TelehashException e1) {

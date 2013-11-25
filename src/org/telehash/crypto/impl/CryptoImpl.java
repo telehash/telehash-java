@@ -9,19 +9,28 @@ import java.security.Security;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.CryptoException;
+import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.modes.SICBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
+import org.bouncycastle.crypto.signers.RSADigestSigner;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -209,6 +218,31 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
+     * Sign a data buffer with an RSA private key using the SHA-256 digest, and
+     * PKCSv1.5 padding.
+     * 
+     * @throws TelehashException 
+     */
+    @Override
+    public byte[] signRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException {
+        
+        // TODO: are we using PKCSv1.5 padding???
+        
+        RSADigestSigner signer = new RSADigestSigner(new SHA256Digest());
+        signer.init(true, ((RSAPrivateKeyImpl)key).getKey());
+        signer.update(buffer, 0, buffer.length);
+        byte[] signature;
+        try {
+            signature = signer.generateSignature();
+        } catch (DataLengthException e) {
+            throw new TelehashException(e);
+        } catch (CryptoException e) {
+            throw new TelehashException(e);
+        }
+        return signature;
+    }
+
+    /**
      * Read a PEM-formatted RSA public key from a file.
      * 
      * @param filename The filename of the file containing the PEM-formatted key.
@@ -393,4 +427,87 @@ public class CryptoImpl implements Crypto {
         byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
         return secretBytes;
     }
+    
+    /**
+     * Encrypt the provided plaintext using AES-256-CTR with the provided
+     * initialization vector (IV) and key.
+     * 
+     * @param plainText The plaintext to encrypt.
+     * @param iv The initialization vector.
+     * @param key The encryption key.
+     * @return The resulting ciphertext.
+     * @throws TelehashException If a problem occurred.
+     */
+    @Override
+    public byte[] encryptAES256CTR(
+            byte[] plainText, 
+            byte[] iv,
+            byte[] key
+    ) throws TelehashException {
+        // initialize cipher
+        AESEngine aes = new AESEngine();
+        CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(key), iv);
+        PaddedBufferedBlockCipher cipher = new PaddedBufferedBlockCipher(new SICBlockCipher(aes));
+        cipher.init(true, ivAndKey);
+
+        // encrypt
+        byte[] cipherText = new byte[cipher.getOutputSize(plainText.length)];
+        int nbytes = cipher.processBytes(plainText, 0, plainText.length, cipherText, 0);
+        try {
+            nbytes += cipher.doFinal(cipherText, nbytes);
+        } catch (CryptoException e) {
+            throw new TelehashException(e);
+        }
+        
+        // trim output if needed
+        if (nbytes < cipherText.length) {
+            byte[] trimmedCipherText = new byte[nbytes];
+            System.arraycopy(cipherText, 0, trimmedCipherText, 0, nbytes);
+            cipherText = trimmedCipherText;
+        }
+
+        return cipherText;
+    }
+
+    /**
+     * Decrypt the provided ciphertext using AES-256-CTR with the provided
+     * initialization vector (IV) and key.
+     * 
+     * @param plainText The ciphertext to decrypt.
+     * @param iv The initialization vector.
+     * @param key The encryption key.
+     * @return The resulting plaintext.
+     * @throws TelehashException If a problem occurred.
+     */
+    @Override
+    public byte[] decryptAES256CTR(
+            byte[] cipherText, 
+            byte[] iv,
+            byte[] key
+    ) throws TelehashException {
+        // init cipher
+        AESEngine aes = new AESEngine();
+        CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(key), iv);
+        PaddedBufferedBlockCipher cipher = new PaddedBufferedBlockCipher(new SICBlockCipher(aes));
+        cipher.init(false, ivAndKey);
+
+        // decrypt
+        byte[] plainText = new byte[cipher.getOutputSize(cipherText.length)];
+        int nbytes = cipher.processBytes(cipherText, 0, cipherText.length, plainText, 0);
+        try {
+            nbytes += cipher.doFinal(plainText, nbytes);
+        } catch (CryptoException e) {
+            throw new TelehashException(e);
+        }
+        
+        // trim output if needed
+        if (nbytes < plainText.length) {
+            byte[] trimmedPlainText = new byte[nbytes];
+            System.arraycopy(plainText, 0, trimmedPlainText, 0, nbytes);
+            plainText = trimmedPlainText;
+        }
+
+        return plainText;
+    }
+
 }
