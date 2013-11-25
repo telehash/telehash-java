@@ -4,26 +4,30 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.security.spec.ECGenParameterSpec;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
+import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
@@ -31,6 +35,8 @@ import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.ECKeyPair;
+import org.telehash.crypto.ECPrivateKey;
+import org.telehash.crypto.ECPublicKey;
 import org.telehash.crypto.RSAKeyPair;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;
@@ -45,10 +51,32 @@ public class CryptoImpl implements Crypto {
     private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
     
     private SecureRandom random = new SecureRandom();
-    
+
+    // elliptic curve settings
+    private ECNamedCurveParameterSpec mECNamedCurveParameterSpec;
+    private ECKeyPairGenerator mECGenerator = new ECKeyPairGenerator();
+    private ECDomainParameters mECDomainParameters;
+    private ECKeyGenerationParameters mECKeyGenerationParameters;
+
     static {
         Security.addProvider(new BouncyCastleProvider());
-    };
+    };    
+    
+    public CryptoImpl() {
+        // initialize elliptic curve parameters and generator
+        mECNamedCurveParameterSpec =
+                ECNamedCurveTable.getParameterSpec("prime256v1");
+        mECGenerator = new ECKeyPairGenerator();
+        mECDomainParameters =
+                new ECDomainParameters(
+                        mECNamedCurveParameterSpec.getCurve(),
+                        mECNamedCurveParameterSpec.getG(),
+                        mECNamedCurveParameterSpec.getN()
+                );
+        mECKeyGenerationParameters =
+                new ECKeyGenerationParameters(mECDomainParameters, random);        
+        mECGenerator.init(mECKeyGenerationParameters);
+    }
 
     /**
      * Generate a cryptographically secure pseudo-random array of byte values.
@@ -112,6 +140,7 @@ public class CryptoImpl implements Crypto {
                 )
             );
         AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
+        
         AsymmetricKeyParameter publicKey = keyPair.getPublic();
         AsymmetricKeyParameter privateKey = keyPair.getPrivate();
         if (! (privateKey instanceof RSAPrivateCrtKeyParameters)) {
@@ -129,22 +158,21 @@ public class CryptoImpl implements Crypto {
      * Generate a fresh elliptic curve key pair
      */
     @Override
-    public ECKeyPair generateECCKeyPair() throws TelehashException {
-        ECGenParameterSpec ecGenSpec = new ECGenParameterSpec("secp256r1");
-        KeyPairGenerator generator;
-        try {
-            generator = KeyPairGenerator.getInstance("ECDH", "BC");
-        } catch (NoSuchAlgorithmException e) {
-            throw new TelehashException(e);
-        } catch (NoSuchProviderException e) {
-            throw new TelehashException(e);
+    public ECKeyPair generateECKeyPair() throws TelehashException {
+        AsymmetricCipherKeyPair keyPair = mECGenerator.generateKeyPair();
+        
+        AsymmetricKeyParameter publicKey = keyPair.getPublic();
+        AsymmetricKeyParameter privateKey = keyPair.getPrivate();
+        if (! (publicKey instanceof ECPublicKeyParameters)) {
+            throw new TelehashException("generated key is not an elliptic curve public key.");
         }
-        try {
-            generator.initialize(ecGenSpec, new SecureRandom());
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new TelehashException(e);
+        if (! (privateKey instanceof ECPrivateKeyParameters)) {
+            throw new TelehashException("generated key is not an elliptic curve private key.");
         }
-        return new ECKeyPairImpl(generator.generateKeyPair());
+        return new ECKeyPairImpl(
+                (ECPublicKeyParameters)publicKey,
+                (ECPrivateKeyParameters)privateKey
+        );
     }
     
     /**
@@ -325,5 +353,50 @@ public class CryptoImpl implements Crypto {
     @Override
     public RSAKeyPair createRSAKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
         return new RSAKeyPairImpl((RSAPublicKeyImpl)publicKey, (RSAPrivateKeyImpl)privateKey);
+    }
+    
+    /**
+     * Decode an ANSI X9.63-encoded public key into an ECPublicKey object.
+     * 
+     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
+     * @return The decoded public key.
+     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
+     */
+    @Override
+    public ECPublicKey decodeECPublicKey(byte[] buffer) throws TelehashException {
+        return new ECPublicKeyImpl(buffer, mECDomainParameters);
+    }
+
+    /**
+     * Decode an ANSI X9.63-encoded private key into an ECPrivateKey object.
+     * 
+     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
+     * @return The decoded private key.
+     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
+     */
+    /*
+    public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException {
+        return new ECPrivateKeyImpl(buffer);
+    }
+    */
+    
+    /**
+     * Perform Elliptic Curve Diffie-Hellman key agreement
+     * 
+     * @param remotePublicKey The EC public key of the remote node.
+     * @param localPrivateKey The EC private key of the local node.
+     * @return A byte array containing the shared secret.
+     */
+    @Override
+    public byte[] calculateECDHSharedSecret(
+            ECPublicKey remotePublicKey,
+            ECPrivateKey localPrivateKey
+    ) {
+        ECDHBasicAgreement agreement = new ECDHBasicAgreement();
+        agreement.init(((ECPrivateKeyImpl)localPrivateKey).getKey());
+        BigInteger secretInteger =
+                agreement.calculateAgreement(((ECPublicKeyImpl)remotePublicKey).getKey());
+        byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
+        return secretBytes;
     }
 }

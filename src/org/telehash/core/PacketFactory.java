@@ -79,8 +79,8 @@ public class PacketFactory {
         byte[] lineIdentifier = crypto.getRandomBytes(16);
 
         // generate the elliptic curve key pair
-        ECKeyPair ellipticCurveKeyPair = Util.getCryptoInstance().generateECCKeyPair();
-        ellipticCurveKeyPair.getPublicKey().getUncompressedKey();
+        ECKeyPair ellipticCurveKeyPair = Util.getCryptoInstance().generateECKeyPair();
+        ellipticCurveKeyPair.getPublicKey().getEncoded();
         
         // SHA-256 hash the public elliptic key to form the encryption key for the inner packet
         //byte[] aesKey = crypto.sha256Digest(ellipticCurveKeyPair.getPublic().getEncoded());

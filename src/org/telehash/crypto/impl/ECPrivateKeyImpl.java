@@ -1,14 +1,24 @@
 package org.telehash.crypto.impl;
 
-import org.bouncycastle.jce.provider.JCEECPrivateKey;
+import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.telehash.crypto.ECPrivateKey;
 
 public class ECPrivateKeyImpl implements ECPrivateKey {
     
-    private JCEECPrivateKey mKey;
+    private ECPrivateKeyParameters mKey;
     
-    public ECPrivateKeyImpl(JCEECPrivateKey privateKey) {
+    public ECPrivateKeyImpl(ECPrivateKeyParameters privateKey) {
         mKey = privateKey;
+    }
+
+    /*
+    public ECPrivateKeyImpl(byte[] buffer) {
+        // TODO Auto-generated constructor stub
+    }
+    */
+    
+    public ECPrivateKeyParameters getKey() {
+        return mKey;
     }
 
 }

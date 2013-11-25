@@ -2,7 +2,8 @@ package org.telehash.crypto.impl;
 
 import java.math.BigInteger;
 
-import org.bouncycastle.jce.provider.JCEECPublicKey;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 import org.telehash.core.TelehashException;
@@ -10,13 +11,16 @@ import org.telehash.crypto.ECPublicKey;
 
 public class ECPublicKeyImpl implements ECPublicKey {
     
-    private JCEECPublicKey mKey;
+    private ECPublicKeyParameters mKey;
     
-    public ECPublicKeyImpl(JCEECPublicKey publicKey) {
+    public ECPublicKeyImpl(ECPublicKeyParameters publicKey) {
         mKey = publicKey;
     }
-    
-    public ECPublicKeyImpl(byte[] buffer) throws TelehashException {
+ 
+    public ECPublicKeyImpl(
+            byte[] buffer,
+            ECDomainParameters domainParameters
+    ) throws TelehashException {
         if (buffer.length != 65 || buffer[0] != 0x04) {
             throw new TelehashException("bad ANSI X9.63 EC key encoding");
         }
@@ -27,27 +31,31 @@ public class ECPublicKeyImpl implements ECPublicKey {
         yBytes[0] = 0;
         // copy
         System.arraycopy(buffer, 1, xBytes, 1, 32);
-        System.arraycopy(buffer, 1, yBytes, 1+32, 32);
+        System.arraycopy(buffer, 1+32, yBytes, 1, 32);
         BigInteger x = new BigInteger(xBytes);
         BigInteger y = new BigInteger(yBytes);
         
-//        mKey = new JCEECPublicKey("ECDH", 3);
-        
+        ECPoint q = domainParameters.getCurve().createPoint(x, y, false);
+        mKey = new ECPublicKeyParameters(q, domainParameters);
     }
     
-    public byte[] getUncompressedKey() {
+    @Override
+    public byte[] getEncoded() {
         // return the public key in ANSI X9.63 format
-        mKey.setPointFormat("UNCOMPRESSED");
+        //mKey.setPointFormat("UNCOMPRESSED");
         ECPoint qPoint = mKey.getQ();
 
-        // TODO: update bouncy castle, then specify length=64.
-        byte[] xBytes = BigIntegers.asUnsignedByteArray(qPoint.getX().toBigInteger());
-        byte[] yBytes = BigIntegers.asUnsignedByteArray(qPoint.getY().toBigInteger());
+        byte[] xBytes = BigIntegers.asUnsignedByteArray(32, qPoint.getX().toBigInteger());
+        byte[] yBytes = BigIntegers.asUnsignedByteArray(32, qPoint.getY().toBigInteger());
         byte[] buffer = new byte[65];
         buffer[0] = 0x04;
         System.arraycopy(xBytes, 0, buffer, 1, xBytes.length);
         System.arraycopy(yBytes, 0, buffer, 1 + xBytes.length, yBytes.length);
 
         return buffer;
+    }
+    
+    public ECPublicKeyParameters getKey() {
+        return mKey;
     }
 }

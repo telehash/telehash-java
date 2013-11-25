@@ -1,6 +1,5 @@
 package org.telehash.crypto.impl;
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.telehash.crypto.RSAKeyPair;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;

@@ -11,6 +11,8 @@ import org.junit.Test;
 import org.telehash.core.Identity;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
+import org.telehash.crypto.ECKeyPair;
+import org.telehash.crypto.ECPublicKey;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;
 
@@ -104,4 +106,69 @@ public class CryptoTest {
         assertEquals(clearTextString, TEST_MESSAGE);
     }
     
+    @Test
+    public void testECPublicKeyEncodeDecode() throws Exception {
+        ECKeyPair keyPair = mCrypto.generateECKeyPair();
+        
+        // DER-encode the public key
+        ECPublicKey publicKey = keyPair.getPublicKey();
+        byte[] publicKeyBytes = publicKey.getEncoded();
+        String publicKeyHex = Util.bytesToHex(publicKeyBytes);
+        
+        // DER-decode the public key
+        byte[] publicKeyBytes2 = Util.hexToBytes(publicKeyHex);
+        assertEquals(publicKeyHex, Util.bytesToHex(publicKeyBytes2));
+        ECPublicKey publicKey2 = mCrypto.decodeECPublicKey(publicKeyBytes2);
+        assertEquals(publicKeyHex, Util.bytesToHex(publicKey2.getEncoded()));
+    }
+    
+    /*
+    @Test
+    public void testECPrivateKeyEncodeDecode() throws Exception {
+        ECKeyPair keyPair = mCrypto.generateECKeyPair();
+        
+        // DER-encode the public key
+        ECPrivateKey privateKey = keyPair.getPrivateKey();
+        byte[] privateKeyBytes = privateKey.getEncoded();
+        String privateKeyHex = Util.bytesToHex(privateKeyBytes);
+        
+        // DER-decode the public key
+        byte[] privateKeyBytes2 = Util.hexToBytes(privateKeyHex);
+        assertEquals(privateKeyHex, Util.bytesToHex(privateKeyBytes2));
+        ECPrivateKey privateKey2 = mCrypto.decodeECPrivateKey(privateKeyBytes2);
+        assertEquals(privateKeyHex, Util.bytesToHex(privateKey2.getEncoded()));
+    }
+    */
+    
+    @Test
+    public void testECDHKeyAgreement() throws Exception {
+        ECKeyPair localKeyPair = mCrypto.generateECKeyPair();
+        ECKeyPair remoteKeyPair = mCrypto.generateECKeyPair();
+        
+        // cycle the remote end's received version of the local public
+        // key through an encode/decode cycle to validate that
+        // those methods aren't losing information necessary for
+        // ECDH.  (The test*EncodeDecode() methods above only verify
+        // consistency, not correctness.)
+        ECPublicKey localPublicKeyAsReceivedByRemote =
+                mCrypto.decodeECPublicKey(
+                        Util.hexToBytes(
+                                Util.bytesToHex(
+                                        localKeyPair.getPublicKey().getEncoded()
+                                )
+                        )
+                );
+
+        byte[] localSharedSecret = mCrypto.calculateECDHSharedSecret(
+                remoteKeyPair.getPublicKey(),
+                localKeyPair.getPrivateKey()
+        );
+        byte[] remoteSharedSecret = mCrypto.calculateECDHSharedSecret(
+                localPublicKeyAsReceivedByRemote,
+                remoteKeyPair.getPrivateKey()
+        );
+        System.out.println(Util.bytesToHex(localSharedSecret));
+        System.out.println(Util.bytesToHex(remoteSharedSecret));
+        assertArrayEquals(localSharedSecret, remoteSharedSecret);
+    }
 }

@@ -40,7 +40,7 @@ public interface Crypto {
      * Generate a fresh elliptic curve key pair
      * @throws TelehashException 
      */
-    public ECKeyPair generateECCKeyPair() throws TelehashException;
+    public ECKeyPair generateECKeyPair() throws TelehashException;
     
     /**
      * Encrypt data with an RSA public key
@@ -113,7 +113,25 @@ public interface Crypto {
      * @throws TelehashException If the DER buffer cannot be parsed.
      */
     public RSAPrivateKey decodeRSAPrivateKey(byte[] buffer) throws TelehashException;
-    
+
+    /**
+     * Decode an ANSI X9.63-encoded public key into an ECPublicKey object.
+     * 
+     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
+     * @return The decoded public key.
+     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
+     */
+    public ECPublicKey decodeECPublicKey(byte[] buffer) throws TelehashException;
+
+    /**
+     * Decode an ANSI X9.63-encoded private key into an ECPrivateKey object.
+     * 
+     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
+     * @return The decoded private key.
+     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
+     */
+    //public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException;
+
     /**
      * Create a new RSAKeyPair from the provided public and private key.
      * @param privateKey
@@ -121,4 +139,16 @@ public interface Crypto {
      * @return The newly created RSAKeyPair object.
      */
     public RSAKeyPair createRSAKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey);
+    
+    /**
+     * Perform Elliptic Curve Diffie-Hellman key agreement
+     * 
+     * @param remotePublicKey The EC public key of the remote node.
+     * @param localPrivateKey The EC private key of the local node.
+     * @return A byte array containing the shared secret.
+     */
+    public byte[] calculateECDHSharedSecret(
+            ECPublicKey remotePublicKey,
+            ECPrivateKey localPrivateKey
+    );
 }
