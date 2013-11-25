@@ -5,6 +5,8 @@ package org.telehash.test;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +73,33 @@ public class CryptoTest {
         assertEquals(privateKeyHex, Util.bytesToHex(privateKeyBytes2));
         RSAPrivateKey privateKey2 = mCrypto.decodeRSAPrivateKey(privateKeyBytes2);
         assertEquals(privateKeyHex, Util.bytesToHex(privateKey2.getDEREncoded()));
+    }
+    
+    @Test
+    public void testRSAPublicKeyReadWrite() throws Exception {
+        File publicKeyFile = File.createTempFile("test-public", ".pub");
+        String publicKeyFilename = publicKeyFile.getAbsolutePath();
+        File privateKeyFile = File.createTempFile("test-private", ".key");
+        String privateKeyFilename = privateKeyFile.getAbsolutePath();
+        
+        // generate a fresh identity
+        Identity identity = mCrypto.generateIdentity();
+
+        // write to files
+        mCrypto.writeRSAPublicKeyToFile(publicKeyFilename, identity.getPublicKey());
+        mCrypto.writeRSAPrivateKeyToFile(privateKeyFilename, identity.getPrivateKey());
+        
+        // read from files
+        RSAPublicKey readPublicKey = mCrypto.readRSAPublicKeyFromFile(publicKeyFilename);
+        RSAPrivateKey readPrivateKey = mCrypto.readRSAPrivateKeyFromFile(privateKeyFilename);
+        
+        // assert equality
+        assertArrayEquals(identity.getPublicKey().getDEREncoded(), readPublicKey.getDEREncoded());
+        assertArrayEquals(identity.getPrivateKey().getDEREncoded(), readPrivateKey.getDEREncoded());
+        
+        // clean up
+        publicKeyFile.delete();
+        privateKeyFile.delete();
     }
     
     @Test
@@ -167,8 +196,6 @@ public class CryptoTest {
                 localPublicKeyAsReceivedByRemote,
                 remoteKeyPair.getPrivateKey()
         );
-        System.out.println(Util.bytesToHex(localSharedSecret));
-        System.out.println(Util.bytesToHex(remoteSharedSecret));
         assertArrayEquals(localSharedSecret, remoteSharedSecret);
     }
 }

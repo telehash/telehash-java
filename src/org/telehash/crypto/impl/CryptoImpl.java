@@ -22,7 +22,6 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -246,7 +245,6 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public RSAPrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException {
-        System.out.println("read file: "+filename);
         try {
             PemReader pemReader = new PemReader(new FileReader(filename));
             PemObject pemObject = pemReader.readPemObject();
@@ -260,11 +258,7 @@ public class CryptoImpl implements Crypto {
                         pemObject.getType() + "\""
                 );
             }
-            AsymmetricKeyParameter key = PrivateKeyFactory.createKey(pemObject.getContent());
-            if (! (key instanceof RSAPrivateCrtKeyParameters)) {
-                throw new TelehashException("parsed key was not a proper RSA private key.");
-            }
-            return new RSAPrivateKeyImpl((RSAPrivateCrtKeyParameters)key);
+            return new RSAPrivateKeyImpl(pemObject.getContent());
         } catch (IOException e) {
             throw new TelehashException(e);
         }

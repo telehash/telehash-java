@@ -22,56 +22,7 @@ public class PacketFactory {
         System.out.println("destinationPublicKey="+destinationPublicKey);
         byte[] destinationPublicKeyDer = destinationPublicKey.getDEREncoded();
         System.out.println("destinationPublicKeyDer="+Util.bytesToHex(destinationPublicKeyDer));
-        /*
-        try {
-            ASN1Object o = ASN1Object.fromByteArray(destinationPublicKey.getEncoded());
-            System.out.println("ASN1Object="+o);
-            ASN1Sequence s = (ASN1Sequence)o;
-            System.out.println("ASN1Sequence="+s);
-            SubjectPublicKeyInfo subjectPublicKeyInfo = new SubjectPublicKeyInfo(s);
-            System.out.println("subjectPublicKeyInfo="+subjectPublicKeyInfo);
-            
-            System.out.println("destination PK DER:  "+Util.bytesToHex(destinationPublicKeyDer));
-            System.out.println("SPKI DER encoded:    "+Util.bytesToHex(subjectPublicKeyInfo.getDEREncoded()));
-            System.out.println("SPKI encoded:        "+Util.bytesToHex(subjectPublicKeyInfo.getEncoded()));
-            System.out.println("SPKI.PK.DER encoded: "+
-                    Util.bytesToHex(subjectPublicKeyInfo.getPublicKey().getDEREncoded())
-            );
-            System.out.println("SPKI.PK encoded:     "+
-                    Util.bytesToHex(subjectPublicKeyInfo.getPublicKey().getEncoded())
-            );
-            System.out.println();
-            System.out.println("key.getEncoded():");
-            System.out.println(ASN1Dump.dumpAsString(o));
-            System.out.println("SPKI DER:");
-            System.out.println(ASN1Dump.dumpAsString(
-                    ASN1Object.fromByteArray(
-                            subjectPublicKeyInfo.getDEREncoded())
-                    )
-            );
-            System.out.println("SPKI.PK DER:");
-            System.out.println(ASN1Dump.dumpAsString(
-                    ASN1Object.fromByteArray(
-                            subjectPublicKeyInfo.getPublicKey().getDEREncoded())
-                    )
-            );
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
-        */
-        /*
-        try {
-            SubjectPublicKeyInfo subjectPublicKeyInfo = new SubjectPublicKeyInfo(
-                    (ASN1Sequence)ASN1Object.fromByteArray(
-                            destinationPublicKey.getEncoded()
-                    )
-            );
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }*/
-        
+
         // generate a random IV
         byte[] iv = crypto.getRandomBytes(16);
         
