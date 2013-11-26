@@ -83,35 +83,60 @@ public class PacketFactory {
         // keypair, a SHA 256 digest, and PKCSv1.5 padding
         byte[] signature = crypto.signRSA(mIdentity.getPrivateKey(), encryptedInnerPacket);
         
-        //
         // Encrypt the signature using a new AES-256-CTR cipher with the same IV
         // and a new SHA-256 key hashed from the public elliptic key + the line
         // value (16 bytes from #5), then base64 encode the result as the value
         // for the sig param.
+        byte[] signatureKey = crypto.sha256Digest(
+                Util.concatenateByteArrays(encodedECPublicKey, lineIdentifier)
+        ); 
+        byte[] encryptedSignature =
+                crypto.encryptAES256CTR(signature, iv, signatureKey);
         
         // Create an open param, by encrypting the public elliptic curve key you
         // generated (in uncompressed form, aka ANSI X9.63) with the recipient's
         // RSA public key and OAEP padding.
+        // TODO: OAEP padding
+        byte[] openParam =
+                crypto.encryptRSA(destination.getPublicKey(), encodedECPublicKey);
 
         // Form the outer packet containing the open type, open param, the
         // generated iv, and the sig value.
-
-        // If you have also received an open packet from the recipient hostname,
-        // you may use it now to generate a line shared secret, using the ECC
-        // public key they sent in their open packet and Elliptic Curve
-        // Diffie-Hellman (ECDH).
+        byte[] outerPacket;
+        try {
+            outerPacket = new JSONStringer()
+                .object()
+                .key("type")
+                .value("open")
+                .key("open")
+                .value(Util.base64Encode(openParam))
+                .key("iv")
+                .value(Util.bytesToHex(iv))
+                .key("sig")
+                .value(Util.base64Encode(encryptedSignature))
+                .endObject()
+                .toString()
+                .getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new TelehashException(e);
+        } catch (JSONException e) {
+            throw new TelehashException(e);
+        }
         
-        // TODO: 
-        // X 1. implement KeyPair Crypto.generateECCKeyPair()
-        // X 2. implement byte[] Crypto.encryptRSA(PublicKey key, byte[]);
-        // X 3. implement Crypto.random()
-        // 4. implement base64encode(), base64decode().
-        // 5. create open parameter
-        // 6. create iv
-        // 7. create sig
-        // 8. record relevant information in a PendingOpen.
+        byte[] lengthPrefix = new byte[2];
+        lengthPrefix[0] = (byte)((outerPacket.length >> 8) & 0xFF);
+        lengthPrefix[1] = (byte)(outerPacket.length & 0xFF);
+        byte[] packet = Util.concatenateByteArrays(
+                lengthPrefix,
+                outerPacket,
+                encryptedInnerPacket
+        );
+        Util.hexdump(packet);
+
+        // TODO: do something with the packet bytes.
+        // TODO: solidify the design of the packet classes, etc.
+        // TODO: record relevant information in a PendingOpen.
         
         return new Packet();
     }
-
 }

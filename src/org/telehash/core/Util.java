@@ -247,4 +247,64 @@ public class Util {
     public static String slurpTextFile(String filename) throws IOException {
         return new String(slurpFile(filename), "UTF-8");
     }
+    
+    /**
+     * Concatenate two byte arrays.
+     * 
+     * @param a The first byte array.
+     * @param b The second byte array.
+     * @return A new byte array containing the concatenation.
+     */
+    public static byte[] concatenateByteArrays(byte[] a, byte[] b) {
+        byte[] z = new byte[a.length + b.length];
+        System.arraycopy(a, 0, z, 0, a.length);
+        System.arraycopy(b, 0, z, a.length, b.length);
+        return z;        
+    }
+    
+    /**
+     * Concatenate three byte arrays.
+     * 
+     * @param a The first byte array.
+     * @param b The second byte array.
+     * @param c The third byte array.
+     * @return A new byte array containing the concatenation.
+     */
+    public static byte[] concatenateByteArrays(byte[] a, byte[] b, byte[] c) {
+        byte[] z = new byte[a.length + b.length + c.length];
+        System.arraycopy(a, 0, z, 0, a.length);
+        System.arraycopy(b, 0, z, a.length, b.length);
+        System.arraycopy(c, 0, z, a.length+b.length, c.length);
+        return z;
+    }
+    
+    /**
+     * Dump a hexadecimal representation of the specified byte buffer to
+     * standard output.
+     * 
+     * @param buffer The byte buffer.
+     */
+    public static void hexdump(byte[] buffer) {
+        for (int i=0; i<buffer.length; i+=16) {
+            System.out.printf("%04X: ", i);
+            for (int j=i; j<(i+16); j++) {
+                if (j < buffer.length) {
+                    System.out.printf("%02X ", buffer[j]);
+                } else {
+                    System.out.print("   ");
+                }
+            }
+            for (int j=i; j<(i+16); j++) {
+                if (j < buffer.length) {
+                    int c = buffer[j];
+                    if (c >= 0x20 && c < 0x7F) {
+                        System.out.print((char)c);                        
+                    } else {
+                        System.out.print(".");
+                    }
+                }
+            }
+            System.out.println();
+        }
+    }
 }
