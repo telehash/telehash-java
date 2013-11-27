@@ -18,7 +18,15 @@ public class ECKeyPairImpl implements ECKeyPair {
         mPublicKey = new ECPublicKeyImpl(publicKey);
         mPrivateKey = new ECPrivateKeyImpl(privateKey);
     }
-    
+
+    public ECKeyPairImpl(
+            ECPublicKey publicKey,
+            ECPrivateKey privateKey
+    ) throws TelehashException {
+        mPublicKey = (ECPublicKeyImpl)publicKey;
+        mPrivateKey = (ECPrivateKeyImpl)privateKey;
+    }
+
     public ECPrivateKey getPrivateKey() {
         return mPrivateKey;
     }

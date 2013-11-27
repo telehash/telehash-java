@@ -49,5 +49,5 @@ public class Identity {
      */
     public byte[] getHashName() {
         return mHashName;
-    }
+    }    
 }

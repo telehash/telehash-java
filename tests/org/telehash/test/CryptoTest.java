@@ -59,6 +59,32 @@ public class CryptoTest {
             "ilBvcrs/XrwGGETUcFYcnYI7I0YwJKeL2V/5AGcAjPR5TeFdIUKbyj0QdYdDnNcc" +
             "IIlb1qLenrvtSfLJTsnmPR3uB0yRIJ/aPn+IlpQq4zjPG7//4Zs0";
 
+    private static final byte[] AES_PLAINTEXT = Util.base64Decode(
+            "AIZ7ImF0IjoxMzg1NTgxNTIxMTYxLCJ0byI6IjMzYmIwZDVhOTFkZmIzMzlkZjU1"+ 
+            "MzkyMTRhYThlODYzNTk5NjEzMTE0MTQ4OWU1Y2FmZTllYjg5ZTRjOTEyMDAiLCJs"+ 
+            "aW5lIjoiODVlYjVjY2IwODc4YmFmZDVlMTYyMzg4M2E5MWNmNGYifTCCASIwDQYJ"+ 
+            "KoZIhvcNAQEBBQADggEPADCCAQoCggEBAL8R/ZUlJHfvsDAYsx9TrSVH9jE+l6Uh"+ 
+            "9lVXO97GFoXrSDXJC+MYbaM1mNlVH0qz7dGtA4GbcloVYdU5c4cuKZd9TmJU7/x9"+ 
+            "AS7Sndh60rCVGUjXl/JKeCgtLIlPfAJ2YrQOJorAb5yfrP8V0mbFnQgGwj8cJA4F"+ 
+            "rfXIEF+IoiqNw1ef/etJvDeK33lYjI29uJ2vLpyREQ1Z9WHBKLLBwq5eGtASTsap"+ 
+            "EBJa4lJXq9EsBIDv/+SsVOuiy8R5lwMtrQOt9I+nu1yx0nzllcIr6JhkinyO5OHR"+ 
+            "tUs5wV5d7GvSG6uul0bZba2rbZ/plurENhgdA4oIA3hKCwqoc9SAowsCAwEAAQ=="
+    );
+    private static final byte[] AES_IV = Util.hexToBytes("a95b836b9c12c3ce35e166218237596b");
+    private static final byte[] AES_KEY =
+            Util.hexToBytes("585501ae7f7de80ea07ecf09a1d78b2962d2fd98a6644a0c1b9dd58e57139e0c");
+    private static final byte[] EXPECTED_AES_CIPHERTEXT = Util.base64Decode(
+            "T7eXkxL/rvT4twHFL3X+Jhi+9Q1clDWepIpp87afv7o55ydRx29F1O9ngMDGciXa"+ 
+            "95exGhK2moMQgiCdooznL8/wpWL6feFle4OZH1q8qvvaeuAUYav8+ETDmw/gMUD6"+ 
+            "iOghLpsSgUEhLgbejIaN68RWVW/MQraCPUMHweV8QvCebfeofXGQnyY8hknZ54u+"+ 
+            "iqLZCS0uy9hW8Z2dPOijJ7eyxEJGBM7k4gk6SfOdjLFRWTVpmAL76S/h80m6x3ZK"+ 
+            "D1z4EqmHh672pZXJ5Je9eviEHihRJFsK0ch8xwM9iQrV8BRYltl00a9l1TbNlW/q"+ 
+            "W9IyoclN9r5J0kqHLWe6qbuWCVu1yCnfFY9aq4P7MCjEHpzYTQMmkgt0rNiq2Ce9"+ 
+            "3VOugk3QOMwI7DmlH5j0QeKm9LNriz0dfHlSx4ahAwdHYSlQA5k/JlUQ+ctMDL8+"+ 
+            "PK1ixqTz+b/4DGfhCMoePIRC38BHtflgqm6It0aeLhn9cp7W5GaKEhV/93W0fJfq"+ 
+            "4bf9Yew3UWhbVTiTmR66m0j891b/ohvJKvdLzUHTQesMtf9q5rO8VKJ1S8AwGw==" 
+    );
+    
     private Crypto mCrypto;
     private Identity mIdentity;
     
@@ -176,7 +202,37 @@ public class CryptoTest {
 
         assertEquals(clearTextString, TEST_MESSAGE);
     }
-    
+
+    @Test
+    public void testRSAEncryptDecryptOAEP() throws Exception {
+        // cycle keys through an encode/decode cycle to validate that
+        // those methods aren't losing information necessary for the
+        // encryption/decryption.  (The test*EncodeDecode() methods
+        // above only verify consistency, not correctness.)
+        RSAPublicKey publicKey = mCrypto.decodeRSAPublicKey(
+                Util.hexToBytes(
+                        Util.bytesToHex(
+                                mIdentity.getPublicKey().getDEREncoded()
+                        )
+                )
+        );
+        RSAPrivateKey privateKey = mCrypto.decodeRSAPrivateKey(
+                Util.hexToBytes(
+                        Util.bytesToHex(
+                                mIdentity.getPrivateKey().getDEREncoded()
+                        )
+                )
+        );
+
+        // encrypt
+        byte[] cipherText = mCrypto.encryptRSAOAEP(publicKey, TEST_MESSAGE.getBytes("UTF-8"));
+        // decrypt
+        byte[] clearText = mCrypto.decryptRSAOAEP(privateKey, cipherText);
+        String clearTextString = new String(clearText, "UTF-8");
+
+        assertEquals(clearTextString, TEST_MESSAGE);
+    }
+
     private static final String EXPECTED_SIGNATURE =
             "eapjm0CIenRMV+3f+tBYmCgsBGUEnlijb03idHeCQgbQ4TWxIAdXMSOXGNN9ikuZ" +
             "bpNyGDKO+vnRMNvtw7gLO+Mtgj3hUD5uoRg1NDYL1JK4VhAkbsysjh8wX8T14dav" +
@@ -195,6 +251,82 @@ public class CryptoTest {
         byte[] expectedSignature = Util.base64Decode(EXPECTED_SIGNATURE);
         assertTrue(expectedSignature.length == signature.length);
         assertArrayEquals(expectedSignature, signature);
+    }
+
+    private static final byte[] RSA_PUBLIC_KEY = Util.base64Decode(
+            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvxH9lSUkd++wMBizH1Ot"+
+            "JUf2MT6XpSH2VVc73sYWhetINckL4xhtozWY2VUfSrPt0a0DgZtyWhVh1Tlzhy4p"+
+            "l31OYlTv/H0BLtKd2HrSsJUZSNeX8kp4KC0siU98AnZitA4misBvnJ+s/xXSZsWd"+
+            "CAbCPxwkDgWt9cgQX4iiKo3DV5/960m8N4rfeViMjb24na8unJERDVn1YcEossHC"+
+            "rl4a0BJOxqkQElriUler0SwEgO//5KxU66LLxHmXAy2tA630j6e7XLHSfOWVwivo"+
+            "mGSKfI7k4dG1SznBXl3sa9Ibq66XRtltrattn+mW6sQ2GB0DiggDeEoLCqhz1ICj"+
+            "CwIDAQAB"
+    );
+
+    private static final byte[] RSA_PRIVATE_KEY = Util.base64Decode(
+            "MIIEpQIBAAKCAQEAvxH9lSUkd++wMBizH1OtJUf2MT6XpSH2VVc73sYWhetINckL"+
+            "4xhtozWY2VUfSrPt0a0DgZtyWhVh1Tlzhy4pl31OYlTv/H0BLtKd2HrSsJUZSNeX"+
+            "8kp4KC0siU98AnZitA4misBvnJ+s/xXSZsWdCAbCPxwkDgWt9cgQX4iiKo3DV5/9"+
+            "60m8N4rfeViMjb24na8unJERDVn1YcEossHCrl4a0BJOxqkQElriUler0SwEgO//"+
+            "5KxU66LLxHmXAy2tA630j6e7XLHSfOWVwivomGSKfI7k4dG1SznBXl3sa9Ibq66X"+
+            "Rtltrattn+mW6sQ2GB0DiggDeEoLCqhz1ICjCwIDAQABAoIBAQC2zhGd1nFzxoD9"+
+            "I0SNHlO0LYtgRhB0T3AM6m8/jqoR6q+ltfqHheGvmyHoHUbZBBju2OdX40+e3IJD"+
+            "rLnZhdMJOzv5XGZXXYn6MEwQyEI37A7K4Gphx9n6Jm5L2R4+hOGef0Nk0QR4B1VO"+
+            "oKQy67J38W97TgM43zo2wvjXTjRJHLuD+SHv38AZy9b16DQOzVw7ak89KHXS/KHT"+
+            "4bfLHvhsI5MxR2liEui8LLRtODO/7FyZIUiFT3JNCorg3EYadKomxA4YaO7hxTcW"+
+            "qo58DsTP3WeoV2aOxuIeO1yj6UVlIYDI8xs9ZeiZmpuuXypzlfqVrigmy+lJ7dmJ"+
+            "ilMkbKNRAoGBAPSdmIGRFs4CCxpDaQrUzGUqZ2EkoFtkBpwaKI8wEamCSghkhqyO"+
+            "oKddde5Nb/NgnwOGHyc7aNJM/RGnuk2AqY2ie+UYS44jsa105wwNMOuQk3yqqTTH"+
+            "MUzv5j0o90wvK+zD/AjK/jcseSYu082UvtQ6Xm6AOKpH4/2d9NwGHOC/AoGBAMf2"+
+            "caWuuwj0BPLGm+x3ovLAAJiIdeUU1QYBM8WkZotdGs+yB0ySaJrQhVkJRWzPLGT2"+
+            "J1quBCelCaAZXr/XxSSRMTD78vMIGsC7yT6Uslf1zWoApBka11eawkE+0wkOo/RQ"+
+            "oljZm/AHf9jb66PxUBShC+UU9sNwy9B+ziUPXUS1AoGAQz+EKrKZg18acEjx+tFP"+
+            "s8w5iYJJN3bDPm0Ok3bSlDhGZBJG1++KCRjvj+joCw+YB576t41kntQdipoC5MWn"+
+            "V1HBH9VTCCuV8CrAThbeSRSBB3ffdqwASLd3I388pUwelkO26S/tPXvTfoTHI7Bt"+
+            "2eiGB3jmmyGScynWpBpmG/8CgYEAr4kE7Pf9Une8HE8DM8s2LTkljMFGFUp7UmEd"+
+            "zKNsLW0XCzpyM+LWlwjz9lwwKLuZciuwEmduWEsFrxh2V5yXgGlAsIqMFJKJwaVX"+
+            "nWs1QAgUQbi8VRl97nZ5joMTCQFkJiXeznaA8G306i7spadBsEpLwdbsZFcRZD7c"+
+            "wiXBr30CgYEAnMYg1M0alFbtLJQN+B+xNCKf+49b6fOwLvkt1XnkFOMEWDnaHyst"+
+            "TSkuDEy1LQU99Iw0xIdTj38VQEpYbPTM3DqdAQDnQ4a0j1NidRrzZGHDGZie90pi"+
+            "d66vFcnmRXGncwTdoHInpdJAnYVfrcT6Nv2RUPWk55t4p8/4FevvO+s="
+    );
+    private static final byte[] MESSAGE_TO_SIGN = Util.base64Decode(
+            "T7eXkxL/rvT4twHFL3X+Jhi+9Q1clDWepIpp87afv7o55ydRx29F1O9ngMDGciXa"+ 
+            "95exGhK2moMQgiCdooznL8/wpWL6feFle4OZH1q8qvvaeuAUYav8+ETDmw/gMUD6"+ 
+            "iOghLpsSgUEhLgbejIaN68RWVW/MQraCPUMHweV8QvCebfeofXGQnyY8hknZ54u+"+ 
+            "iqLZCS0uy9hW8Z2dPOijJ7eyxEJGBM7k4gk6SfOdjLFRWTVpmAL76S/h80m6x3ZK"+ 
+            "D1z4EqmHh672pZXJ5Je9eviEHihRJFsK0ch8xwM9iQrV8BRYltl00a9l1TbNlW/q"+ 
+            "W9IyoclN9r5J0kqHLWe6qbuWCVu1yCnfFY9aq4P7MCjEHpzYTQMmkgt0rNiq2Ce9"+ 
+            "3VOugk3QOMwI7DmlH5j0QeKm9LNriz0dfHlSx4ahAwdHYSlQA5k/JlUQ+ctMDL8+"+ 
+            "PK1ixqTz+b/4DGfhCMoePIRC38BHtflgqm6It0aeLhn9cp7W5GaKEhV/93W0fJfq"+ 
+            "4bf9Yew3UWhbVTiTmR66m0j891b/ohvJKvdLzUHTQesMtf9q5rO8VKJ1S8AwGw=="
+    );
+    private static final byte[] EXPECTED_SIGNATURE_2 = Util.base64Decode(
+            "jR7saWz/vK90vv/sJcDuqPtZxFfFMjeFnGfHWz/LsnKPzyICiOrR9dJsHYCUWCyE"+ 
+            "4YIMNEdAK0lYvAb5ttpUjY1f3FgkV9YewNKpYssgnj36m1Bn/gWhkLo6obNpMQlM"+ 
+            "q2ZzOdZJ3+Q0vQeANgkEMrOnZHyfv0s3fHob0VU0X/SIiqC0OSPuSwbiTh2d8Yr+"+ 
+            "AjS4et/fN+7UhFHYzIGNZrIUmRpJ4ULS7JijBErPMJSLawBaKe9fQPR0MCofMzQQ"+ 
+            "E3uXX3ygYYrH/IETpi9IZUL1bl+gLH/XVQ+hAbKZq784wggwxc8Wy9COFHrtzrt4"+ 
+            "V6xJiNrnw9j0IojtpMvXAw=="
+    );
+
+    @Test
+    public void testRSASigning2() throws Exception {
+        byte[] signature = mCrypto.signRSA(
+                mCrypto.decodeRSAPrivateKey(RSA_PRIVATE_KEY),
+                MESSAGE_TO_SIGN
+        );
+                
+        assertNotNull(signature);
+        assertTrue(EXPECTED_SIGNATURE_2.length == signature.length);
+        assertArrayEquals(EXPECTED_SIGNATURE_2, signature);
+        
+        boolean verify = mCrypto.verifyRSA(
+                mCrypto.decodeRSAPublicKey(RSA_PUBLIC_KEY),
+                MESSAGE_TO_SIGN,
+                signature
+        );
+        assertTrue(verify);
     }
     
     @Test
@@ -262,7 +394,7 @@ public class CryptoTest {
     }
     
     @Test
-    public void testAES() throws Exception {
+    public void testAESSimple() throws Exception {
         byte[] plaintext = mCrypto.sha256Digest("hello".getBytes("UTF-8"));
         byte[] key = mCrypto.sha256Digest("secret".getBytes("UTF-8"));
         byte[] iv = {
@@ -277,4 +409,11 @@ public class CryptoTest {
 
         assertArrayEquals(plaintext, decryptedPlainText);
     }
+    
+    @Test
+    public void testAESEncrypt() throws Exception {
+        byte[] cipherText = mCrypto.encryptAES256CTR(AES_PLAINTEXT, AES_IV, AES_KEY);
+        assertArrayEquals(EXPECTED_AES_CIPHERTEXT, cipherText);
+    }
+
 }

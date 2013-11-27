@@ -1,12 +1,14 @@
 package org.telehash.crypto.impl;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 import org.telehash.core.TelehashException;
+import org.telehash.core.Util;
 import org.telehash.crypto.ECPublicKey;
 
 public class ECPublicKeyImpl implements ECPublicKey {
@@ -57,5 +59,14 @@ public class ECPublicKeyImpl implements ECPublicKey {
     
     public ECPublicKeyParameters getKey() {
         return mKey;
+    }
+    
+    @Override
+    public boolean equals(Object other) {
+        if (! (other instanceof ECPublicKey)) {
+            return false;
+        }
+        ECPublicKey otherKey = (ECPublicKey)other;
+        return Arrays.equals(this.getEncoded(), otherKey.getEncoded());
     }
 }

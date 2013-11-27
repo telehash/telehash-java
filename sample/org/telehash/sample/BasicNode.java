@@ -8,8 +8,8 @@ import java.util.Set;
 
 import org.telehash.core.Identity;
 import org.telehash.core.Node;
+import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
-import org.telehash.core.PacketFactory;
 import org.telehash.core.Switch;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -76,14 +76,9 @@ public class BasicNode {
 
         // send packet
         System.out.println("node sending packet to seed.");
-        PacketFactory packetFactory = new PacketFactory(identity);
-        try {
-            packetFactory.createOpenPacket(seed);
-        } catch (TelehashException e1) {
-            e1.printStackTrace();
-            return;
-        }
-        telehashSwitch.sendPacket(new Packet());
+        
+        Packet openPacket = new OpenPacket(identity, seed);
+        telehashSwitch.sendPacket(openPacket);
         
         // pause 1 second
         try {

@@ -9,18 +9,19 @@ import java.security.Security;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.encodings.OAEPEncoding;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.modes.SICBlockCipher;
-import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -199,6 +200,23 @@ public class CryptoImpl implements Crypto {
         }
         return cipherText;
     }
+    
+    /**
+     * Encrypt data with an RSA private key using OAEP padding
+     * @throws TelehashException 
+     */
+    @Override
+    public byte[] encryptRSAOAEP(RSAPublicKey key, byte[] clearText) throws TelehashException {
+        AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
+        cipher.init(true, ((RSAPublicKeyImpl)key).getKey());
+        byte[] cipherText;
+        try {
+            cipherText = cipher.processBlock(clearText, 0, clearText.length);
+        } catch (InvalidCipherTextException e) {
+            throw new TelehashException(e);
+        }
+        return cipherText;
+    }
 
     /**
      * Decrypt data with an RSA private key
@@ -218,6 +236,23 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
+     * Decrypt data with an RSA private key and OAEP padding
+     * @throws TelehashException 
+     */
+    @Override
+    public byte[] decryptRSAOAEP(RSAPrivateKey key, byte[] cipherText) throws TelehashException {
+        AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
+        cipher.init(false, ((RSAPrivateKeyImpl)key).getKey());
+        byte[] clearText;
+        try {
+            clearText = cipher.processBlock(cipherText, 0, cipherText.length);
+        } catch (InvalidCipherTextException e) {
+            throw new TelehashException(e);
+        }
+        return clearText;
+    }
+
+    /**
      * Sign a data buffer with an RSA private key using the SHA-256 digest, and
      * PKCSv1.5 padding.
      * 
@@ -225,9 +260,6 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public byte[] signRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException {
-        
-        // TODO: are we using PKCSv1.5 padding???
-        
         RSADigestSigner signer = new RSADigestSigner(new SHA256Digest());
         signer.init(true, ((RSAPrivateKeyImpl)key).getKey());
         signer.update(buffer, 0, buffer.length);
@@ -240,6 +272,32 @@ public class CryptoImpl implements Crypto {
             throw new TelehashException(e);
         }
         return signature;
+    }
+
+    /**
+     * Verify the signature of a data buffer with an RSA private key using the
+     * SHA-256 digest, and PKCSv1.5 padding.
+     *
+     * @param key The RSA public key
+     * @param buffer The buffer which was signed
+     * @param signature The signature to verify
+     * @return true if the signature is valid; false otherwise.
+     * @throws TelehashException
+     */
+    @Override
+    public boolean verifyRSA(
+            RSAPublicKey key,
+            byte[] buffer,
+            byte[] signature
+    ) throws TelehashException {
+        RSADigestSigner signer = new RSADigestSigner(new SHA256Digest());
+        signer.init(false, ((RSAPublicKeyImpl)key).getKey());
+        signer.update(buffer, 0, buffer.length);
+        try {
+            return signer.verifySignature(signature);
+        } catch (DataLengthException e) {
+            throw new TelehashException(e);
+        }
     }
 
     /**
@@ -396,17 +454,30 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * Decode an ANSI X9.63-encoded private key into an ECPrivateKey object.
+     * Decode a byte-encoded private key into an ECPrivateKey object.
      * 
-     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
+     * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
-     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
+     * @throws TelehashException If the byte buffer cannot be parsed.
      */
-    /*
+    @Override
     public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException {
-        return new ECPrivateKeyImpl(buffer);
+        return new ECPrivateKeyImpl(buffer, mECDomainParameters);
     }
-    */
+
+    /**
+     * Create a new ECKeyPair from the provided public and private key.
+     * @param privateKey
+     * @param publicKey
+     * @return The newly created ECKeyPair object.
+     */
+    @Override
+    public ECKeyPair createECKeyPair(
+            ECPublicKey publicKey,
+            ECPrivateKey privateKey
+    ) throws TelehashException {
+        return new ECKeyPairImpl((ECPublicKeyImpl)publicKey, (ECPrivateKeyImpl)privateKey);
+    }
     
     /**
      * Perform Elliptic Curve Diffie-Hellman key agreement
@@ -432,11 +503,19 @@ public class CryptoImpl implements Crypto {
      * Encrypt the provided plaintext using AES-256-CTR with the provided
      * initialization vector (IV) and key.
      * 
-     * @param plainText The plaintext to encrypt.
-     * @param iv The initialization vector.
-     * @param key The encryption key.
+     * No padding is used. (The Telehash protocol spec calls for
+     * "PKCS1 v1.5 padding", but the node.js implementation doesn't use padding.
+     * Perhaps "PKCS1 v1.5 padding" is no padding?)
+     * 
+     * @param plainText
+     *            The plaintext to encrypt.
+     * @param iv
+     *            The initialization vector.
+     * @param key
+     *            The encryption key.
      * @return The resulting ciphertext.
-     * @throws TelehashException If a problem occurred.
+     * @throws TelehashException
+     *             If a problem occurred.
      */
     @Override
     public byte[] encryptAES256CTR(
@@ -447,7 +526,7 @@ public class CryptoImpl implements Crypto {
         // initialize cipher
         AESEngine aes = new AESEngine();
         CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(key), iv);
-        PaddedBufferedBlockCipher cipher = new PaddedBufferedBlockCipher(new SICBlockCipher(aes));
+        BufferedBlockCipher cipher = new BufferedBlockCipher(new SICBlockCipher(aes));
         cipher.init(true, ivAndKey);
 
         // encrypt
@@ -473,6 +552,10 @@ public class CryptoImpl implements Crypto {
      * Decrypt the provided ciphertext using AES-256-CTR with the provided
      * initialization vector (IV) and key.
      * 
+     * No padding is used. (The Telehash protocol spec calls for
+     * "PKCS1 v1.5 padding", but the node.js implementation doesn't use padding.
+     * Perhaps "PKCS1 v1.5 padding" is no padding?)
+
      * @param plainText The ciphertext to decrypt.
      * @param iv The initialization vector.
      * @param key The encryption key.
@@ -488,7 +571,7 @@ public class CryptoImpl implements Crypto {
         // init cipher
         AESEngine aes = new AESEngine();
         CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(key), iv);
-        PaddedBufferedBlockCipher cipher = new PaddedBufferedBlockCipher(new SICBlockCipher(aes));
+        BufferedBlockCipher cipher = new BufferedBlockCipher(new SICBlockCipher(aes));
         cipher.init(false, ivAndKey);
 
         // decrypt

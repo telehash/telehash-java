@@ -49,10 +49,22 @@ public interface Crypto {
     public byte[] encryptRSA(RSAPublicKey key, byte[] buffer) throws TelehashException;
 
     /**
+     * Encrypt data with an RSA public key
+     * @throws TelehashException 
+     */
+    public byte[] encryptRSAOAEP(RSAPublicKey key, byte[] clearText) throws TelehashException;
+
+    /**
      * Decrypt data with an RSA private key
      * @throws TelehashException 
      */
     public byte[] decryptRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
+
+    /**
+     * Decrypt data with an RSA private key
+     * @throws TelehashException 
+     */
+    public byte[] decryptRSAOAEP(RSAPrivateKey key, byte[] buffer) throws TelehashException;
 
     /**
      * Sign a data buffer with an RSA private key using the SHA-256 digest, and
@@ -61,6 +73,19 @@ public interface Crypto {
      * @throws TelehashException
      */
     public byte[] signRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
+
+    /**
+     * Verify the signature of a data buffer with an RSA private key using the
+     * SHA-256 digest, and PKCSv1.5 padding.
+     * 
+     * @return true if the signature is valid; false otherwise.
+     * @throws TelehashException
+     */
+    public boolean verifyRSA(
+            RSAPublicKey key,
+            byte[] buffer,
+            byte[] signature
+    ) throws TelehashException;
     
     /**
      * Read a PEM-formatted RSA public key from a file.
@@ -132,13 +157,24 @@ public interface Crypto {
     public ECPublicKey decodeECPublicKey(byte[] buffer) throws TelehashException;
 
     /**
-     * Decode an ANSI X9.63-encoded private key into an ECPrivateKey object.
+     * Decode a byte-encoded private key into an ECPrivateKey object.
      * 
-     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
+     * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
-     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
+     * @throws TelehashException If the byte buffer cannot be parsed.
      */
-    //public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException;
+    public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException;
+
+    /**
+     * Create a new ECKeyPair from the provided public and private key.
+     * @param privateKey
+     * @param publicKey
+     * @return The newly created ECKeyPair object.
+     */
+    public ECKeyPair createECKeyPair(
+            ECPublicKey publicKey,
+            ECPrivateKey privateKey
+    ) throws TelehashException;
 
     /**
      * Create a new RSAKeyPair from the provided public and private key.
