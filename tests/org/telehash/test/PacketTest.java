@@ -14,6 +14,7 @@ import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.ECKeyPair;
 import org.telehash.crypto.RSAPublicKey;
+import org.telehash.network.Endpoint;
 import org.telehash.network.Network;
 
 public class PacketTest {
@@ -135,6 +136,7 @@ public class PacketTest {
     private static final byte[] EXPECTED_PACKET_SHA256 =
             Util.hexToBytes("545c2124151b86ff91038dcbbf0a4808419ba4f2f8236ae19c1cd531dea18854");
     
+    private static final String SAMPLE_ENDPOINT = "inet:127.0.0.1/4242";
     private Crypto mCrypto;
     private Network mNetwork;
     private Identity mIdentity;
@@ -178,7 +180,7 @@ public class PacketTest {
         RSAPublicKey destinationPublicKey = mCrypto.decodeRSAPublicKey(DESTINATION_PUBLIC_KEY);
         Node remoteNode = new Node(
                 destinationPublicKey,
-                mNetwork.parseEndpoint("inet:127.0.0.1/4242")
+                mNetwork.parseEndpoint(SAMPLE_ENDPOINT)
         );
         
         OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
@@ -202,15 +204,17 @@ public class PacketTest {
     @Test
     public void testOpenPacketParse() throws Exception {
         
+        Endpoint localEndpoint = mNetwork.parseEndpoint(SAMPLE_ENDPOINT);
+        Endpoint remoteEndpoint = mNetwork.parseEndpoint(SAMPLE_ENDPOINT);
         Node remoteNode = new Node(
                 mIdentity2.getPublicKey(),
-                mNetwork.parseEndpoint("inet:127.0.0.1/4242")
+                remoteEndpoint
         );
         OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
         byte[] openPacketBuffer = openPacket.render();
         assertNotNull(openPacketBuffer);
 
-        Packet packet = Packet.parse(mTelehash2, openPacketBuffer);
+        Packet packet = Packet.parse(mTelehash2, openPacketBuffer, localEndpoint);
         assertNotNull(packet);
         assertTrue(packet instanceof OpenPacket);
         OpenPacket openPacket2 = (OpenPacket)packet;

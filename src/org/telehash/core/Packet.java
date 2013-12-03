@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telehash.network.Endpoint;
 
 public abstract class Packet {
     
@@ -39,9 +40,26 @@ public abstract class Packet {
      */
     public abstract byte[] render() throws TelehashException;
     
-    public static Packet parse(Telehash telehash, byte[] buffer) throws TelehashException {
+    /**
+     * Parse the provided byte buffer into a packet object. This method will
+     * examine the "type" header, and dispatch to the parse method of the
+     * appropriate subclass.
+     * 
+     * @param telehash The Telehash context.
+     * @param buffer The buffer to parse.
+     * @param sourceEndpoint The endpoint from which this packet was received.
+     * @return
+     * @throws TelehashException
+     */
+    public static Packet parse(
+            Telehash telehash,
+            byte[] buffer,
+            Endpoint sourceEndpoint
+    ) throws TelehashException {
+        // split the packet into the JSON header and the body.
         JsonAndBody jsonAndBody = splitPacket(buffer);
 
+        // examine the "type" header
         String type = jsonAndBody.json.getString(TYPE_KEY);
         if (type == null || type.isEmpty()) {
             throw new TelehashException("invalid type string");
@@ -50,9 +68,10 @@ public abstract class Packet {
             throw new TelehashException("unknown packet type");
         }
         
+        // dispatch to the parse routine of the appropriate subclass.
         try {
             return (Packet) sTypeParseMap.get(type).invoke(
-                    null, telehash, jsonAndBody.json, jsonAndBody.body
+                    null, telehash, jsonAndBody.json, jsonAndBody.body, sourceEndpoint
             );
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("cannot invoke parse method.", e);
@@ -104,7 +123,8 @@ public abstract class Packet {
                     PARSE_METHOD_NAME,
                     Telehash.class,
                     JSONObject.class,
-                    byte[].class
+                    byte[].class,
+                    Endpoint.class
             );
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("cannot find parse method in class.", e);

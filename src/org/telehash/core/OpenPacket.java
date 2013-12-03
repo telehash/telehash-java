@@ -11,6 +11,7 @@ import org.telehash.crypto.ECKeyPair;
 import org.telehash.crypto.ECPrivateKey;
 import org.telehash.crypto.ECPublicKey;
 import org.telehash.crypto.RSAPublicKey;
+import org.telehash.network.Endpoint;
 
 /**
  * A Telehash "open" packet is used to establish a line between two Telehash
@@ -284,7 +285,8 @@ public class OpenPacket extends Packet {
     public static OpenPacket parse(
             Telehash telehash,
             JSONObject json,
-            byte[] body
+            byte[] body,
+            Endpoint endpoint
     ) throws TelehashException {
         Crypto crypto = telehash.getCrypto();
         
@@ -337,8 +339,7 @@ public class OpenPacket extends Packet {
         RSAPublicKey senderRSAPublicKey = crypto.decodeRSAPublicKey(innerPacket.body);
         
         // SHA-256 hash the RSA public key to derive the sender's hashname
-        // TODO: endpoint
-        Node sourceNode = new Node(senderRSAPublicKey, null);
+        Node sourceNode = new Node(senderRSAPublicKey, endpoint);
         
         // Verify the at timestamp is both within a reasonable amount of time to
         // account for network delays and clock skew, and is newer than any
