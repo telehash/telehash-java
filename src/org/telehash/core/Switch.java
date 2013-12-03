@@ -167,13 +167,24 @@ public class Switch {
         // for now, just send to the sole seed.
         // TODO: this will obviously require far more sophistication.
         Node seed = mSeeds.iterator().next();
+        try {
+            System.out.println("sending to hashname="+Util.bytesToHex(seed.getHashName()));
+        } catch (TelehashException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        };
         InetAddress seedAddress = ((InetEndpoint)seed.getEndpoint()).getAddress();
         int seedPort = ((InetEndpoint)seed.getEndpoint()).getPort();
         
         // TODO: don't allocate a new buffer every time.
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         buffer.clear();
-        buffer.putLong(42L);
+        try {
+            buffer.put(packet.render());
+        } catch (TelehashException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         buffer.flip();
         try {
             mChannel.send(buffer, new InetSocketAddress(seedAddress, seedPort));

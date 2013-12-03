@@ -15,6 +15,7 @@ import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
+import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.encodings.OAEPEncoding;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -207,7 +208,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public byte[] encryptRSAOAEP(RSAPublicKey key, byte[] clearText) throws TelehashException {
-        AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
+        AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA1Digest());
         cipher.init(true, ((RSAPublicKeyImpl)key).getKey());
         byte[] cipherText;
         try {
@@ -241,7 +242,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public byte[] decryptRSAOAEP(RSAPrivateKey key, byte[] cipherText) throws TelehashException {
-        AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
+        AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA1Digest());
         cipher.init(false, ((RSAPrivateKeyImpl)key).getKey());
         byte[] clearText;
         try {

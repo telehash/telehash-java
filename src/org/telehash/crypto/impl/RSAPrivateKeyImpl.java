@@ -36,7 +36,7 @@ public class RSAPrivateKeyImpl implements RSAPrivateKey {
                 throw new TelehashException("only PKCS#1v1.5 (version=0) structures supported.");
             }
             
-            mKey =  new RSAPrivateCrtKeyParameters(
+            mKey = new RSAPrivateCrtKeyParameters(
                     getIntegerFromSequence(sequence, 1),
                     getIntegerFromSequence(sequence, 2),
                     getIntegerFromSequence(sequence, 3),
@@ -57,18 +57,17 @@ public class RSAPrivateKeyImpl implements RSAPrivateKey {
 
     @Override
     public byte[] getDEREncoded() throws TelehashException {
-        RSAPrivateCrtKeyParameters param = (RSAPrivateCrtKeyParameters)mKey;
         org.bouncycastle.asn1.pkcs.RSAPrivateKey asn1Key;
         asn1Key =
                 new org.bouncycastle.asn1.pkcs.RSAPrivateKey(
-                    param.getModulus(),
-                    param.getPublicExponent(),
-                    param.getExponent(),
-                    param.getP(),
-                    param.getQ(),
-                    param.getDP(),
-                    param.getDQ(),
-                    param.getQInv()
+                    mKey.getModulus(),
+                    mKey.getPublicExponent(),
+                    mKey.getExponent(),
+                    mKey.getP(),
+                    mKey.getQ(),
+                    mKey.getDP(),
+                    mKey.getDQ(),
+                    mKey.getQInv()
                 );
 
         try {
