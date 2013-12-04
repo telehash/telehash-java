@@ -1,5 +1,7 @@
 package org.telehash.network;
 
+import java.net.SocketAddress;
+
 import org.telehash.core.TelehashException;
 
 /**
@@ -21,4 +23,12 @@ public interface Network {
      *             If a problem occurred while parsing the endpoint.
      */
     public Endpoint parseEndpoint(String endpointString) throws TelehashException;
+    
+    /**
+     * Convert a Java SocketAddress to an Endpoint object.
+     * @param socketAddress
+     * @return The network endpoint object.
+     * @throws TelehashException
+     */
+    public Endpoint socketAddressToEndpoint(SocketAddress socketAddress) throws TelehashException;
 }

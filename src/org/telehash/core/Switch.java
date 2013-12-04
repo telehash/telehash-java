@@ -23,7 +23,7 @@ public class Switch {
     
     private static final int DEFAULT_PORT = 42424;
 
-    private Identity mIdentity;
+    private Telehash mTelehash;
     private Set<Node> mSeeds;
     private int mPort;
     
@@ -33,14 +33,14 @@ public class Switch {
     private boolean mStopRequested = false;
     private Queue<Packet> mWriteQueue = new LinkedList<Packet>();
 
-    public Switch(Identity identity, Set<Node> seeds) {
-        mIdentity = identity;
+    public Switch(Telehash telehash, Set<Node> seeds) {
+        mTelehash = telehash;
         mSeeds = seeds;
         mPort = DEFAULT_PORT;
     }
 
-    public Switch(Identity identity, Set<Node> seeds, int port) {
-        mIdentity = identity;
+    public Switch(Telehash telehash, Set<Node> seeds, int port) {
+        mTelehash = telehash;
         mSeeds = seeds;
         mPort = port;
     }
@@ -93,7 +93,7 @@ public class Switch {
     }
 
     private void loop() {
-        System.out.println("switch loop with identity="+mIdentity+" and seeds="+mSeeds);
+        System.out.println("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
         
         try {
             while (true) {
@@ -155,6 +155,31 @@ public class Switch {
             return;
         }
         System.out.println("received datagram of "+buffer.position()+" bytes from: "+socketAddress);
+
+        // extract a byte array of the datagram buffer
+        // TODO: retool parse() to take length/offset args to avoid excessive copying.
+        byte[] packetBuffer = new byte[buffer.position()];
+        System.arraycopy(buffer.array(), 0, packetBuffer, 0, buffer.position());
+
+        // parse the packet
+        Packet packet;
+        try {
+            packet = Packet.parse(
+                    mTelehash,
+                    packetBuffer,
+                    mTelehash.getNetwork().socketAddressToEndpoint(socketAddress)
+            );
+        } catch (TelehashException e) {
+            e.printStackTrace();
+            return;
+        }
+        
+        // process the packet
+        handleIncomingPacket(packet);
+    }
+    
+    private void handleIncomingPacket(Packet packet) {
+        System.out.println("incoming packet: "+packet);        
     }
     
     private void handleOutgoing() {

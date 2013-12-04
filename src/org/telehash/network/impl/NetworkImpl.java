@@ -1,6 +1,8 @@
 package org.telehash.network.impl;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
 import org.telehash.core.TelehashException;
@@ -26,6 +28,7 @@ public class NetworkImpl implements Network {
      * @throws TelehashException
      *             If a problem occurred while parsing the endpoint.
      */
+    @Override
     public Endpoint parseEndpoint(String endpointString) throws TelehashException {
         if (endpointString.startsWith(ENDPOINT_INET_PREFIX)) {
             String inetEndpointString = endpointString.substring(ENDPOINT_INET_PREFIX.length());
@@ -52,4 +55,20 @@ public class NetworkImpl implements Network {
             throw new TelehashException("cannot parse endpoint string");
         }
     }
+    
+    /**
+     * Convert a Java SocketAddress to an Endpoint object.
+     * @param socketAddress
+     * @return The network endpoint object.
+     * @throws TelehashException
+     */
+    @Override
+    public Endpoint socketAddressToEndpoint(SocketAddress socketAddress) throws TelehashException {
+        if (! (socketAddress instanceof InetSocketAddress)) {
+            throw new TelehashException("unknown socket address type");
+        }
+        InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
+        return new InetEndpoint(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
+    }
+
 }

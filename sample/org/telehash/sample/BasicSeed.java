@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 
 import org.telehash.core.Identity;
 import org.telehash.core.Switch;
+import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 
@@ -35,7 +36,8 @@ public class BasicSeed {
         }
 
         // launch the switch
-        Switch telehashSwitch = new Switch(identity, null, PORT);
+        Telehash telehash = new Telehash(identity);
+        Switch telehashSwitch = new Switch(telehash, null, PORT);
         try {
             telehashSwitch.start();
         } catch (TelehashException e) {

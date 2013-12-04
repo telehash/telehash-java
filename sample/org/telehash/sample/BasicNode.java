@@ -11,6 +11,7 @@ import org.telehash.core.Node;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
 import org.telehash.core.Switch;
+import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.RSAPublicKey;
@@ -66,7 +67,8 @@ public class BasicNode {
         seeds.add(seed);
 
         // launch the switch
-        Switch telehashSwitch = new Switch(identity, seeds, PORT);
+        Telehash telehash = new Telehash(identity);
+        Switch telehashSwitch = new Switch(telehash, seeds, PORT);
         try {
             telehashSwitch.start();
         } catch (TelehashException e) {
@@ -80,9 +82,9 @@ public class BasicNode {
         Packet openPacket = new OpenPacket(identity, seed);
         telehashSwitch.sendPacket(openPacket);
         
-        // pause 1 second
+        // pause 5 seconds
         try {
-            Thread.sleep(1000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
