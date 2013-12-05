@@ -71,6 +71,9 @@ public class OpenPacket extends Packet {
         mIdentity = identity;
         mDestinationNode = destinationNode;
         mSenderRSAPublicKey = identity.getPublicKey();
+        
+        // generate a random line identifier
+        mLineIdentifier = Util.getCryptoInstance().getRandomBytes(LINE_IDENTIFIER_SIZE);
     }
     
     public OpenPacket(
@@ -146,9 +149,6 @@ public class OpenPacket extends Packet {
         
         // generate a random IV
         byte[] iv = crypto.getRandomBytes(IV_SIZE);
-        
-        // generate a random line identifier
-        mLineIdentifier = crypto.getRandomBytes(LINE_IDENTIFIER_SIZE);
         
         // note the current time
         mOpenTime = System.currentTimeMillis();

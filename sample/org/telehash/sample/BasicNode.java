@@ -6,7 +6,9 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.telehash.core.CompletionHandler;
 import org.telehash.core.Identity;
+import org.telehash.core.Line;
 import org.telehash.core.Node;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
@@ -62,7 +64,12 @@ public class BasicNode {
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
-        Node seed = new Node(seedPublicKey, new InetEndpoint(localhost, SEED_PORT));
+        Node seed;
+        try {
+            seed = new Node(seedPublicKey, new InetEndpoint(localhost, SEED_PORT));
+        } catch (TelehashException e) {
+            throw new RuntimeException(e);
+        }
         Set<Node> seeds = new HashSet<Node>();
         seeds.add(seed);
 
@@ -79,8 +86,30 @@ public class BasicNode {
         // send packet
         System.out.println("node sending packet to seed.");
         
+        /*
         Packet openPacket = new OpenPacket(identity, seed);
-        telehashSwitch.sendPacket(openPacket);
+        try {
+            telehashSwitch.sendPacket(openPacket);
+        } catch (TelehashException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        */
+        try {
+            telehashSwitch.openLine(seed, new CompletionHandler<Line>() {
+                @Override
+                public void failed(Throwable exc, Object attachment) {
+                    System.out.println("line open failed.");
+                }
+                
+                @Override
+                public void completed(Line result, Object attachment) {
+                    System.out.println("line established: "+result);
+                }
+            }, null);
+        } catch (TelehashException e) {
+            e.printStackTrace();
+        }
         
         // pause 5 seconds
         try {
