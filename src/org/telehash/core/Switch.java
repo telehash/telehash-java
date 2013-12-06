@@ -36,36 +36,29 @@ public class Switch {
     private boolean mStopRequested = false;
     private Queue<Packet> mWriteQueue = new LinkedList<Packet>();
     
-    // TODO: is this really necessary vs. a simple map?
-    //       in other words, do we really need lookups based soley on
-    //       line-id?  (which could be dangerous -- don't want malicious
-    //       nodes killing our lines to other nodes just be referencing
-    //       the same line-id.)
     private static class LineTracker {
         private Map<Node,Line> mNodeToLineMap = new HashMap<Node,Line>();
-        //private Map<byte[],Line> mLineIdentifierToLineMap = new HashMap<byte[],Line>();
+        private Map<byte[],Line> mIncomingLineIdentifierToLineMap = new HashMap<byte[],Line>();
         public Line getByNode(Node node) {
             return mNodeToLineMap.get(node);
         }
-        /*
-        public Line getByLineIdentifier(byte[] lineIdentifier) {
-            return mLineIdentifierToLineMap.get(lineIdentifier);
+        public Line getByIncomingLineIdentifier(byte[] lineIdentifier) {
+            return mIncomingLineIdentifierToLineMap.get(lineIdentifier);
         }
-        */
         public void add(Line line) {
             if (mNodeToLineMap.containsKey(line.getRemoteNode())) {
                 // put() would overwrite, but we must make sure to
                 // remove the entry from both maps.
                 Line oldLine = mNodeToLineMap.get(line.getRemoteNode());
                 mNodeToLineMap.remove(oldLine.getRemoteNode());
-                //mLineIdentifierToLineMap.remove(oldLine.getLineIdentifier());
+                mIncomingLineIdentifierToLineMap.remove(oldLine.getIncomingLineIdentifier());
             }
             mNodeToLineMap.put(line.getRemoteNode(), line);
-            //mLineIdentifierToLineMap.put(line.getLineIdentifier(), line);
+            mIncomingLineIdentifierToLineMap.put(line.getIncomingLineIdentifier(), line);
         }
         public void remove(Line line) {
             mNodeToLineMap.remove(line.getRemoteNode());
-            //mLineIdentifierToLineMap.remove(line.getLineIdentifier());
+            mIncomingLineIdentifierToLineMap.remove(line.getIncomingLineIdentifier());
         }
         // TODO: purge()
         
@@ -145,7 +138,11 @@ public class Switch {
         }
     }
     
-    // TODO: more args: timeout, completion...
+    public Line getLine(byte[] lineIdentifier) {
+        return mLineTracker.getByIncomingLineIdentifier(lineIdentifier);
+    }
+    
+    // TODO: timeout?
     public void openLine(
             Node destination,
             CompletionHandler<Line> handler,
@@ -184,6 +181,17 @@ public class Switch {
             mLineTracker.remove(line);
             throw e;            
         }        
+    }
+    
+    public void sendLinePacket(
+            Line line,
+            byte[] body,
+            CompletionHandler<Line> handler,
+            Object attachment
+    ) throws TelehashException {
+        // create a line packet
+        LinePacket linePacket = new LinePacket(line, body);
+        sendPacket(linePacket);
     }
     
     public void sendPacket(Packet packet) throws TelehashException {
@@ -307,8 +315,8 @@ public class Switch {
                 mTelehash.getCrypto().sha256Digest(
                         Util.concatenateByteArrays(
                                 sharedSecret,
-                                line.getOutgoingLineIdentifier(),
-                                line.getIncomingLineIdentifier()
+                                line.getIncomingLineIdentifier(),
+                                line.getOutgoingLineIdentifier()
                         )
                 )
         );
@@ -316,11 +324,11 @@ public class Switch {
                 mTelehash.getCrypto().sha256Digest(
                         Util.concatenateByteArrays(
                                 sharedSecret,
-                                line.getIncomingLineIdentifier(),
-                                line.getOutgoingLineIdentifier()
+                                line.getOutgoingLineIdentifier(),
+                                line.getIncomingLineIdentifier()
                         )
                 )
-        );        
+        );
     }
     
     private void handleOpenPacket(OpenPacket incomingOpenPacket) throws TelehashException {

@@ -75,7 +75,7 @@ public class BasicNode {
 
         // launch the switch
         Telehash telehash = new Telehash(identity);
-        Switch telehashSwitch = new Switch(telehash, seeds, PORT);
+        final Switch telehashSwitch = new Switch(telehash, seeds, PORT);
         try {
             telehashSwitch.start();
         } catch (TelehashException e) {
@@ -86,15 +86,6 @@ public class BasicNode {
         // send packet
         System.out.println("node sending packet to seed.");
         
-        /*
-        Packet openPacket = new OpenPacket(identity, seed);
-        try {
-            telehashSwitch.sendPacket(openPacket);
-        } catch (TelehashException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
-        */
         try {
             telehashSwitch.openLine(seed, new CompletionHandler<Line>() {
                 @Override
@@ -103,8 +94,25 @@ public class BasicNode {
                 }
                 
                 @Override
-                public void completed(Line result, Object attachment) {
-                    System.out.println("line established: "+result);
+                public void completed(Line line, Object attachment) {
+                    System.out.println("line established: "+line);
+                    
+                    // send a "test" line packet, for now.
+                    try {
+                        String json = "{\"type\":\"test\"}";
+                        byte[] jsonBytes = json.getBytes();
+                        telehashSwitch.sendLinePacket(
+                                line,
+                                Util.concatenateByteArrays(
+                                    new byte[]{0x00, (byte)jsonBytes.length},
+                                    jsonBytes,
+                                    new byte[] {0x42}
+                                ),
+                                null, null);
+                    } catch (TelehashException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             }, null);
         } catch (TelehashException e) {
