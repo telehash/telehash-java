@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -38,11 +37,26 @@ public class Switch {
     
     private static class LineTracker {
         private Map<Node,Line> mNodeToLineMap = new HashMap<Node,Line>();
-        private Map<byte[],Line> mIncomingLineIdentifierToLineMap = new HashMap<byte[],Line>();
+        private Map<LineIdentifier,Line> mIncomingLineIdentifierToLineMap =
+                new HashMap<LineIdentifier,Line>();
         public Line getByNode(Node node) {
             return mNodeToLineMap.get(node);
         }
-        public Line getByIncomingLineIdentifier(byte[] lineIdentifier) {
+        public Line getByIncomingLineIdentifier(LineIdentifier lineIdentifier) {
+            
+            // TODO: remove this debugging block
+            if (mIncomingLineIdentifierToLineMap.get(lineIdentifier) == null) {
+                if (mIncomingLineIdentifierToLineMap.containsKey(lineIdentifier)) {
+                    System.out.println("XXX has key, but value is null");
+                } else {
+                    System.out.println("XXX cannot find "+
+                            lineIdentifier+" ; candidates include:");
+                    for (LineIdentifier id : mIncomingLineIdentifierToLineMap.keySet()) {
+                        System.out.println("XXX     "+id+" "+id.hashCode());
+                    }
+                }
+            }
+            
             return mIncomingLineIdentifierToLineMap.get(lineIdentifier);
         }
         public void add(Line line) {
@@ -73,12 +87,12 @@ public class Switch {
                 if (line.getIncomingLineIdentifier() == null) {
                     sb.append("null ");
                 } else {
-                    sb.append(Util.bytesToHex(line.getIncomingLineIdentifier())+" ");
+                    sb.append(line.getIncomingLineIdentifier()+" ");
                 }
                 if (line.getOutgoingLineIdentifier() == null) {
                     sb.append("null ");
                 } else {
-                    sb.append(Util.bytesToHex(line.getOutgoingLineIdentifier())+" ");
+                    sb.append(line.getOutgoingLineIdentifier()+" ");
                 }
                 sb.append(line.getState().name()+"\n");
             }
@@ -138,7 +152,7 @@ public class Switch {
         }
     }
     
-    public Line getLine(byte[] lineIdentifier) {
+    public Line getLine(LineIdentifier lineIdentifier) {
         return mLineTracker.getByIncomingLineIdentifier(lineIdentifier);
     }
     
@@ -185,12 +199,12 @@ public class Switch {
     
     public void sendLinePacket(
             Line line,
-            byte[] body,
+            ChannelPacket channelPacket,
             CompletionHandler<Line> handler,
             Object attachment
     ) throws TelehashException {
         // create a line packet
-        LinePacket linePacket = new LinePacket(line, body);
+        LinePacket linePacket = new LinePacket(line, channelPacket);
         sendPacket(linePacket);
     }
     
@@ -290,13 +304,15 @@ public class Switch {
     
     private void handleIncomingPacket(Packet packet) {
         System.out.println("incoming packet: "+packet);
-        if (packet instanceof OpenPacket) {
-            try {
+        try {
+            if (packet instanceof OpenPacket) {
                 handleOpenPacket((OpenPacket)packet);
-            } catch (TelehashException e) {
-                System.out.println("error handling incoming packet: "+e);
-                e.printStackTrace();
+            } else if (packet instanceof LinePacket) {
+                handleLinePacket((LinePacket)packet);
             }
+        } catch (TelehashException e) {
+            System.out.println("error handling incoming packet: "+e);
+            e.printStackTrace();
         }
     }
     
@@ -315,8 +331,8 @@ public class Switch {
                 mTelehash.getCrypto().sha256Digest(
                         Util.concatenateByteArrays(
                                 sharedSecret,
-                                line.getIncomingLineIdentifier(),
-                                line.getOutgoingLineIdentifier()
+                                line.getIncomingLineIdentifier().getBytes(),
+                                line.getOutgoingLineIdentifier().getBytes()
                         )
                 )
         );
@@ -324,8 +340,8 @@ public class Switch {
                 mTelehash.getCrypto().sha256Digest(
                         Util.concatenateByteArrays(
                                 sharedSecret,
-                                line.getOutgoingLineIdentifier(),
-                                line.getIncomingLineIdentifier()
+                                line.getOutgoingLineIdentifier().getBytes(),
+                                line.getIncomingLineIdentifier().getBytes()
                         )
                 )
         );
@@ -338,11 +354,8 @@ public class Switch {
         Line line = mLineTracker.getByNode(remoteNode);
         if (line != null && (
                 line.getOutgoingLineIdentifier() == null ||
-                Arrays.equals(
-                        line.getOutgoingLineIdentifier(),
-                        incomingOpenPacket.getLineIdentifier())
-                )
-        ) {
+                line.getOutgoingLineIdentifier().equals(incomingOpenPacket.getLineIdentifier())
+        )) {
             // an existing line is present for this open.
             
             if (line.getState() != Line.State.PENDING) {
@@ -393,7 +406,14 @@ public class Switch {
 
         }
         System.out.println("handleOpenPacket() bottom:\n"+mLineTracker);
-
+    }
+    
+    private void handleLinePacket(LinePacket linePacket) throws TelehashException {
+        ChannelPacket channelPacket = linePacket.getChannelPacket();
+        
+        System.out.println("receiving channel packet: "+channelPacket);
+        
+        // TODO
     }
     
     private void handleOutgoing() {

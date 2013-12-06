@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.telehash.core.Identity;
+import org.telehash.core.LineIdentifier;
 import org.telehash.core.Node;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
@@ -188,7 +189,7 @@ public class PacketTest {
         openPacket.setEllipticCurvePublicKey(mECKeyPair.getPublicKey());
         openPacket.setEllipticCurvePrivateKey(mECKeyPair.getPrivateKey());
         openPacket.setOpenTime(TEST_OPEN_TIME);
-        openPacket.setLineIdentifier(TEST_LINE_ID);
+        openPacket.setLineIdentifier(new LineIdentifier(TEST_LINE_ID));
         
         byte[] openPacketBuffer = openPacket.render(
                 TEST_IV,
@@ -223,7 +224,7 @@ public class PacketTest {
                 openPacket2.getEllipticCurvePublicKey()
         );
         assertEquals(openPacket.getOpenTime(), openPacket2.getOpenTime());
-        assertArrayEquals(openPacket.getLineIdentifier(), openPacket2.getLineIdentifier());
+        assertEquals(openPacket.getLineIdentifier(), openPacket2.getLineIdentifier());
     }
 
 }

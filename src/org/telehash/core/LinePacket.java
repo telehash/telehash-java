@@ -40,15 +40,15 @@ public class LinePacket extends Packet {
     }
     
     private Line mLine;
-    private byte[] mBody;
+    private ChannelPacket mChannelPacket;
 
     public LinePacket(Line line) {
         mLine = line;
     }
     
-    public LinePacket(Line line, byte[] body) {
+    public LinePacket(Line line, ChannelPacket channelPacket) {
         mLine = line;
-        mBody = body;
+        mChannelPacket = channelPacket;
     }
     
     // accessor methods
@@ -60,12 +60,12 @@ public class LinePacket extends Packet {
         return mLine;
     }
     
-    public void setBody(byte[] body) {
-        mBody = body;
+    public void setChannelPacket(ChannelPacket channelPacket) {
+        mChannelPacket = channelPacket;
     }
-    public byte[] getBody() {
-        return mBody;
-    }    
+    public ChannelPacket getChannelPacket() {
+        return mChannelPacket;
+    }
     
     /**
      * Render the open packet into its final form.
@@ -74,16 +74,18 @@ public class LinePacket extends Packet {
      */
     public byte[] render() throws TelehashException {
         Crypto crypto = Util.getCryptoInstance();
-        
-        if (mBody == null) {
-            mBody = new byte[0];
+
+        // serialize the channel packet
+        if (mChannelPacket == null) {
+            mChannelPacket = new ChannelPacket();
         }
+        byte[] body = mChannelPacket.render();
         
         // generate a random IV
         byte[] iv = crypto.getRandomBytes(IV_SIZE);
         
         // encrypt body
-        byte[] encryptedBody = crypto.encryptAES256CTR(mBody, iv, mLine.getEncryptionKey());
+        byte[] encryptedBody = crypto.encryptAES256CTR(body, iv, mLine.getEncryptionKey());
         
         // Form the inner packet containing a current timestamp at, line
         // identifier, recipient hashname, and family (if you have such a
@@ -96,7 +98,7 @@ public class LinePacket extends Packet {
                 .key(TYPE_KEY)
                 .value(LINE_TYPE)
                 .key(LINE_IDENTIFIER_KEY)
-                .value(Util.bytesToHex(mLine.getOutgoingLineIdentifier()))
+                .value(mLine.getOutgoingLineIdentifier().asHex())
                 .key(IV_KEY)
                 .value(Util.bytesToHex(iv))
                 .endObject()
@@ -134,17 +136,22 @@ public class LinePacket extends Packet {
         assertBufferSize(iv, IV_SIZE);
         String lineIdentifierString = json.getString(LINE_IDENTIFIER_KEY);
         assertNotNull(lineIdentifierString);
-        byte[] lineIdentifier = Util.hexToBytes(lineIdentifierString);
-        assertBufferSize(lineIdentifier, LINE_IDENTIFIER_SIZE);
+        byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
+        assertBufferSize(lineIdentifierBytes, LINE_IDENTIFIER_SIZE);
+        LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
         
         // lookup the line
         Line line = telehash.getSwitch().getLine(lineIdentifier);
         if (line == null) {
-            throw new TelehashException("unknown line id");
+            throw new TelehashException("unknown line id: "+Util.bytesToHex(lineIdentifierBytes));
         }
 
         // decrypt the body
         byte[] decryptedBody = crypto.decryptAES256CTR(body, iv, line.getDecryptionKey());
-        return new LinePacket(line, decryptedBody);
+        
+        // parse the embedded channel packet
+        ChannelPacket channelPacket = ChannelPacket.parse(telehash, decryptedBody, endpoint);
+        
+        return new LinePacket(line, channelPacket);
     }
 }

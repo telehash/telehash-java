@@ -8,7 +8,6 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 import org.telehash.core.TelehashException;
-import org.telehash.core.Util;
 import org.telehash.crypto.ECPublicKey;
 
 public class ECPublicKeyImpl implements ECPublicKey {

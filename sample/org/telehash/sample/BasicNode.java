@@ -6,12 +6,12 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.telehash.core.ChannelIdentifier;
+import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
 import org.telehash.core.Identity;
 import org.telehash.core.Line;
 import org.telehash.core.Node;
-import org.telehash.core.OpenPacket;
-import org.telehash.core.Packet;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -74,8 +74,9 @@ public class BasicNode {
         seeds.add(seed);
 
         // launch the switch
-        Telehash telehash = new Telehash(identity);
+        final Telehash telehash = new Telehash(identity);
         final Switch telehashSwitch = new Switch(telehash, seeds, PORT);
+        telehash.setSwitch(telehashSwitch);
         try {
             telehashSwitch.start();
         } catch (TelehashException e) {
@@ -99,16 +100,20 @@ public class BasicNode {
                     
                     // send a "test" line packet, for now.
                     try {
-                        String json = "{\"type\":\"test\"}";
-                        byte[] jsonBytes = json.getBytes();
+                        ChannelPacket channelPacket = new ChannelPacket();
+                        channelPacket.setChannelIdentifier(
+                                new ChannelIdentifier(
+                                        telehash.getCrypto().getRandomBytes(16)
+                                )
+                        );
+                        channelPacket.setType("seek");
+                        channelPacket.put("seek", Util.bytesToHex(telehash.getIdentity().getHashName()));
                         telehashSwitch.sendLinePacket(
                                 line,
-                                Util.concatenateByteArrays(
-                                    new byte[]{0x00, (byte)jsonBytes.length},
-                                    jsonBytes,
-                                    new byte[] {0x42}
-                                ),
-                                null, null);
+                                channelPacket,
+                                null,
+                                null
+                        );
                     } catch (TelehashException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();

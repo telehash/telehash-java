@@ -65,7 +65,7 @@ public class OpenPacket extends Packet {
     private ECPublicKey mEllipticCurvePublicKey;
     private ECPrivateKey mEllipticCurvePrivateKey;
     private long mOpenTime;
-    private byte[] mLineIdentifier;
+    private LineIdentifier mLineIdentifier;
 
     public OpenPacket(Identity identity, Node destinationNode) {
         mIdentity = identity;
@@ -73,14 +73,16 @@ public class OpenPacket extends Packet {
         mSenderRSAPublicKey = identity.getPublicKey();
         
         // generate a random line identifier
-        mLineIdentifier = Util.getCryptoInstance().getRandomBytes(LINE_IDENTIFIER_SIZE);
+        mLineIdentifier = new LineIdentifier(
+                Util.getCryptoInstance().getRandomBytes(LINE_IDENTIFIER_SIZE)
+        );
     }
     
     public OpenPacket(
             Node sourceNode,
             ECPublicKey ellipticCurvePublicKey,
             long openTime,
-            byte[] lineIdentifier
+            LineIdentifier lineIdentifier
     ) {
         mSourceNode = sourceNode;
         mEllipticCurvePublicKey = ellipticCurvePublicKey;
@@ -132,10 +134,10 @@ public class OpenPacket extends Packet {
         return mOpenTime;
     }
     
-    public void setLineIdentifier(byte[] lineIdentifier) {
+    public void setLineIdentifier(LineIdentifier lineIdentifier) {
         mLineIdentifier = lineIdentifier;
     }
-    public byte[] getLineIdentifier() {
+    public LineIdentifier getLineIdentifier() {
         return mLineIdentifier;
     }
     
@@ -211,7 +213,7 @@ public class OpenPacket extends Packet {
                 .key("to")
                 .value(Util.bytesToHex(mDestinationNode.getHashName()))
                 .key("line")
-                .value(Util.bytesToHex(mLineIdentifier))
+                .value(mLineIdentifier.asHex())
                 .endObject()
                 .toString()
                 .getBytes("UTF-8");
@@ -242,7 +244,7 @@ public class OpenPacket extends Packet {
         // line value (16 bytes from #5), then base64 encode the result as the
         // value for the sig param.
         byte[] signatureKey = crypto.sha256Digest(
-                Util.concatenateByteArrays(encodedECPublicKey, mLineIdentifier)
+                Util.concatenateByteArrays(encodedECPublicKey, mLineIdentifier.getBytes())
         ); 
         byte[] encryptedSignature =
                 crypto.encryptAES256CTR(signature, iv, signatureKey);
@@ -326,8 +328,9 @@ public class OpenPacket extends Packet {
         assertBufferSize(destination, HASHNAME_SIZE);
         String lineIdentifierString = innerPacket.json.getString(LINE_IDENTIFIER_KEY);
         assertNotNull(lineIdentifierString);
-        byte[] lineIdentifier = Util.hexToBytes(lineIdentifierString);
-        assertBufferSize(lineIdentifier, LINE_IDENTIFIER_SIZE);
+        byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
+        assertBufferSize(lineIdentifierBytes, LINE_IDENTIFIER_SIZE);
+        LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
         
         // Verify the to value of the inner packet matches your hashname
         if (! Arrays.equals(destination, telehash.getIdentity().getHashName())) {
@@ -353,7 +356,7 @@ public class OpenPacket extends Packet {
         // SHA-256 hash the ECC public key with the 16 bytes derived from the
         // inner line hex value to generate a new AES key
         byte[] signatureKey = crypto.sha256Digest(
-                Util.concatenateByteArrays(ellipticCurvePublicKeyBuffer, lineIdentifier)
+                Util.concatenateByteArrays(ellipticCurvePublicKeyBuffer, lineIdentifierBytes)
         );
         
         // Decrypt the outer packet sig value using AES-256-CTR with the key

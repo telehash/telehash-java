@@ -2,7 +2,6 @@ package org.telehash.core;
 
 public class Line {
     
-    private static final int LINE_IDENTIFIER_SIZE = 16;
     private static final int SHA256_DIGEST_SIZE = 32;
     
     public enum State {
@@ -12,8 +11,8 @@ public class Line {
     };
     private State mState = State.CLOSED;
 
-    private byte[] mIncomingLineIdentifier;
-    private byte[] mOutgoingLineIdentifier;
+    private LineIdentifier mIncomingLineIdentifier;
+    private LineIdentifier mOutgoingLineIdentifier;
     private Node mRemoteNode;
     private OpenPacket mLocalOpenPacket;
     private OpenPacket mRemoteOpenPacket;
@@ -30,25 +29,19 @@ public class Line {
         return mState;
     }
     
-    public void setIncomingLineIdentifier(byte[] lineIdentifier) {
-        if (lineIdentifier == null || lineIdentifier.length != LINE_IDENTIFIER_SIZE) {
-            throw new IllegalArgumentException("invalid line id");
-        }
+    public void setIncomingLineIdentifier(LineIdentifier lineIdentifier) {
         mIncomingLineIdentifier = lineIdentifier;
     }
     
-    public byte[] getIncomingLineIdentifier() {
+    public LineIdentifier getIncomingLineIdentifier() {
         return mIncomingLineIdentifier;
     }
 
-    public void setOutgoingLineIdentifier(byte[] lineIdentifier) {
-        if (lineIdentifier == null || lineIdentifier.length != LINE_IDENTIFIER_SIZE) {
-            throw new IllegalArgumentException("invalid line id");
-        }
+    public void setOutgoingLineIdentifier(LineIdentifier lineIdentifier) {
         mOutgoingLineIdentifier = lineIdentifier;
     }
     
-    public byte[] getOutgoingLineIdentifier() {
+    public LineIdentifier getOutgoingLineIdentifier() {
         return mOutgoingLineIdentifier;
     }
 
