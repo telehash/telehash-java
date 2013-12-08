@@ -14,14 +14,18 @@ public class Node {
     
     private RSAPublicKey mPublicKey;
     private Endpoint mEndpoint;
-    private transient byte[] mHashName = null;
-    
-    // TODO: java identity
+    private byte[] mHashName = null;
     
     public Node(RSAPublicKey publicKey, Endpoint endpoint) throws TelehashException {
         mPublicKey = publicKey;
         mEndpoint = endpoint;
         mHashName = Util.getCryptoInstance().sha256Digest(mPublicKey.getDEREncoded());
+    }
+
+    public Node(byte[] hashName, Endpoint endpoint) throws TelehashException {
+        mPublicKey = null;
+        mEndpoint = endpoint;
+        mHashName = hashName;
     }
 
     public RSAPublicKey getPublicKey() {

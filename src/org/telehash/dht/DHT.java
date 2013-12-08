@@ -9,25 +9,26 @@ public class DHT {
 
     private Switch mSwitch;
     private Node mLocalNode;
-    private Set<Node> mSeeds;
     
     private NodeTracker mNodeTracker;
         
     public DHT(Switch telehashSwitch, Node localNode, Set<Node> seeds) {
         mSwitch = telehashSwitch;
         mLocalNode = localNode;
-        mSeeds = seeds;
         mNodeTracker = new NodeTracker(localNode);
+        
+        // install seeds in k-buckets.
+        if (seeds != null) {
+            for (Node node : seeds) {
+                mNodeTracker.submitNode(node);
+            }
+        }
     }
-    
+
     public void init() {
-        
-        // TODO: install seeds in k-buckets.
-        
         // TODO: implement bucket refresh
         
         // TODO: implement bootstrap (refresh all buckets)
-        
     }
 
     /**
