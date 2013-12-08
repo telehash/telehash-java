@@ -75,7 +75,7 @@ public class BasicNode {
         }
         Set<Node> seeds = new HashSet<Node>();
         seeds.add(seed);
-
+        
         // launch the switch
         final Telehash telehash = new Telehash(identity);
         final Switch telehashSwitch = new Switch(telehash, seeds, PORT);
@@ -85,6 +85,13 @@ public class BasicNode {
         } catch (TelehashException e) {
             e.printStackTrace();
             return;
+        }
+        
+        try {
+            System.out.println("preferred local endpoint: "+telehash.getNetwork().getPreferredLocalEndpoint());
+        } catch (TelehashException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
         }
 
         // send packet

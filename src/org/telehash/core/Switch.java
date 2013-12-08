@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.telehash.dht.DHT;
+import org.telehash.network.Endpoint;
 import org.telehash.network.impl.InetEndpoint;
 
 /**
@@ -34,6 +36,10 @@ public class Switch {
     private DatagramChannel mChannel;
     private boolean mStopRequested = false;
     private Queue<Packet> mWriteQueue = new LinkedList<Packet>();
+    
+    private Node mLocalNode;
+    private DHT mDHT;
+    private Scheduler mScheduler = new Scheduler();
     
     private static class LineTracker {
         private Map<Node,Line> mNodeToLineMap = new HashMap<Node,Line>();
@@ -114,6 +120,13 @@ public class Switch {
     }
 
     public void start() throws TelehashException {
+
+        // determine the local node information
+        Endpoint localEndpoint = mTelehash.getNetwork().getPreferredLocalEndpoint();
+        if (localEndpoint == null) {
+            throw new TelehashException("no network");
+        }
+        mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), localEndpoint);
         
         // provision datagram channel and selector
         try {
@@ -219,6 +232,9 @@ public class Switch {
     private void loop() {
         System.out.println("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
         
+        mDHT = new DHT(this, mLocalNode, mSeeds);
+        mDHT.init();
+        
         try {
             while (true) {
 
@@ -230,8 +246,15 @@ public class Switch {
                     System.out.println("selecting for write");
                 }
                 
+                long nextTaskTime = mScheduler.getNextTaskTime();
+                if (nextTaskTime == -1) {
+                    // hack: if any tasks are currently runnable, use a select timeout
+                    // of 1ms and then run them.
+                    nextTaskTime = 1;
+                }
+                
                 // select
-                mSelector.select();
+                mSelector.select(nextTaskTime);
                 
                 // dispatch
                 if (mSelector.selectedKeys().contains(mSelectionKey)) {
@@ -242,6 +265,10 @@ public class Switch {
                         handleOutgoing();
                     }
                 }
+                
+                // run any timed tasks
+                mScheduler.runTasks();
+                
                 if (mStopRequested) {
                     break;
                 }

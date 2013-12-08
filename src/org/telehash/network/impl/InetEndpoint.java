@@ -19,4 +19,8 @@ public class InetEndpoint implements Endpoint {
     public int getPort() {
         return mPort;
     }
+    
+    public String toString() {
+        return "inet:" + mAddress.getHostAddress() + "/" + mPort;
+    }
 }

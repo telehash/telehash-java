@@ -31,4 +31,10 @@ public interface Network {
      * @throws TelehashException
      */
     public Endpoint socketAddressToEndpoint(SocketAddress socketAddress) throws TelehashException;
+
+    /**
+     * Get preferred local endpoint
+     * TODO: This will certainly change... we need to support multiple network interfaces!
+     */
+    public Endpoint getPreferredLocalEndpoint() throws TelehashException;
 }

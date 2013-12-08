@@ -2,8 +2,11 @@ package org.telehash.network.impl;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 
 import org.telehash.core.TelehashException;
 import org.telehash.network.Endpoint;
@@ -69,6 +72,39 @@ public class NetworkImpl implements Network {
         }
         InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
         return new InetEndpoint(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
+    }
+
+    /**
+     * Get preferred local endpoint
+     * TODO: This will certainly change... we need to support multiple network interfaces!
+     */
+    public Endpoint getPreferredLocalEndpoint() throws TelehashException {
+        Enumeration<NetworkInterface> networkInterfaces;
+        try {
+            networkInterfaces = NetworkInterface.getNetworkInterfaces();
+        } catch (SocketException e) {
+            throw new TelehashException(e);
+        }
+        while (networkInterfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = networkInterfaces.nextElement();
+            Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+            while (inetAddresses.hasMoreElements()) {
+                InetAddress inetAddress = inetAddresses.nextElement();
+                if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress()) {
+                    continue;
+                }
+                
+                // TODO: restrict to ipv4 for now, but must eventually support ipv6.
+                // (the whole idea of a "preferred" network interface is temporary, anyway --
+                // eventually all non-localhost addresses will be used, both IPv4 and IPv6.
+                if (inetAddress.getAddress().length != 4) {
+                    continue;
+                }
+                
+                return new InetEndpoint(inetAddress, 0);
+            }
+        }
+        return null;
     }
 
 }

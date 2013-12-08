@@ -10,6 +10,8 @@ import org.telehash.network.Endpoint;
  * endpoint.
  */
 public class Node {
+    public static final int HASHNAME_SIZE = 32;
+    
     private RSAPublicKey mPublicKey;
     private Endpoint mEndpoint;
     private transient byte[] mHashName = null;
