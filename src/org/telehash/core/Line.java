@@ -1,5 +1,8 @@
 package org.telehash.core;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Line {
     
     private static final int SHA256_DIGEST_SIZE = 32;
@@ -22,6 +25,13 @@ public class Line {
     private CompletionHandler<Line> mOpenCompletionHandler;
     private Object mOpenCompletionAttachment;
 
+    private Telehash mTelehash;
+    private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
+    
+    public Line(Telehash telehash) {
+        mTelehash = telehash;
+    }
+    
     public void setState(State state) {
         mState = state;
     }
@@ -114,5 +124,33 @@ public class Line {
         if (mOpenCompletionHandler != null) {
             mOpenCompletionHandler.completed(this, mOpenCompletionAttachment);
         }
+    }
+    
+    public Channel openChannel(String type, ChannelHandler channelHandler) {
+        // create a channel object and establish a callback
+        Channel channel = new Channel(mTelehash, this, type);
+
+        // record channel handler
+        channel.setChannelHandler(channelHandler);
+        
+        // track channel
+        mChannels.put(channel.getChannelIdentifier(), channel);
+        
+        return channel;
+    }
+    
+    public void handleIncoming(LinePacket linePacket) {
+        ChannelPacket channelPacket = linePacket.getChannelPacket();
+        Channel channel = mChannels.get(channelPacket.getChannelIdentifier());
+        if (channel == null) {
+            System.out.println("dropping packet for unknown channel");
+            return;
+        }
+        // is this the end?
+        if (channelPacket.isEnd()) {
+            mChannels.remove(channel.getChannelIdentifier());
+        }
+        // dispatch to channel handler
+        channel.getChannelHandler().handleIncoming(channelPacket);
     }
 }

@@ -285,6 +285,10 @@ public class Util {
      * @param buffer The byte buffer.
      */
     public static void hexdump(byte[] buffer) {
+        if (buffer == null) {
+            System.out.println("<null>");
+            return;
+        }
         for (int i=0; i<buffer.length; i+=16) {
             System.out.printf("%04X: ", i);
             for (int j=i; j<(i+16); j++) {

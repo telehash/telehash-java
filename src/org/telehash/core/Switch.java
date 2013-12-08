@@ -170,7 +170,7 @@ public class Switch {
         OpenPacket openPacket = new OpenPacket(mTelehash.getIdentity(), destination);
         
         // create and record a line entry
-        Line line = new Line();
+        Line line = new Line(mTelehash);
         // note: this open packet is *outgoing* but its embedded line identifier
         // is to be used for *incoming* line packets.
         System.out.println("openPacket.lineid="+openPacket.getLineIdentifier());
@@ -308,7 +308,8 @@ public class Switch {
             if (packet instanceof OpenPacket) {
                 handleOpenPacket((OpenPacket)packet);
             } else if (packet instanceof LinePacket) {
-                handleLinePacket((LinePacket)packet);
+                LinePacket linePacket = (LinePacket)packet;
+                linePacket.getLine().handleIncoming(linePacket);
             }
         } catch (TelehashException e) {
             System.out.println("error handling incoming packet: "+e);
@@ -378,7 +379,7 @@ public class Switch {
             
             // note: this reply open packet is *outgoing* but its embedded line identifier
             // is to be used for *incoming* line packets.
-            line = new Line();
+            line = new Line(mTelehash);
             line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
             line.setLocalOpenPacket(replyOpenPacket);
             line.setRemoteOpenPacket(incomingOpenPacket);
@@ -406,14 +407,6 @@ public class Switch {
 
         }
         System.out.println("handleOpenPacket() bottom:\n"+mLineTracker);
-    }
-    
-    private void handleLinePacket(LinePacket linePacket) throws TelehashException {
-        ChannelPacket channelPacket = linePacket.getChannelPacket();
-        
-        System.out.println("receiving channel packet: "+channelPacket);
-        
-        // TODO
     }
     
     private void handleOutgoing() {

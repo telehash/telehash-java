@@ -3,10 +3,13 @@ package org.telehash.sample;
 import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-import org.telehash.core.ChannelIdentifier;
+import org.telehash.core.Channel;
+import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
 import org.telehash.core.Identity;
@@ -98,22 +101,22 @@ public class BasicNode {
                 public void completed(Line line, Object attachment) {
                     System.out.println("line established: "+line);
                     
-                    // send a "test" line packet, for now.
+                    Channel channel = line.openChannel("seek", new ChannelHandler() {
+                        @Override
+                        public void handleError(Throwable error) {
+                            System.out.println("channel error: "+error);
+                        }
+                        @Override
+                        public void handleIncoming(ChannelPacket channelPacket) {
+                            System.out.println("channel incoming data: "+channelPacket);
+                            Util.hexdump(channelPacket.getBody());
+                        }
+                    });
+                    
+                    Map<String,Object> fields = new HashMap<String,Object>();;
+                    fields.put("seek", Util.bytesToHex(telehash.getIdentity().getHashName()));
                     try {
-                        ChannelPacket channelPacket = new ChannelPacket();
-                        channelPacket.setChannelIdentifier(
-                                new ChannelIdentifier(
-                                        telehash.getCrypto().getRandomBytes(16)
-                                )
-                        );
-                        channelPacket.setType("seek");
-                        channelPacket.put("seek", Util.bytesToHex(telehash.getIdentity().getHashName()));
-                        telehashSwitch.sendLinePacket(
-                                line,
-                                channelPacket,
-                                null,
-                                null
-                        );
+                        channel.send(null, fields);
                     } catch (TelehashException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
