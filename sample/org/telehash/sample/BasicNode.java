@@ -97,6 +97,7 @@ public class BasicNode {
         // send packet
         System.out.println("node sending packet to seed.");
         
+        /*
         try {
             telehashSwitch.openLine(seed, new CompletionHandler<Line>() {
                 @Override
@@ -120,7 +121,7 @@ public class BasicNode {
                         }
                     });
                     
-                    Map<String,Object> fields = new HashMap<String,Object>();;
+                    Map<String,Object> fields = new HashMap<String,Object>();
                     fields.put("seek", Util.bytesToHex(telehash.getIdentity().getHashName()));
                     try {
                         channel.send(null, fields);
@@ -133,6 +134,7 @@ public class BasicNode {
         } catch (TelehashException e) {
             e.printStackTrace();
         }
+        */
         
         // pause 5 seconds
         try {

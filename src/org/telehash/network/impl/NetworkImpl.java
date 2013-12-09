@@ -60,6 +60,25 @@ public class NetworkImpl implements Network {
     }
     
     /**
+     * Parse a string representing a network address. 
+     * 
+     * @param addressString
+     *            The endpoint string to parse.
+     * @return The network endpoint object.
+     * @throws TelehashException
+     *             If a problem occurred while parsing the endpoint.
+     */
+    public Endpoint parseEndpoint(String addressString, int port) throws TelehashException {
+        InetAddress address;
+        try {
+            address = InetAddress.getByName(addressString);
+        } catch (UnknownHostException e) {
+            throw new TelehashException("invalid address or unknown host in endpoint");
+        }
+        return new InetEndpoint(address, port);
+    }
+    
+    /**
      * Convert a Java SocketAddress to an Endpoint object.
      * @param socketAddress
      * @return The network endpoint object.

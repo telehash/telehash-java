@@ -1,7 +1,5 @@
 package org.telehash.core;
 
-import java.util.Arrays;
-
 import org.telehash.crypto.RSAPublicKey;
 import org.telehash.network.Endpoint;
 
@@ -10,24 +8,27 @@ import org.telehash.network.Endpoint;
  * endpoint.
  */
 public class Node {
-    public static final int HASHNAME_SIZE = 32;
-    
     private RSAPublicKey mPublicKey;
     private Endpoint mEndpoint;
-    private byte[] mHashName = null;
+    private HashName mHashName = null;
+    private Node mReferringNode;
     
     public Node(RSAPublicKey publicKey, Endpoint endpoint) throws TelehashException {
         mPublicKey = publicKey;
         mEndpoint = endpoint;
-        mHashName = Util.getCryptoInstance().sha256Digest(mPublicKey.getDEREncoded());
+        mHashName = new HashName(Util.getCryptoInstance().sha256Digest(mPublicKey.getDEREncoded()));
     }
 
-    public Node(byte[] hashName, Endpoint endpoint) throws TelehashException {
+    public Node(HashName hashName, Endpoint endpoint) throws TelehashException {
         mPublicKey = null;
         mEndpoint = endpoint;
         mHashName = hashName;
     }
 
+    public void setPublicKey(RSAPublicKey publicKey) {
+        mPublicKey = publicKey;
+    }
+    
     public RSAPublicKey getPublicKey() {
         return mPublicKey;
     }
@@ -36,15 +37,25 @@ public class Node {
         return mEndpoint;
     }
     
-    public byte[] getHashName() {
+    public HashName getHashName() {
         return mHashName;
+    }
+    
+    public void setReferringNode(Node referringNode) {
+        mReferringNode = referringNode;
+    }
+    
+    public Node getReferringNode() {
+        return mReferringNode;
     }
     
     // Java identity
     
     @Override
     public boolean equals(Object other) {
-        if (other instanceof Node && Arrays.equals(((Node)other).getHashName(), getHashName())) {
+        if (    other != null &&
+                other instanceof Node &&
+                ((Node)other).getHashName().equals(mHashName)) {
             return true;
         } else {
             return false;
@@ -53,6 +64,11 @@ public class Node {
     
     @Override
     public int hashCode() {
-        return Arrays.hashCode(getHashName());
+        return mHashName.hashCode();
+    }
+    
+    @Override
+    public String toString() {
+        return "Node["+mHashName+"]"+((mPublicKey!=null)?"*":"")+mEndpoint;
     }
 }

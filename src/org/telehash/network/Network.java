@@ -23,7 +23,18 @@ public interface Network {
      *             If a problem occurred while parsing the endpoint.
      */
     public Endpoint parseEndpoint(String endpointString) throws TelehashException;
-    
+
+    /**
+     * Parse a string representing a network address. 
+     * 
+     * @param addressString
+     *            The endpoint string to parse.
+     * @return The network endpoint object.
+     * @throws TelehashException
+     *             If a problem occurred while parsing the endpoint.
+     */
+    public Endpoint parseEndpoint(String addressString, int port) throws TelehashException;
+
     /**
      * Convert a Java SocketAddress to an Endpoint object.
      * @param socketAddress

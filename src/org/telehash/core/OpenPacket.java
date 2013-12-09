@@ -72,6 +72,10 @@ public class OpenPacket extends Packet {
         mDestinationNode = destinationNode;
         mSenderRSAPublicKey = identity.getPublicKey();
         
+        if (destinationNode.getPublicKey() == null) {
+            throw new IllegalArgumentException("attempt to open a line to a node with unknown public key");
+        }
+        
         // generate a random line identifier
         mLineIdentifier = new LineIdentifier(
                 Util.getCryptoInstance().getRandomBytes(LINE_IDENTIFIER_SIZE)
@@ -211,7 +215,7 @@ public class OpenPacket extends Packet {
                 .key("at")
                 .value(mOpenTime)
                 .key("to")
-                .value(Util.bytesToHex(mDestinationNode.getHashName()))
+                .value(mDestinationNode.getHashName().asHex())
                 .key("line")
                 .value(mLineIdentifier.asHex())
                 .endObject()

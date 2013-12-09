@@ -89,7 +89,7 @@ public class Switch {
             for (Map.Entry<Node, Line> entry : mNodeToLineMap.entrySet()) {
                 Node node = entry.getKey();
                 Line line = entry.getValue();
-                sb.append(Util.bytesToHex(node.getHashName())+" ");
+                sb.append(node.getHashName().asHex()+" ");
                 if (line.getIncomingLineIdentifier() == null) {
                     sb.append("null ");
                 } else {
@@ -232,7 +232,7 @@ public class Switch {
     private void loop() {
         System.out.println("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
         
-        mDHT = new DHT(this, mLocalNode, mSeeds);
+        mDHT = new DHT(mTelehash, mLocalNode, mSeeds);
         mDHT.init();
         
         try {
@@ -412,10 +412,15 @@ public class Switch {
             line.setRemoteOpenPacket(incomingOpenPacket);
             line.setOutgoingLineIdentifier(incomingOpenPacket.getLineIdentifier());
             line.setRemoteNode(incomingOpenPacket.getSourceNode());
+            calculateLineKeys(line, incomingOpenPacket, replyOpenPacket);
             line.setState(Line.State.ESTABLISHED);
+            
             // TODO: alert interested parties of the new line?
             System.out.println("new line established for remote initiator");
 
+            // alert the DHT of the new line
+            mDHT.handleNewLine(line);
+            
             // TODO: synchronize
             mLineTracker.add(line);
             
@@ -446,7 +451,7 @@ public class Switch {
         // for now, just send to the sole seed.
         // TODO: this will obviously require far more sophistication.
         Node seed = mSeeds.iterator().next();
-        System.out.println("sending to hashname="+Util.bytesToHex(seed.getHashName()));
+        System.out.println("sending to hashname="+seed.getHashName());
         InetAddress seedAddress = ((InetEndpoint)seed.getEndpoint()).getAddress();
         int seedPort = ((InetEndpoint)seed.getEndpoint()).getPort();
         
@@ -469,4 +474,7 @@ public class Switch {
         System.out.println("datagram sent.");
     }
     
+    public Line getLineByNode(Node node) {
+        return mLineTracker.getByNode(node);
+    }
 }
