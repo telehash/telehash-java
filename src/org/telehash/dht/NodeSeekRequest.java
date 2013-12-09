@@ -76,11 +76,11 @@ public class NodeSeekRequest {
     private void sendSeek() {
         Channel channel = mLine.openChannel(SEEK_TYPE, new ChannelHandler() {
             @Override
-            public void handleError(Throwable error) {
+            public void handleError(Channel channel, Throwable error) {
                 fail(error);
             }
             @Override
-            public void handleIncoming(ChannelPacket channelPacket) {
+            public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
                 parseResult(channelPacket);
             }
         });

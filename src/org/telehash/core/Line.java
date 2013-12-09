@@ -143,7 +143,27 @@ public class Line {
         ChannelPacket channelPacket = linePacket.getChannelPacket();
         Channel channel = mChannels.get(channelPacket.getChannelIdentifier());
         if (channel == null) {
-            System.out.println("dropping packet for unknown channel");
+            // is this the first communication of a new channel?
+            // (it will have a type field)
+            String type = (String) channelPacket.get("type");
+            if (type == null) {
+                System.out.println("dropping packet for unknown channel without type");
+                return;
+            }
+            // is anyone interested in channels of this type?
+            ChannelHandler channelHandler = mTelehash.getSwitch().getChannelHandler(type);
+            if (channelHandler == null) {
+                System.out.println("no channel handler for type");
+                return;
+            }
+            
+            // create channel
+            channel = new Channel(mTelehash, this, type);
+            channel.setChannelHandler(channelHandler);
+            mChannels.put(channel.getChannelIdentifier(), channel);
+            
+            // invoke callback
+            channelHandler.handleIncoming(channel, channelPacket);
             return;
         }
         // is this the end?
@@ -151,6 +171,6 @@ public class Line {
             mChannels.remove(channel.getChannelIdentifier());
         }
         // dispatch to channel handler
-        channel.getChannelHandler().handleIncoming(channelPacket);
+        channel.getChannelHandler().handleIncoming(channel, channelPacket);
     }
 }

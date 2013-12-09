@@ -477,4 +477,15 @@ public class Switch {
     public Line getLineByNode(Node node) {
         return mLineTracker.getByNode(node);
     }
+    
+    private Map<String,ChannelHandler> mRegisteredChannelHandlers =
+            new HashMap<String,ChannelHandler>();
+    
+    public void registerChannelHandler(String type, ChannelHandler channelHandler) {
+        mRegisteredChannelHandlers.put(type, channelHandler);
+    }
+    
+    public ChannelHandler getChannelHandler(String type) {
+        return mRegisteredChannelHandlers.get(type);
+    }
 }

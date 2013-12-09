@@ -1,6 +1,6 @@
 package org.telehash.core;
 
 public interface ChannelHandler {
-    void handleError(Throwable error);
-    void handleIncoming(ChannelPacket channelPacket);
+    void handleError(Channel channel, Throwable error);
+    void handleIncoming(Channel channel, ChannelPacket channelPacket);
 }
