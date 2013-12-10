@@ -88,7 +88,7 @@ public class NodeSeekRequest {
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put("seek", mTargetHashName.asHex());
         try {
-            channel.send(null, fields);
+            channel.send(null, fields, false);
         } catch (TelehashException e) {
             fail(e);
             return;

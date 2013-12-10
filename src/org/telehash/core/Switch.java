@@ -42,11 +42,15 @@ public class Switch {
     private Scheduler mScheduler = new Scheduler();
     
     private static class LineTracker {
+        private Map<HashName,Line> mHashNameToLineMap = new HashMap<HashName,Line>();
         private Map<Node,Line> mNodeToLineMap = new HashMap<Node,Line>();
         private Map<LineIdentifier,Line> mIncomingLineIdentifierToLineMap =
                 new HashMap<LineIdentifier,Line>();
         public Line getByNode(Node node) {
             return mNodeToLineMap.get(node);
+        }
+        public Line getByHashName(HashName hashName) {
+            return mHashNameToLineMap.get(hashName);
         }
         public Line getByIncomingLineIdentifier(LineIdentifier lineIdentifier) {
             
@@ -70,13 +74,16 @@ public class Switch {
                 // put() would overwrite, but we must make sure to
                 // remove the entry from both maps.
                 Line oldLine = mNodeToLineMap.get(line.getRemoteNode());
+                mHashNameToLineMap.remove(oldLine.getRemoteNode().getHashName());
                 mNodeToLineMap.remove(oldLine.getRemoteNode());
                 mIncomingLineIdentifierToLineMap.remove(oldLine.getIncomingLineIdentifier());
             }
+            mHashNameToLineMap.put(line.getRemoteNode().getHashName(), line);
             mNodeToLineMap.put(line.getRemoteNode(), line);
             mIncomingLineIdentifierToLineMap.put(line.getIncomingLineIdentifier(), line);
         }
         public void remove(Line line) {
+            mHashNameToLineMap.remove(line.getRemoteNode().getHashName());
             mNodeToLineMap.remove(line.getRemoteNode());
             mIncomingLineIdentifierToLineMap.remove(line.getIncomingLineIdentifier());
         }
@@ -477,7 +484,11 @@ public class Switch {
     public Line getLineByNode(Node node) {
         return mLineTracker.getByNode(node);
     }
-    
+
+    public Line getLineByHashName(HashName hashName) {
+        return mLineTracker.getByHashName(hashName);
+    }
+
     private Map<String,ChannelHandler> mRegisteredChannelHandlers =
             new HashMap<String,ChannelHandler>();
     

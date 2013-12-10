@@ -1,5 +1,7 @@
 package org.telehash.dht;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -15,11 +17,14 @@ import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
+import org.telehash.crypto.RSAPublicKey;
+import org.telehash.network.Endpoint;
 import org.telehash.network.impl.InetEndpoint;
 
 public class DHT {
     
     public static final String SEEK_KEY = "seek";
+    public static final String SEE_KEY = "see";
     public static final String PEER_KEY = "peer";
     public static final String CONNECT_KEY = "connect";
 
@@ -134,12 +139,17 @@ xSeed = seeds.iterator().next();
             if (type == null) {
                 return;
             }
-            if (type.equals(SEEK_KEY)) {
-                handleSeek(channel, channelPacket);
-            } else if (type.equals(PEER_KEY)) {
-                handlePeer(channelPacket);
-            } else if (type.equals(CONNECT_KEY)) {
-                handleConnect(channelPacket);
+            try {
+                if (type.equals(SEEK_KEY)) {
+                    handleSeek(channel, channelPacket);
+                } else if (type.equals(PEER_KEY)) {
+                    handlePeer(channel, channelPacket);
+                } else if (type.equals(CONNECT_KEY)) {
+                    handleConnect(channel, channelPacket);
+                }
+            } catch (Throwable e) {
+                // best-effort only
+                e.printStackTrace();
             }
         };
     };
@@ -147,7 +157,7 @@ xSeed = seeds.iterator().next();
     private static final int MAX_SEEK_NODES_RETURNED = 9;
 
     private void handleSeek(Channel channel, ChannelPacket channelPacket) {
-        String seekString = (String) channelPacket.get("seek");
+        String seekString = (String) channelPacket.get(PEER_KEY);
         if (seekString == null || seekString.isEmpty()) {
             return;
         }
@@ -166,19 +176,69 @@ xSeed = seeds.iterator().next();
             }
         }
         Map<String,Object> fields = new HashMap<String,Object>();
-        fields.put("see", see);
+        fields.put(SEE_KEY, see);
         try {
-            channel.send(null, fields);
+            channel.send(null, fields, true);
         } catch (TelehashException e) {
             return;
         }
     }
     
-    private void handlePeer(ChannelPacket channelPacket) {
+    private void handlePeer(Channel channel, ChannelPacket channelPacket) {
+        String peerString = (String) channelPacket.get(PEER_KEY);
+        if (peerString == null || peerString.isEmpty()) {
+            return;
+        }
+        HashName target = new HashName(Util.hexToBytes(peerString));
+        Line line = mTelehash.getSwitch().getLineByHashName(target);
+        if (line == null) {
+            // no line to the target
+            return;
+        }
         
+        Node originatingNode = channel.getRemoteNode();
+        if (! (originatingNode.getEndpoint() instanceof InetEndpoint)) {
+            return;
+        }
+        InetEndpoint endpoint = (InetEndpoint)originatingNode.getEndpoint();
+        
+        // send a connect message to the target with the originator's information
+        Channel newChannel = line.openChannel(CONNECT_KEY, null);
+        Map<String,Object> fields = new HashMap<String,Object>();
+        fields.put("ip", endpoint.getAddress());
+        fields.put("port", endpoint.getPort());
+        try {
+            newChannel.send(
+                    channel.getRemoteNode().getPublicKey().getDEREncoded(),
+                    fields,
+                    true
+            );
+        } catch (TelehashException e) {
+            // best-effort only
+            e.printStackTrace();
+        }
     }
 
-    private void handleConnect(ChannelPacket channelPacket) {
-        
+    private void handleConnect(Channel channel, ChannelPacket channelPacket) throws TelehashException {
+        String ipString = (String) channelPacket.get("ip");
+        if (ipString == null || ipString.isEmpty()) {
+            return;
+        }
+        int port = ((Number)channelPacket.get("port")).intValue();
+        byte[] body = channelPacket.getBody();
+        if (body == null) {
+            return;
+        }
+        RSAPublicKey publicKey = mTelehash.getCrypto().decodeRSAPublicKey(body);
+        InetAddress inetAddress;
+        try {
+            // TODO: is this safe?
+            inetAddress = InetAddress.getByName(ipString);
+        } catch (UnknownHostException e) {
+            throw new TelehashException(e);
+        }
+        Endpoint endpoint = new InetEndpoint(inetAddress, port);
+        Node node = new Node(publicKey, endpoint);
+        mTelehash.getSwitch().openLine(node, null, null);
     }
 }

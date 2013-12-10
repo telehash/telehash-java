@@ -27,6 +27,18 @@ public class Channel {
         mType = type;
     }
     
+    public void setLine(Line line) {
+        mLine = line;
+    }
+    
+    public Line getLine() {
+        return mLine;
+    }
+    
+    public Node getRemoteNode() {
+        return mLine.getRemoteNode();
+    }
+    
     public ChannelIdentifier getChannelIdentifier() {
         return mChannelIdentifier;
     }
@@ -52,10 +64,10 @@ public class Channel {
     }
     
     public void send(byte[] body) throws TelehashException {
-        send(body, null);
+        send(body, null, false);
     }
 
-    public void send(byte[] body, Map<String,Object> fields) throws TelehashException {
+    public void send(byte[] body, Map<String,Object> fields, boolean end) throws TelehashException {
         ChannelPacket channelPacket = new ChannelPacket();
         channelPacket.setChannelIdentifier(mChannelIdentifier);
         if (! mSentFirstPacket) {
@@ -67,6 +79,10 @@ public class Channel {
             for (Map.Entry<String,Object> field : fields.entrySet()) {
                 channelPacket.put(field.getKey(), field.getValue());
             }
+        }
+        if (end) {
+            channelPacket.put("end", true);
+            // TODO: remove from Line's channel tracking
         }
         mTelehash.getSwitch().sendLinePacket(
                 mLine,
