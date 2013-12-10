@@ -40,6 +40,14 @@ public class Switch {
     private Node mLocalNode;
     private DHT mDHT;
     private Scheduler mScheduler = new Scheduler();
+    private Map<HashName,PendingReverseOpen> mPendingReverseOpens =
+            new HashMap<HashName,PendingReverseOpen>();
+    
+    private static class PendingReverseOpen {
+        public HashName destination;
+        public CompletionHandler<Line> completionHandler;
+        public Object attachment;
+    }
     
     private static class LineTracker {
         private Map<HashName,Line> mHashNameToLineMap = new HashMap<HashName,Line>();
@@ -186,6 +194,20 @@ public class Switch {
         // previous line entry.  Perhaps instead we should throw an exception,
         // or simply return the current line.
         
+        // if we don't know the public key of the destination node, we must
+        // ask the referring node to introduce us.
+        if (destination.getPublicKey() == null) {
+            Node referringNode = destination.getReferringNode();
+            if (referringNode == null) {
+                throw new TelehashException(
+                        "cannot open a line to a node with an " +
+                        "unknown public key and no referring node."
+                );
+            }
+            reverseOpenLine(referringNode, destination, handler, attachment);
+            return;
+        }
+        
         // create an open packet
         OpenPacket openPacket = new OpenPacket(mTelehash.getIdentity(), destination);
         
@@ -215,6 +237,52 @@ public class Switch {
             mLineTracker.remove(line);
             throw e;            
         }        
+    }
+    
+    public void reverseOpenLine(
+            final Node referringNode,
+            final Node destination,
+            final CompletionHandler<Line> handler,
+            final Object attachment
+    ) throws TelehashException {
+        Line line = getLineByNode(referringNode);
+        if (line == null) {
+            throw new TelehashException("no line to referring node");
+        }
+        Channel channel = line.openChannel("peer", new ChannelHandler() {
+            @Override
+            public void handleError(Channel channel, Throwable error) {
+                if (handler != null) {
+                    handler.failed(error, attachment);
+                }
+                mPendingReverseOpens.remove(destination.getHashName());
+            }
+            @Override
+            public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
+                // do nothing -- there is no response expected
+            }
+        });
+        
+        Map<String,Object> fields = new HashMap<String,Object>();
+        fields.put("peer", destination.getHashName().asHex());
+        try {
+            channel.send(null, fields, true);
+        } catch (TelehashException e) {
+            if (handler != null) {
+                handler.failed(e, attachment);
+            }
+            mPendingReverseOpens.remove(destination.getHashName());
+            return;
+        }
+        
+        // track the reverse open
+        PendingReverseOpen pendingReverseOpen = new PendingReverseOpen();
+        pendingReverseOpen.destination = destination.getHashName();
+        pendingReverseOpen.completionHandler = handler;
+        pendingReverseOpen.attachment = attachment;
+        mPendingReverseOpens.put(destination.getHashName(), pendingReverseOpen);
+
+        return;
     }
     
     public void sendLinePacket(
@@ -431,18 +499,30 @@ public class Switch {
             // TODO: synchronize
             mLineTracker.add(line);
             
+            // is there a pending reverse-open for this node?
+            PendingReverseOpen pendingReverseOpen = mPendingReverseOpens.get(line.getRemoteNode());
+            
             // enqueue the packet to be sent
             try {
                 sendPacket(replyOpenPacket);
+                if (pendingReverseOpen != null) {
+                    pendingReverseOpen.completionHandler.completed(line, pendingReverseOpen.attachment);
+                }
                 // TODO: wait for response?
             } catch (RuntimeException e) {
                 // rollback
                 mLineTracker.remove(line);
+                if (pendingReverseOpen != null) {
+                    pendingReverseOpen.completionHandler.failed(e, pendingReverseOpen.attachment);
+                }
                 throw e;
             } catch (TelehashException e) {
                 mLineTracker.remove(line);
+                if (pendingReverseOpen != null) {
+                    pendingReverseOpen.completionHandler.failed(e, pendingReverseOpen.attachment);
+                }
                 throw e;            
-            }        
+            }
 
         }
         System.out.println("handleOpenPacket() bottom:\n"+mLineTracker);

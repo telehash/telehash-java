@@ -87,6 +87,9 @@ public class NodeTracker {
     }
     
     public void submitNode(Node node) {
+        if (node.getPublicKey() == null) {
+            throw new IllegalArgumentException("attempt to track node without RSA public key.");
+        }
         int distance = DHT.logDistance(mLocalNode.getHashName(), node.getHashName());
         if (distance == -1) {
             // the referenced node is us.

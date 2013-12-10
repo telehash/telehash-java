@@ -145,7 +145,7 @@ public class Line {
         if (channel == null) {
             // is this the first communication of a new channel?
             // (it will have a type field)
-            String type = (String) channelPacket.get("type");
+            String type = channelPacket.getType();
             if (type == null) {
                 System.out.println("dropping packet for unknown channel without type");
                 return;

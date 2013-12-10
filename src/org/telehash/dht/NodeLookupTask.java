@@ -1,8 +1,10 @@
 package org.telehash.dht;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -107,10 +109,21 @@ public class NodeLookupTask {
             mClosestNodeDistance = candidateDistance;
         }
 
-        // provision/start additional seek requests.
+        // make a copy of the nodes to query, so we can safely append to mQueryNodes
+        // from within the iteration
         int additionalRequestsNeeded = QUERY_CONCURRENCY_PARAMETER - mOutstandingSeeks.size();
         int seeks=0;
+        List<Node> currentQueryNodes = new ArrayList<Node>(additionalRequestsNeeded);
         for (Node queryNode : mQueryNodes) {
+            currentQueryNodes.add(queryNode);
+            seeks++;
+            if (seeks >= additionalRequestsNeeded) {
+                break;
+            }            
+        }
+        
+        // provision/start the additional seek requests.
+        for (Node queryNode : currentQueryNodes) {
             final NodeSeekRequest seek =
                     new NodeSeekRequest(mTelehash, queryNode, mTargetHashName, new NodeSeekRequest.Handler() {
                         // TODO: resource usage could be reduced by making this class shared
@@ -132,11 +145,6 @@ public class NodeLookupTask {
             mOutstandingSeeks.add(seek);
             mVisitedNodes.add(queryNode);
             seek.start();
-            
-            seeks++;
-            if (seeks >= additionalRequestsNeeded) {
-                break;
-            }
         }
         
         mIterations++;

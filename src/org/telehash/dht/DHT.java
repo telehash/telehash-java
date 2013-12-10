@@ -13,7 +13,6 @@ import org.telehash.core.ChannelPacket;
 import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Node;
-import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -23,10 +22,12 @@ import org.telehash.network.impl.InetEndpoint;
 
 public class DHT {
     
+    public static final String SEEK_TYPE = "seek";
+    public static final String PEER_TYPE = "peer";
+    public static final String CONNECT_TYPE = "connect";
     public static final String SEEK_KEY = "seek";
     public static final String SEE_KEY = "see";
     public static final String PEER_KEY = "peer";
-    public static final String CONNECT_KEY = "connect";
 
     private Telehash mTelehash;
     private Node mLocalNode;
@@ -50,9 +51,9 @@ xSeed = seeds.iterator().next();
 
     public void init() {
         // register to receive channel packets for our types
-        mTelehash.getSwitch().registerChannelHandler(SEEK_KEY, mChannelHandler);
-        mTelehash.getSwitch().registerChannelHandler(PEER_KEY, mChannelHandler);
-        mTelehash.getSwitch().registerChannelHandler(CONNECT_KEY, mChannelHandler);
+        mTelehash.getSwitch().registerChannelHandler(SEEK_TYPE, mChannelHandler);
+        mTelehash.getSwitch().registerChannelHandler(PEER_TYPE, mChannelHandler);
+        mTelehash.getSwitch().registerChannelHandler(CONNECT_TYPE, mChannelHandler);
         
         // TODO: implement bucket refresh
         
@@ -140,11 +141,11 @@ xSeed = seeds.iterator().next();
                 return;
             }
             try {
-                if (type.equals(SEEK_KEY)) {
+                if (type.equals(SEEK_TYPE)) {
                     handleSeek(channel, channelPacket);
-                } else if (type.equals(PEER_KEY)) {
+                } else if (type.equals(PEER_TYPE)) {
                     handlePeer(channel, channelPacket);
-                } else if (type.equals(CONNECT_KEY)) {
+                } else if (type.equals(CONNECT_TYPE)) {
                     handleConnect(channel, channelPacket);
                 }
             } catch (Throwable e) {
@@ -203,7 +204,7 @@ xSeed = seeds.iterator().next();
         InetEndpoint endpoint = (InetEndpoint)originatingNode.getEndpoint();
         
         // send a connect message to the target with the originator's information
-        Channel newChannel = line.openChannel(CONNECT_KEY, null);
+        Channel newChannel = line.openChannel(CONNECT_TYPE, null);
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put("ip", endpoint.getAddress());
         fields.put("port", endpoint.getPort());

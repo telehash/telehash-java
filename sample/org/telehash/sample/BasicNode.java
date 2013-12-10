@@ -3,17 +3,10 @@ package org.telehash.sample;
 import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import org.telehash.core.Channel;
-import org.telehash.core.ChannelHandler;
-import org.telehash.core.ChannelPacket;
-import org.telehash.core.CompletionHandler;
 import org.telehash.core.Identity;
-import org.telehash.core.Line;
 import org.telehash.core.Node;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
@@ -96,45 +89,6 @@ public class BasicNode {
 
         // send packet
         System.out.println("node sending packet to seed.");
-        
-        /*
-        try {
-            telehashSwitch.openLine(seed, new CompletionHandler<Line>() {
-                @Override
-                public void failed(Throwable exc, Object attachment) {
-                    System.out.println("line open failed.");
-                }
-                
-                @Override
-                public void completed(Line line, Object attachment) {
-                    System.out.println("line established: "+line);
-                    
-                    Channel channel = line.openChannel("seek", new ChannelHandler() {
-                        @Override
-                        public void handleError(Throwable error) {
-                            System.out.println("channel error: "+error);
-                        }
-                        @Override
-                        public void handleIncoming(ChannelPacket channelPacket) {
-                            System.out.println("channel incoming data: "+channelPacket);
-                            Util.hexdump(channelPacket.getBody());
-                        }
-                    });
-                    
-                    Map<String,Object> fields = new HashMap<String,Object>();
-                    fields.put("seek", Util.bytesToHex(telehash.getIdentity().getHashName()));
-                    try {
-                        channel.send(null, fields);
-                    } catch (TelehashException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-            }, null);
-        } catch (TelehashException e) {
-            e.printStackTrace();
-        }
-        */
         
         // pause 5 seconds
         try {

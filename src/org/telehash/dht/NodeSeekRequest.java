@@ -124,6 +124,7 @@ public class NodeSeekRequest {
                         parts[1], Integer.parseInt(parts[2])
                 );
                 Node node = new Node(hashName, endpoint);
+                node.setReferringNode(mQueryNode);
                 mResultNodes.add(node);
             } catch (NumberFormatException e) {
                 fail(e);
