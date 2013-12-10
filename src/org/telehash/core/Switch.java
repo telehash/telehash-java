@@ -479,6 +479,10 @@ public class Switch {
             // create an open packet
             OpenPacket replyOpenPacket = new OpenPacket(mTelehash.getIdentity(), incomingOpenPacket.getSourceNode());
             
+            // perform the "pre-render" stage so values such as the EC key pair
+            // have been generated.
+            replyOpenPacket.preRender();
+            
             // note: this reply open packet is *outgoing* but its embedded line identifier
             // is to be used for *incoming* line packets.
             line = new Line(mTelehash);
@@ -535,12 +539,10 @@ public class Switch {
             return;
         }
         
-        // for now, just send to the sole seed.
-        // TODO: this will obviously require far more sophistication.
-        Node seed = mSeeds.iterator().next();
-        System.out.println("sending to hashname="+seed.getHashName());
-        InetAddress seedAddress = ((InetEndpoint)seed.getEndpoint()).getAddress();
-        int seedPort = ((InetEndpoint)seed.getEndpoint()).getPort();
+        Node destination = packet.getDestinationNode();
+        System.out.println("sending to hashname="+destination);
+        InetAddress destinationAddress = ((InetEndpoint)destination.getEndpoint()).getAddress();
+        int destinationPort = ((InetEndpoint)destination.getEndpoint()).getPort();
         
         // TODO: don't allocate a new buffer every time.
         ByteBuffer buffer = ByteBuffer.allocate(2048);
@@ -553,7 +555,7 @@ public class Switch {
         }
         buffer.flip();
         try {
-            mChannel.send(buffer, new InetSocketAddress(seedAddress, seedPort));
+            mChannel.send(buffer, new InetSocketAddress(destinationAddress, destinationPort));
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

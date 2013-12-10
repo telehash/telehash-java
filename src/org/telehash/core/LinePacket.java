@@ -44,11 +44,13 @@ public class LinePacket extends Packet {
 
     public LinePacket(Line line) {
         mLine = line;
+        mDestinationNode = line.getRemoteNode();
     }
     
     public LinePacket(Line line, ChannelPacket channelPacket) {
         mLine = line;
         mChannelPacket = channelPacket;
+        mDestinationNode = line.getRemoteNode();
     }
     
     // accessor methods

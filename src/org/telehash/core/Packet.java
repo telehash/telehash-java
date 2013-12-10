@@ -22,6 +22,9 @@ public abstract class Packet {
     
     private static Map<String,Method> sTypeParseMap =
             new HashMap<String,Method>(); 
+    
+    protected Node mSourceNode;
+    protected Node mDestinationNode;
 
     protected static final class JsonAndBody {
         public JsonAndBody(JSONObject json, byte[] body) {
@@ -30,6 +33,20 @@ public abstract class Packet {
         }
         public JSONObject json;
         public byte[] body;
+    }
+    
+    public void setSourceNode(Node sourceNode) {
+        mSourceNode = sourceNode;
+    }
+    public Node getSourceNode() {
+        return mSourceNode;
+    }
+
+    public void setDestinationNode(Node destinationNode) {
+        mDestinationNode = destinationNode;
+    }
+    public Node getDestinationNode() {
+        return mDestinationNode;
     }
     
     /**

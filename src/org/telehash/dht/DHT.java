@@ -41,7 +41,7 @@ private Node xSeed;
         mNodeTracker = new NodeTracker(localNode);
         
         // install seeds in k-buckets.
-        if (seeds != null) {
+        if (seeds != null && (! seeds.isEmpty())) {
 xSeed = seeds.iterator().next();
             for (Node node : seeds) {
                 mNodeTracker.submitNode(node);

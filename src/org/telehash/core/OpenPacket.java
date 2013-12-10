@@ -59,8 +59,6 @@ public class OpenPacket extends Packet {
     }
     
     private Identity mIdentity;
-    private Node mSourceNode;
-    private Node mDestinationNode;
     private RSAPublicKey mSenderRSAPublicKey;
     private ECPublicKey mEllipticCurvePublicKey;
     private ECPrivateKey mEllipticCurvePrivateKey;
@@ -96,20 +94,6 @@ public class OpenPacket extends Packet {
     
     // accessor methods
     
-    public void setSourceNode(Node sourceNode) {
-        mSourceNode = sourceNode;
-    }
-    public Node getSourceNode() {
-        return mSourceNode;
-    }
-
-    public void setDestinationNode(Node destinationNode) {
-        mDestinationNode = destinationNode;
-    }
-    public Node getDestinationNode() {
-        return mDestinationNode;
-    }
-    
     public void setSenderRSAPublicKey(RSAPublicKey senderRSAPublicKey) {
         mSenderRSAPublicKey = senderRSAPublicKey;
     }
@@ -144,17 +128,18 @@ public class OpenPacket extends Packet {
     public LineIdentifier getLineIdentifier() {
         return mLineIdentifier;
     }
+
+    private boolean mPreRendered = false;
+    private byte[] mPreRenderedIV;
+    private byte[] mPreRenderedOpenParameter;
     
-    /**
-     * Render the open packet into its final form.
-     * 
-     * @return The rendered open packet as a byte array.
-     */
-    public byte[] render() throws TelehashException {
+    public void preRender() throws TelehashException {
+        mPreRendered = true;
+
         Crypto crypto = Util.getCryptoInstance();
         
         // generate a random IV
-        byte[] iv = crypto.getRandomBytes(IV_SIZE);
+        mPreRenderedIV = crypto.getRandomBytes(IV_SIZE);
         
         // note the current time
         mOpenTime = System.currentTimeMillis();
@@ -163,17 +148,28 @@ public class OpenPacket extends Packet {
         ECKeyPair ellipticCurveKeyPair = crypto.generateECKeyPair();
         mEllipticCurvePublicKey = ellipticCurveKeyPair.getPublicKey();
         mEllipticCurvePrivateKey = ellipticCurveKeyPair.getPrivateKey();
-        
+
         // generate the "open" parameter by encrypting the public elliptic curve
         // key (in ANSI X9.63 format) with the recipient's
         // RSA public key and OAEP padding.
-        byte[] openParameter = crypto.encryptRSAOAEP(
+        mPreRenderedOpenParameter = crypto.encryptRSAOAEP(
                 mDestinationNode.getPublicKey(),
                 ellipticCurveKeyPair.getPublicKey().getEncoded()
         );
+    }
+    
+    /**
+     * Render the open packet into its final form.
+     * 
+     * @return The rendered open packet as a byte array.
+     */
+    public byte[] render() throws TelehashException {
+        if (mPreRendered == false) {
+            preRender();
+        }
 
         // perform further packet creation.
-        return render(iv, openParameter);
+        return render(mPreRenderedIV, mPreRenderedOpenParameter);
     }
     
     /**

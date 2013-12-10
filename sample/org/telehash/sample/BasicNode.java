@@ -23,7 +23,7 @@ public class BasicNode {
     private static final int SEED_PORT = 5001;
 
     public static final void main(String[] args) {
-
+        
         // load or create an identity
         Identity identity;
         try {
