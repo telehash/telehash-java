@@ -19,7 +19,7 @@ import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.network.impl.InetEndpoint;
 
-public class TelehashTestNode {
+public class TelehashTestInstance {
     
     private static final String IDENTITY_BASE_FILENAME = "telehash-node";
     private static final String BASE_DIRECTORY =
@@ -32,10 +32,10 @@ public class TelehashTestNode {
     private Set<Node> mSeeds;
     private Telehash mTelehash;
     
-    public static List<TelehashTestNode> createNodes(int numNodes, int startPort) {
+    public static List<TelehashTestInstance> createNodes(int numNodes, int startPort) {
         Node seed = null;
         Set<Node> seeds = new HashSet<Node>();
-        List<TelehashTestNode> list = new ArrayList<TelehashTestNode>(numNodes);
+        List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(numNodes);
         
         for (int i=0; i<numNodes; i++) {
             File configDirectory = new File(
@@ -44,7 +44,7 @@ public class TelehashTestNode {
             configDirectory.mkdirs();
             
             System.out.println("node "+i+" dir: "+configDirectory);
-            TelehashTestNode node = new TelehashTestNode(i, configDirectory, startPort+i, seeds);
+            TelehashTestInstance node = new TelehashTestInstance(i, configDirectory, startPort+i, seeds);
             node.start();
             list.add(node);
             
@@ -54,7 +54,7 @@ public class TelehashTestNode {
             }
             
             try {
-                Thread.sleep(1000);
+                Thread.sleep(200);
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -64,7 +64,7 @@ public class TelehashTestNode {
         return list;
     }
 
-    public TelehashTestNode(int index, File configDirectory, int port, Set<Node> seeds) {
+    public TelehashTestInstance(int index, File configDirectory, int port, Set<Node> seeds) {
         mIndex = index;
         mConfigDirectory = configDirectory;
         mPort = port;
@@ -123,6 +123,10 @@ public class TelehashTestNode {
             e.printStackTrace();
             return null;
         }
+    }
+    
+    public Switch getSwitch() {
+        return mTelehash.getSwitch();
     }
     
     private void loadIdentity() {
