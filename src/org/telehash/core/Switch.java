@@ -396,6 +396,9 @@ public class Switch {
                     packetBuffer,
                     mTelehash.getNetwork().socketAddressToEndpoint(socketAddress)
             );
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return;            
         } catch (TelehashException e) {
             e.printStackTrace();
             return;
