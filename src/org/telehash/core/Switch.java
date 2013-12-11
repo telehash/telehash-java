@@ -115,7 +115,8 @@ public class Switch {
                 } else {
                     sb.append(line.getOutgoingLineIdentifier()+" ");
                 }
-                sb.append(line.getState().name()+"\n");
+                sb.append(line.getState().name()+" ");
+                sb.append(node.getEndpoint()+"\n");
             }
             return sb.toString();
         }

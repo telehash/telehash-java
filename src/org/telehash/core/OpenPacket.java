@@ -344,13 +344,8 @@ public class OpenPacket extends Packet {
         // SHA-256 hash the RSA public key to derive the sender's hashname
         Node sourceNode = new Node(senderRSAPublicKey, endpoint);
         
-        // Verify the at timestamp is both within a reasonable amount of time to
-        // account for network delays and clock skew, and is newer than any
-        // other 'open' requests received from the sender.
-        long elapsedTime = System.currentTimeMillis() - openTime;
-        if (elapsedTime > MAXIMUM_TIME_DIFFERENCE) {
-            throw new TelehashException("received open packet is too old.");
-        }
+        // Verify the at timestamp is newer than any other 'open'
+        // requests received from the sender.
         // TODO: "newer than any other open..." <-- should be handled at higher level
         
         // SHA-256 hash the ECC public key with the 16 bytes derived from the
