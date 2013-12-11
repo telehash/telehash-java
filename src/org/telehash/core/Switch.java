@@ -399,6 +399,10 @@ public class Switch {
             e.printStackTrace();
             return;
         }
+        if (packet == null) {
+            // null packet received; ignore
+            return;
+        }
         
         // process the packet
         handleIncomingPacket(packet);

@@ -75,6 +75,10 @@ public abstract class Packet {
     ) throws TelehashException {
         // split the packet into the JSON header and the body.
         JsonAndBody jsonAndBody = splitPacket(buffer);
+        if (jsonAndBody == null) {
+            // null packet received
+            return null;
+        }
 
         // examine the "type" header
         String type = jsonAndBody.json.getString(TYPE_KEY);
@@ -82,7 +86,7 @@ public abstract class Packet {
             throw new TelehashException("invalid type string");
         }
         if (! sTypeParseMap.containsKey(type)) {
-            throw new TelehashException("unknown packet type");
+            throw new TelehashException("unknown packet type: \""+type+"\"");
         }
         
         // dispatch to the parse routine of the appropriate subclass.
@@ -105,8 +109,9 @@ public abstract class Packet {
     }
 
     protected static JsonAndBody splitPacket(byte[] buffer) throws TelehashException {
-        if (buffer.length < MINIMUM_PACKET_LENGTH) {
-            throw new TelehashException("packet too small");
+        if (buffer.length <= MINIMUM_PACKET_LENGTH) {
+            // this can happen if we receive "null" packets
+            return null;
         }
         
         int jsonLength = ((buffer[0]&0xFF)<<8) | (buffer[1]&0xFF);
