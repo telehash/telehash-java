@@ -3,6 +3,7 @@ package org.telehash.crypto.impl;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -297,6 +298,34 @@ public class CryptoImpl implements Crypto {
         try {
             return signer.verifySignature(signature);
         } catch (DataLengthException e) {
+            throw new TelehashException(e);
+        }
+    }
+    
+    /**
+     * Parse a PEM-formatted RSA public key
+     * 
+     * @param pem The PEM string.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    @Override
+    public RSAPublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException {
+        try {
+            PemReader pemReader = new PemReader(new StringReader(pem));
+            PemObject pemObject = pemReader.readPemObject();
+            pemReader.close();
+            if (pemObject == null) {
+                throw new TelehashException("cannot parse RSA public key PEM file.");
+            }
+            if (! pemObject.getType().equals(RSA_PUBLIC_KEY_PEM_TYPE)) {
+                throw new TelehashException(
+                        "RSA public key PEM file of incorrect type \"" +
+                        pemObject.getType() + "\""
+                );
+            }
+            return new RSAPublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
+        } catch (IOException e) {
             throw new TelehashException(e);
         }
     }

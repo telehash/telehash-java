@@ -88,6 +88,15 @@ public interface Crypto {
     ) throws TelehashException;
     
     /**
+     * Parse a PEM-formatted RSA public key
+     * 
+     * @param pem The PEM string.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    RSAPublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException;
+    
+    /**
      * Read a PEM-formatted RSA public key from a file.
      * 
      * @param filename The filename of the file containing the PEM-formatted key.

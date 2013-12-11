@@ -2,6 +2,8 @@ package org.telehash.storage.impl;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,6 +19,7 @@ import org.telehash.crypto.Crypto;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;
 import org.telehash.network.Endpoint;
+import org.telehash.network.impl.InetEndpoint;
 import org.telehash.storage.Storage;
 
 /**
@@ -97,7 +100,7 @@ public class StorageImpl implements Storage {
     }
 
     private static final String SEEDS_KEY = "seeds";
-    private static final String PUBLICKEY_KEY = "publickey";
+    private static final String PUBLICKEY_KEY = "pubkey";
     private static final String ENDPOINT_KEY = "endpoint";
 
     /**
@@ -121,19 +124,30 @@ public class StorageImpl implements Storage {
         } catch (FileNotFoundException e) {
             throw new TelehashException(e);
         }
-        JSONObject root = new JSONObject(tokener);
-        JSONArray array = root.getJSONArray(SEEDS_KEY);
+        
+        JSONArray array = new JSONArray(tokener);
         for (int i=0; i<array.length(); i++) {
             JSONObject seed = array.getJSONObject(i);
             String publicKeyString = seed.getString(PUBLICKEY_KEY);
-            String endpointString = seed.getString(ENDPOINT_KEY);
             
+            String ipString = seed.getString("ip");
+            InetAddress address;
+            try {
+                address = InetAddress.getByName(ipString);  // TODO: ???
+            } catch (UnknownHostException e) {
+                throw new TelehashException(e);
+            }
+            int port = seed.getInt("port");
+            Endpoint endpoint = new InetEndpoint(address, port);
+            
+            /*
             byte[] publicKeyBuffer = Util.hexToBytes(publicKeyString);
             if (publicKeyBuffer == null) {
                 throw new TelehashException("cannot parse public key hex string");
             }
             RSAPublicKey publicKey = Util.getCryptoInstance().decodeRSAPublicKey(publicKeyBuffer);
-            Endpoint endpoint = Util.getNetworkInstance().parseEndpoint(endpointString);
+             */
+            RSAPublicKey publicKey = Util.getCryptoInstance().parseRSAPublicKeyFromPEM(publicKeyString);
             Node node = new Node(publicKey, endpoint);
             nodes.add(node);
         }
