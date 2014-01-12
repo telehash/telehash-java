@@ -18,9 +18,7 @@ import org.telehash.network.impl.InetEndpoint;
 public class BasicNode {
     
     private static final String IDENTITY_BASE_FILENAME = "telehash-node";
-    private static final int PORT = 5002;
-    private static final String SEED_PUBLIC_KEY_FILENAME = "telehash-seed.pub";
-    private static final int SEED_PORT = 5001;
+    private static final int PORT = 42424;
 
     public static final void main(String[] args) {
         
@@ -44,30 +42,15 @@ public class BasicNode {
             }
         }
         
-        // read the public key of the seed
-        RSAPublicKey seedPublicKey;
-        try {
-            seedPublicKey =
-                    Util.getCryptoInstance().readRSAPublicKeyFromFile(SEED_PUBLIC_KEY_FILENAME);
-        } catch (TelehashException e) {
-            throw new RuntimeException(e);
-        }
+        System.out.println("my hash name: "+Util.bytesToHex(identity.getHashName()));
         
-        // formulate a node object to represent the seed
-        InetAddress localhost;
+        Set<Node> seeds = null;
         try {
-            localhost = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
+            seeds = Util.getStorageInstance().readSeeds("seeds.json");
+        } catch (TelehashException e2) {
+            // TODO Auto-generated catch block
+            e2.printStackTrace();
         }
-        Node seed;
-        try {
-            seed = new Node(seedPublicKey, new InetEndpoint(localhost, SEED_PORT));
-        } catch (TelehashException e) {
-            throw new RuntimeException(e);
-        }
-        Set<Node> seeds = new HashSet<Node>();
-        seeds.add(seed);
         
         // launch the switch
         final Telehash telehash = new Telehash(identity);
@@ -90,9 +73,9 @@ public class BasicNode {
         // send packet
         System.out.println("node sending packet to seed.");
         
-        // pause 5 seconds
+        // sleep 4 hours...
         try {
-            Thread.sleep(5000);
+            Thread.sleep(4 * 60 * 60 * 1000);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
