@@ -2,12 +2,13 @@
 Telehash Java
 ====================
 
-This is a Java implementation of the Telehash protocol.
+This is a Java implementation of the Telehash v2 protocol.
 
-**NOTE: This code base is only a skeleton for now, to demonstrate a
-possible structure and design.**
+**NOTE: This code base is under active development, and should not be
+used for production purposes at this time.**
 
-Goals:
+Goals
+--------------------
 
 1. Implement the Telehash protocol.
 2. The target platforms being considered are Android mobile devices and
@@ -19,20 +20,14 @@ Goals:
    selectable and extendable by the application to provide maximum
    flexibility.
 
-The crypto work is based on Dennis Kubes's work in his telehash-java repo:
-https://github.com/kubes/telehash-java
-
 Warnings
 --------------------
 
-* This skeleton code in no way conforms to any Telehash API concept (yet).
-
-Concerns
---------------------
-
-There's some talk of Android's NIO not being reliable.  Some people suggest
-using "old IO" (OIO) when using Netty on Android.  However, I haven't yet
-stumbled on a concrete description of this hypothetical trouble.
+* This implementation is currently in the "proof of concept" stage to
+  demonstrate the exchange of packets with other nodes and basic DHT
+  maintenance.  There are no timeouts or other limits implemented, so
+  resource usage will grow unbounded.
+* This code in no way conforms to any Telehash API concept (yet).
 
 Code conventions
 --------------------
@@ -103,12 +98,49 @@ For now, just have the switch take identity/seeds as arguments.
 TODO
 --------------------
 
-Evaluate Android's built-in Bouncy Castle.
+* The code needs some serious cleaning and refactoring at this point.
+* Search for TODO items in the code, and do them.
+* Move "path" concerns (type, map generation, encode/deocde) to Endpoint.
+* Implement timeouts and limits for bounded resource usage.
+* More elaborate mesh testing (see: MeshTest).
+* Improve the DHT to support node discovery based on hashname.
+* Factor network concerns out of the core and into the NetworkImpl
+  class.
+* Develop a fake network implementation that doesn't actually use the
+  network.  This implementation will have programable parameters to
+  allow for testing of NATs, lossy connections, congested links, etc.
+* NAT considerations
+    * The switch should learn its public IP address by performing a
+      self-seek.
+    * A switch initiating contact with a new node via peer/connect
+      should also send a hole-punching open packet.
+* Support IPv6
+* The API currently requires the caller to successively open a line
+  (Switch.openLine()) and a channel (Line.openChannel()) before communicating
+  with a remote node (Channel.send()).  The Telehash protocol specification
+  states that "an open is always triggered by the creation of a channel to a
+  hashname, such that when a channel generates it's first packet the switch
+  recognizes that a line doesn't exist yet and attempts to create one."
+  Therefore, we should invert the initiation flow: Channel.send() should open a
+  line and a channel the first time it is run.
+* Specialized exception classes.
+* Android
+    * Decide on a minimum supported version of Android.
+    * Evaluate Android's built-in Bouncy Castle.  (The built-in version
+      is probably not full-featured enough on the versions of Android
+      we'd like to target, and the Bouncy Castle API sometimes changes,
+      so we'll probably end up bundling a specific version.)
+    * What are the best practices for storing/managing private keys?
+    * There's some talk of Android's NIO not being reliable.  Some people
+      suggest using "old IO" (OIO) when using Netty on Android.  However, I
+      haven't yet stumbled on a concrete description of this hypothetical
+      trouble.
 
-* robust/secure?
-* supports all needed ciphers/etc. in the minimum supported version of Android?
 
-Specialized exception classes.
+Acknowledgements
+--------------------
 
-What are the best practices for storing/managing private keys?
+Dennis Kubes performed some early work in investigating the
+implementation of Telehash's cryptographic steps in Java:
+https://github.com/kubes/telehash-java
 

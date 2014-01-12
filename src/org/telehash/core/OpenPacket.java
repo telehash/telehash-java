@@ -52,8 +52,6 @@ public class OpenPacket extends Packet {
     private static final int LINE_IDENTIFIER_SIZE = 16;
     private static final int HASHNAME_SIZE = 32;
     
-    private static final long MAXIMUM_TIME_DIFFERENCE = 24*3600*1000; // 1 day
-    
     static {
         Packet.registerPacketType(OPEN_TYPE, OpenPacket.class);
     }
@@ -80,7 +78,7 @@ public class OpenPacket extends Packet {
         );
     }
     
-    public OpenPacket(
+    private OpenPacket(
             Node sourceNode,
             ECPublicKey ellipticCurvePublicKey,
             long openTime,
@@ -141,7 +139,12 @@ public class OpenPacket extends Packet {
         // generate a random IV
         mPreRenderedIV = crypto.getRandomBytes(IV_SIZE);
         
-        // note the current time
+        // note the current time.
+        // This is a "local" timestamp -- the remote node will not
+        // interpret this as the number of milliseconds since 1970,
+        // but merely as an ever-incrementing value where a greater
+        // value indicates a newer open packet.  This timestamp should
+        // be the time of elliptic curve key generation.
         mOpenTime = System.currentTimeMillis();
         
         // generate the elliptic curve key pair, based on the "nistp256" curve
@@ -208,11 +211,11 @@ public class OpenPacket extends Packet {
         try {
             innerPacket = new JSONStringer()
                 .object()
-                .key("at")
+                .key(OPEN_TIME_KEY)
                 .value(mOpenTime)
-                .key("to")
+                .key(DESTINATION_KEY)
                 .value(mDestinationNode.getHashName().asHex())
-                .key("line")
+                .key(LINE_IDENTIFIER_KEY)
                 .value(mLineIdentifier.asHex())
                 .endObject()
                 .toString()

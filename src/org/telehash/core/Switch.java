@@ -266,6 +266,8 @@ public class Switch {
         
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put("peer", destination.getHashName().asHex());
+        // TODO: if we have multiple public (non-site-local) endpoints, they
+        // should be indicated in a "paths" key.
         try {
             channel.send(null, fields, true);
         } catch (TelehashException e) {

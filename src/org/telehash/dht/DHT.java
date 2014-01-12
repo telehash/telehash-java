@@ -22,12 +22,12 @@ import org.telehash.network.impl.InetEndpoint;
 
 public class DHT {
     
-    public static final String SEEK_TYPE = "seek";
-    public static final String PEER_TYPE = "peer";
-    public static final String CONNECT_TYPE = "connect";
-    public static final String SEEK_KEY = "seek";
-    public static final String SEE_KEY = "see";
-    public static final String PEER_KEY = "peer";
+    private static final String SEEK_TYPE = "seek";
+    private static final String PEER_TYPE = "peer";
+    private static final String CONNECT_TYPE = "connect";
+    private static final String SEEK_KEY = "seek";
+    private static final String SEE_KEY = "see";
+    private static final String PEER_KEY = "peer";
 
     private Telehash mTelehash;
     private Node mLocalNode;

@@ -12,9 +12,9 @@ import org.telehash.network.Endpoint;
 
 public abstract class Packet {
     
-    private static final int MINIMUM_PACKET_LENGTH = 4;
+    private static final int MINIMUM_PACKET_LENGTH = 2;
     private static final int JSON_START_POSITION = 2;
-    private static final int MINIMUM_JSON_LENGTH = 2;
+    private static final int MINIMUM_JSON_LENGTH = 0;
     private static final int MAXIMUM_JSON_LENGTH = 64*1024;
     private static final String PARSE_METHOD_NAME = "parse";
     protected static final int LENGTH_PREFIX_SIZE = 2;
