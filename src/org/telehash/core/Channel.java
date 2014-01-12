@@ -84,6 +84,7 @@ public class Channel {
             channelPacket.put("end", true);
             // TODO: remove from Line's channel tracking
         }
+        channelPacket.setBody(body);
         mTelehash.getSwitch().sendLinePacket(
                 mLine,
                 channelPacket,

@@ -192,6 +192,7 @@ public class ChannelPacket extends Packet {
 
         ChannelPacket channelPacket =
                 new ChannelPacket(channelIdentifier, type, end, error, customFields);
+        channelPacket.setBody(body);
 
         // extract all other (channel-type-specific) JSON values
         @SuppressWarnings("unchecked")

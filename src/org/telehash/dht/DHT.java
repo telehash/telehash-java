@@ -2,11 +2,14 @@ package org.telehash.dht;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
@@ -205,9 +208,14 @@ xSeed = seeds.iterator().next();
         
         // send a connect message to the target with the originator's information
         Channel newChannel = line.openChannel(CONNECT_TYPE, null);
+        Map<String,Object> path = new HashMap<String,Object>();
+        path.put("type", endpoint.getType());
+        path.put("ip", endpoint.getAddress().getHostAddress());
+        path.put("port", endpoint.getPort());
+        List<Map<String,Object>> paths = new ArrayList<Map<String,Object>>(1);
+        paths.add(path);
         Map<String,Object> fields = new HashMap<String,Object>();
-        fields.put("ip", endpoint.getAddress());
-        fields.put("port", endpoint.getPort());
+        fields.put("paths", paths);
         try {
             newChannel.send(
                     channel.getRemoteNode().getPublicKey().getDEREncoded(),
@@ -221,11 +229,34 @@ xSeed = seeds.iterator().next();
     }
 
     private void handleConnect(Channel channel, ChannelPacket channelPacket) throws TelehashException {
-        String ipString = (String) channelPacket.get("ip");
+        // TODO: move paths/path encode/decode into a separate Path class
+        Object pathsObject = channelPacket.get("paths");
+        if (! (pathsObject instanceof JSONArray)) {
+            return;
+        }
+        JSONArray paths = (JSONArray)pathsObject;
+        if (paths.length() < 1) {
+            return;
+        }
+        Object pathObject = paths.get(0); // TODO: support multiple paths
+        if (! (pathObject instanceof JSONObject)) {
+            return;
+        }
+        JSONObject path = (JSONObject)pathObject;
+        String pathType = (String) path.get("type");
+        if (pathType == null || pathType.isEmpty()) {
+            return;
+        }
+        if (! pathType.equals("ipv4")) {
+            // TODO: support ipv6
+            return;
+        }
+        
+        String ipString = (String) path.get("ip");
         if (ipString == null || ipString.isEmpty()) {
             return;
         }
-        int port = ((Number)channelPacket.get("port")).intValue();
+        int port = ((Number)path.get("port")).intValue();
         byte[] body = channelPacket.getBody();
         if (body == null) {
             return;
