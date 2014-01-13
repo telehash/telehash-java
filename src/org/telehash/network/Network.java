@@ -12,40 +12,40 @@ import org.telehash.core.TelehashException;
  */
 public interface Network {
     /**
-     * Parse a string representing a network endpoint. The string must contain
+     * Parse a string representing a network path. The string must contain
      * the address family tag, followed by a colon, followed by the
      * family-specific address representation.
      * 
-     * @param endpointString
-     *            The endpoint string to parse.
-     * @return The network endpoint object.
+     * @param pathString
+     *            The path string to parse.
+     * @return The network path object.
      * @throws TelehashException
-     *             If a problem occurred while parsing the endpoint.
+     *             If a problem occurred while parsing the path.
      */
-    public Endpoint parseEndpoint(String endpointString) throws TelehashException;
+    public Path parsePath(String pathString) throws TelehashException;
 
     /**
      * Parse a string representing a network address. 
      * 
      * @param addressString
-     *            The endpoint string to parse.
-     * @return The network endpoint object.
+     *            The path string to parse.
+     * @return The network path object.
      * @throws TelehashException
-     *             If a problem occurred while parsing the endpoint.
+     *             If a problem occurred while parsing the path.
      */
-    public Endpoint parseEndpoint(String addressString, int port) throws TelehashException;
+    public Path parsePath(String addressString, int port) throws TelehashException;
 
     /**
-     * Convert a Java SocketAddress to an Endpoint object.
+     * Convert a Java SocketAddress to a Path object.
      * @param socketAddress
-     * @return The network endpoint object.
+     * @return The network path object.
      * @throws TelehashException
      */
-    public Endpoint socketAddressToEndpoint(SocketAddress socketAddress) throws TelehashException;
+    public Path socketAddressToPath(SocketAddress socketAddress) throws TelehashException;
 
     /**
-     * Get preferred local endpoint
+     * Get preferred local path
      * TODO: This will certainly change... we need to support multiple network interfaces!
      */
-    public Endpoint getPreferredLocalEndpoint() throws TelehashException;
+    public Path getPreferredLocalPath() throws TelehashException;
 }

@@ -6,9 +6,8 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telehash.core.TelehashException;
-import org.telehash.network.impl.InetEndpoint;
 
-public abstract class Endpoint {
+public abstract class Path {
     public static final String IPV4_TYPE = "ipv4";
     public static final String IPV6_TYPE = "ipv6";
     public static final String TYPE_KEY = "type";
@@ -17,7 +16,7 @@ public abstract class Endpoint {
     public abstract JSONObject toJSONObject();
     
     
-    static public Endpoint parsePath(JSONObject path) throws TelehashException {
+    static public Path parsePath(JSONObject path) throws TelehashException {
         if (path == null) {
             return null;
         }
@@ -26,14 +25,14 @@ public abstract class Endpoint {
             return null;
         }
         if (type.equals(IPV4_TYPE) || type.equals(IPV6_TYPE)) {
-            return InetEndpoint.parsePath(path);
+            return InetPath.parsePath(path);
         } else {
             return null;
         }
     }
     
-    static public List<Endpoint> parsePathArray(JSONArray array) throws TelehashException {
-        List<Endpoint> paths = new ArrayList<Endpoint>();
+    static public List<Path> parsePathArray(JSONArray array) throws TelehashException {
+        List<Path> paths = new ArrayList<Path>();
         if (array == null) {
             return null;
         }
@@ -44,7 +43,7 @@ public abstract class Endpoint {
                 continue;
             }
             JSONObject pathJson = (JSONObject)pathObject;
-            Endpoint path = Endpoint.parsePath(pathJson);
+            Path path = Path.parsePath(pathJson);
             paths.add(path);
         }
         return paths;

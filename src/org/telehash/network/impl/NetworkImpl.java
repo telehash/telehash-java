@@ -9,7 +9,8 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 
 import org.telehash.core.TelehashException;
-import org.telehash.network.Endpoint;
+import org.telehash.network.InetPath;
+import org.telehash.network.Path;
 import org.telehash.network.Network;
 
 /**
@@ -18,44 +19,44 @@ import org.telehash.network.Network;
  */
 public class NetworkImpl implements Network {
 
-    private static final String ENDPOINT_INET_PREFIX = "inet:";
+    private static final String PATH_INET_PREFIX = "inet:";
 
     /**
-     * Parse a string representing a network endpoint. The string must contain
+     * Parse a string representing a network path. The string must contain
      * the address family tag, followed by a colon, followed by the
      * family-specific address representation.
      * 
-     * @param endpointString
-     *            The endpoint string to parse.
-     * @return The network endpoint object.
+     * @param pathString
+     *            The path string to parse.
+     * @return The network path object.
      * @throws TelehashException
-     *             If a problem occurred while parsing the endpoint.
+     *             If a problem occurred while parsing the path.
      */
     @Override
-    public Endpoint parseEndpoint(String endpointString) throws TelehashException {
-        if (endpointString.startsWith(ENDPOINT_INET_PREFIX)) {
-            String inetEndpointString = endpointString.substring(ENDPOINT_INET_PREFIX.length());
-            int slashIndex = inetEndpointString.indexOf("/");
+    public Path parsePath(String pathString) throws TelehashException {
+        if (pathString.startsWith(PATH_INET_PREFIX)) {
+            String inetPathString = pathString.substring(PATH_INET_PREFIX.length());
+            int slashIndex = inetPathString.indexOf("/");
             if (slashIndex == -1) {
-                throw new TelehashException("cannot parse inet endpoint string");
+                throw new TelehashException("cannot parse inet path string");
             }
-            String addressString = inetEndpointString.substring(0, slashIndex);
-            String portString = inetEndpointString.substring(slashIndex + 1);
+            String addressString = inetPathString.substring(0, slashIndex);
+            String portString = inetPathString.substring(slashIndex + 1);
             InetAddress address;
             try {
                 address = InetAddress.getByName(addressString);
             } catch (UnknownHostException e) {
-                throw new TelehashException("invalid address or unknown host in endpoint");
+                throw new TelehashException("invalid address or unknown host in path");
             }
             int port;
             try {
                 port = Integer.parseInt(portString);
             } catch (NumberFormatException e) {
-                throw new TelehashException("invalid port number in endpoint");
+                throw new TelehashException("invalid port number in path");
             }
-            return new InetEndpoint(address, port);
+            return new InetPath(address, port);
         } else {
-            throw new TelehashException("cannot parse endpoint string");
+            throw new TelehashException("cannot parse path string");
         }
     }
     
@@ -63,41 +64,41 @@ public class NetworkImpl implements Network {
      * Parse a string representing a network address. 
      * 
      * @param addressString
-     *            The endpoint string to parse.
-     * @return The network endpoint object.
+     *            The path string to parse.
+     * @return The network path object.
      * @throws TelehashException
-     *             If a problem occurred while parsing the endpoint.
+     *             If a problem occurred while parsing the path.
      */
-    public Endpoint parseEndpoint(String addressString, int port) throws TelehashException {
+    public Path parsePath(String addressString, int port) throws TelehashException {
         InetAddress address;
         try {
             address = InetAddress.getByName(addressString);
         } catch (UnknownHostException e) {
-            throw new TelehashException("invalid address or unknown host in endpoint");
+            throw new TelehashException("invalid address or unknown host in path");
         }
-        return new InetEndpoint(address, port);
+        return new InetPath(address, port);
     }
     
     /**
-     * Convert a Java SocketAddress to an Endpoint object.
+     * Convert a Java SocketAddress to a Path object.
      * @param socketAddress
-     * @return The network endpoint object.
+     * @return The network path object.
      * @throws TelehashException
      */
     @Override
-    public Endpoint socketAddressToEndpoint(SocketAddress socketAddress) throws TelehashException {
+    public Path socketAddressToPath(SocketAddress socketAddress) throws TelehashException {
         if (! (socketAddress instanceof InetSocketAddress)) {
             throw new TelehashException("unknown socket address type");
         }
         InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
-        return new InetEndpoint(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
+        return new InetPath(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
     }
 
     /**
-     * Get preferred local endpoint
+     * Get preferred local path
      * TODO: This will certainly change... we need to support multiple network interfaces!
      */
-    public Endpoint getPreferredLocalEndpoint() throws TelehashException {
+    public Path getPreferredLocalPath() throws TelehashException {
         Enumeration<NetworkInterface> networkInterfaces;
         try {
             networkInterfaces = NetworkInterface.getNetworkInterfaces();
@@ -120,7 +121,7 @@ public class NetworkImpl implements Network {
                     continue;
                 }
                 
-                return new InetEndpoint(inetAddress, 0);
+                return new InetPath(inetAddress, 0);
             }
         }
         return null;

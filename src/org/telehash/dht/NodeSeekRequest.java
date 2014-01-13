@@ -17,7 +17,7 @@ import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
-import org.telehash.network.Endpoint;
+import org.telehash.network.Path;
 
 /**
  * Handle a single seek/see transaction.
@@ -118,12 +118,12 @@ public class NodeSeekRequest {
                 return;
             }
             HashName hashName = new HashName(Util.hexToBytes(parts[0]));
-            Endpoint endpoint;
+            Path path;
             try {
-                endpoint = mTelehash.getNetwork().parseEndpoint(
+                path = mTelehash.getNetwork().parsePath(
                         parts[1], Integer.parseInt(parts[2])
                 );
-                Node node = new Node(hashName, endpoint);
+                Node node = new Node(hashName, path);
                 node.setReferringNode(mQueryNode);
                 mResultNodes.add(node);
             } catch (NumberFormatException e) {

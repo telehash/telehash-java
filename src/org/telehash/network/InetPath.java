@@ -1,4 +1,4 @@
-package org.telehash.network.impl;
+package org.telehash.network;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -7,16 +7,15 @@ import java.net.UnknownHostException;
 
 import org.json.JSONObject;
 import org.telehash.core.TelehashException;
-import org.telehash.network.Endpoint;
 
-public class InetEndpoint extends Endpoint {
+public class InetPath extends Path {
     private static final String IP_ADDRESS_KEY = "ip";
     private static final String PORT_KEY = "port";
     
     private InetAddress mAddress;
     private int mPort;
 
-    public InetEndpoint(InetAddress address, int port) {
+    public InetPath(InetAddress address, int port) {
         mAddress = address;
         mPort = port;
     }
@@ -56,7 +55,7 @@ public class InetEndpoint extends Endpoint {
         return getType()+":" + mAddress.getHostAddress() + "/" + mPort;
     }
     
-    static public InetEndpoint parsePath(JSONObject path) throws TelehashException {
+    static public InetPath parsePath(JSONObject path) throws TelehashException {
         if (path == null) {
             return null;
         }
@@ -92,6 +91,6 @@ public class InetEndpoint extends Endpoint {
             );
         }
         
-        return new InetEndpoint(address, port);
+        return new InetPath(address, port);
     }
 }

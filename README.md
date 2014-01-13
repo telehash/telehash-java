@@ -98,9 +98,10 @@ For now, just have the switch take identity/seeds as arguments.
 TODO
 --------------------
 
+* ~~Move "path" concerns (type, map generation, encode/deocde) to Endpoint
+  and rename Endpoint to Path.~~
 * The code needs some serious cleaning and refactoring at this point.
 * Search for TODO items in the code, and do them.
-* Move "path" concerns (type, map generation, encode/deocde) to Endpoint.
 * Implement timeouts and limits for bounded resource usage.
 * More elaborate mesh testing (see: MeshTest).
 * Improve the DHT to support node discovery based on hashname.

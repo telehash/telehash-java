@@ -18,8 +18,8 @@ import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.RSAPublicKey;
-import org.telehash.network.Endpoint;
-import org.telehash.network.impl.InetEndpoint;
+import org.telehash.network.InetPath;
+import org.telehash.network.Path;
 
 public class DHT {
     
@@ -168,12 +168,12 @@ xSeed = seeds.iterator().next();
         
         JSONArray see = new JSONArray();
         for (Node node : nodes) {
-            if (node.getEndpoint() instanceof InetEndpoint) {
-                InetEndpoint endpoint = (InetEndpoint)node.getEndpoint();
+            if (node.getPath() instanceof InetPath) {
+                InetPath path = (InetPath)node.getPath();
                 String seeNode =
                         node.getHashName().asHex() + "," +
-                        endpoint.getAddress().getHostAddress() + "," +
-                        endpoint.getPort(); 
+                        path.getAddress().getHostAddress() + "," +
+                        path.getPort(); 
                 see.put(seeNode);
             }
         }
@@ -199,15 +199,15 @@ xSeed = seeds.iterator().next();
         }
         
         Node originatingNode = channel.getRemoteNode();
-        if (! (originatingNode.getEndpoint() instanceof InetEndpoint)) {
+        if (! (originatingNode.getPath() instanceof InetPath)) {
             return;
         }
-        InetEndpoint endpoint = (InetEndpoint)originatingNode.getEndpoint();
+        InetPath path = (InetPath)originatingNode.getPath();
         
         // send a connect message to the target with the originator's information
         Channel newChannel = line.openChannel(CONNECT_TYPE, null);
         List<JSONObject> paths = new ArrayList<JSONObject>(1);
-        paths.add(endpoint.toJSONObject());
+        paths.add(path.toJSONObject());
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put("paths", paths);
         try {
@@ -228,13 +228,13 @@ xSeed = seeds.iterator().next();
         if (! (pathsObject instanceof JSONArray)) {
             return;
         }
-        List<Endpoint> paths = Endpoint.parsePathArray((JSONArray)pathsObject);
+        List<Path> paths = Path.parsePathArray((JSONArray)pathsObject);
         if (paths == null || paths.isEmpty()) {
             return;
         }
         
-        // TODO: support more than the first endpoint
-        Endpoint endpoint = paths.get(0);
+        // TODO: support more than the first path
+        Path path = paths.get(0);
                 
         byte[] body = channelPacket.getBody();
         if (body == null) {
@@ -242,7 +242,7 @@ xSeed = seeds.iterator().next();
         }
         RSAPublicKey publicKey = mTelehash.getCrypto().decodeRSAPublicKey(body);
         
-        Node node = new Node(publicKey, endpoint);
+        Node node = new Node(publicKey, path);
         mTelehash.getSwitch().openLine(node, null, null);
     }
 }

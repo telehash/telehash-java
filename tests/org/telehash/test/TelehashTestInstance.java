@@ -17,7 +17,7 @@ import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
-import org.telehash.network.impl.InetEndpoint;
+import org.telehash.network.InetPath;
 
 public class TelehashTestInstance {
     
@@ -118,7 +118,7 @@ public class TelehashTestInstance {
         try {
             return new Node(
                     mIdentity.getPublicKey(),
-                    new InetEndpoint(InetAddress.getLocalHost(), mPort)
+                    new InetPath(InetAddress.getLocalHost(), mPort)
             );
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block

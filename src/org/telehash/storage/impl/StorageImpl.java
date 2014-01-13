@@ -22,8 +22,8 @@ import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;
-import org.telehash.network.Endpoint;
-import org.telehash.network.impl.InetEndpoint;
+import org.telehash.network.InetPath;
+import org.telehash.network.Path;
 import org.telehash.storage.Storage;
 
 /**
@@ -107,9 +107,7 @@ public class StorageImpl implements Storage {
         writeIdentity(identity, DEFAULT_IDENTITY_FILENAME_BASE);
     }
 
-    private static final String SEEDS_KEY = "seeds";
     private static final String PUBLICKEY_KEY = "pubkey";
-    private static final String ENDPOINT_KEY = "endpoint";
 
     /**
      * Read the local seed cache to obtain a set of nodes that may be used to
@@ -139,7 +137,7 @@ public class StorageImpl implements Storage {
             String publicKeyString = seed.getString(PUBLICKEY_KEY);
             
             // parse seed paths
-            List<Endpoint> paths = new ArrayList<Endpoint>();
+            List<Path> paths = new ArrayList<Path>();
             if (seed.has(IPV4_ADDRESS_KEY)) {
                 String ipString = seed.getString(IPV4_ADDRESS_KEY);
                 InetAddress address;
@@ -149,7 +147,7 @@ public class StorageImpl implements Storage {
                     throw new TelehashException(e);
                 }
                 int port = seed.getInt(IPV4_PORT_KEY);
-                InetEndpoint ipv4Path = new InetEndpoint(address, port);
+                InetPath ipv4Path = new InetPath(address, port);
                 if (! (ipv4Path.getAddress() instanceof Inet4Address)) {
                     ipv4Path = null;
                 }
@@ -164,7 +162,7 @@ public class StorageImpl implements Storage {
                     throw new TelehashException(e);
                 }
                 int port = seed.getInt(IPV6_PORT_KEY);
-                InetEndpoint ipv6Path = new InetEndpoint(address, port);
+                InetPath ipv6Path = new InetPath(address, port);
                 if (! (ipv6Path.getAddress() instanceof Inet6Address)) {
                     ipv6Path = null;
                 }

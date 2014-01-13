@@ -1,27 +1,27 @@
 package org.telehash.core;
 
 import org.telehash.crypto.RSAPublicKey;
-import org.telehash.network.Endpoint;
+import org.telehash.network.Path;
 
 /**
  * This class represents a Telehash node, including its public key and network
- * endpoint.
+ * path.
  */
 public class Node {
     private RSAPublicKey mPublicKey;
-    private Endpoint mEndpoint;
+    private Path mPath;
     private HashName mHashName = null;
     private Node mReferringNode;
     
-    public Node(RSAPublicKey publicKey, Endpoint endpoint) throws TelehashException {
+    public Node(RSAPublicKey publicKey, Path path) throws TelehashException {
         mPublicKey = publicKey;
-        mEndpoint = endpoint;
+        mPath = path;
         mHashName = new HashName(Util.getCryptoInstance().sha256Digest(mPublicKey.getDEREncoded()));
     }
 
-    public Node(HashName hashName, Endpoint endpoint) throws TelehashException {
+    public Node(HashName hashName, Path path) throws TelehashException {
         mPublicKey = null;
-        mEndpoint = endpoint;
+        mPath = path;
         mHashName = hashName;
     }
 
@@ -33,8 +33,8 @@ public class Node {
         return mPublicKey;
     }
     
-    public Endpoint getEndpoint() {
-        return mEndpoint;
+    public Path getPath() {
+        return mPath;
     }
     
     public HashName getHashName() {
@@ -69,6 +69,6 @@ public class Node {
     
     @Override
     public String toString() {
-        return "Node["+mHashName+"]"+((mPublicKey!=null)?"*":"")+mEndpoint;
+        return "Node["+mHashName+"]"+((mPublicKey!=null)?"*":"")+mPath;
     }
 }

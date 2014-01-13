@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.telehash.core.Node;
 import org.telehash.core.Util;
-import org.telehash.network.impl.InetEndpoint;
+import org.telehash.network.InetPath;
 import org.telehash.storage.Storage;
 
 public class StorageTest {
@@ -85,8 +85,8 @@ public class StorageTest {
         assertNotNull(seeds);
         assertEquals(seeds.size(), NUM_SEEDS);
         for (Node seed : seeds) {
-            int port = ((InetEndpoint)seed.getEndpoint()).getPort();
-            int lowerOctet = ((InetEndpoint)seed.getEndpoint()).getAddress().getAddress()[3]&0xFF;
+            int port = ((InetPath)seed.getPath()).getPort();
+            int lowerOctet = ((InetPath)seed.getPath()).getAddress().getAddress()[3]&0xFF;
             assertEquals(lowerOctet, port-9000);
         }
     }

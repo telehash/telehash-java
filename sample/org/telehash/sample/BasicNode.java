@@ -13,7 +13,7 @@ import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.RSAPublicKey;
-import org.telehash.network.impl.InetEndpoint;
+import org.telehash.network.InetPath;
 
 public class BasicNode {
     
@@ -64,7 +64,7 @@ public class BasicNode {
         }
         
         try {
-            System.out.println("preferred local endpoint: "+telehash.getNetwork().getPreferredLocalEndpoint());
+            System.out.println("preferred local path: "+telehash.getNetwork().getPreferredLocalPath());
         } catch (TelehashException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();

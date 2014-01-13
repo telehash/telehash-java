@@ -6,7 +6,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.telehash.crypto.Crypto;
-import org.telehash.network.Endpoint;
+import org.telehash.network.Path;
 
 /**
  * A Telehash "line" packet is used to exchange data between two Telehash nodes
@@ -127,7 +127,7 @@ public class LinePacket extends Packet {
             Telehash telehash,
             JSONObject json,
             byte[] body,
-            Endpoint endpoint
+            Path path
     ) throws TelehashException {
         Crypto crypto = telehash.getCrypto();
         
@@ -152,7 +152,7 @@ public class LinePacket extends Packet {
         byte[] decryptedBody = crypto.decryptAES256CTR(body, iv, line.getDecryptionKey());
         
         // parse the embedded channel packet
-        ChannelPacket channelPacket = ChannelPacket.parse(telehash, decryptedBody, endpoint);
+        ChannelPacket channelPacket = ChannelPacket.parse(telehash, decryptedBody, path);
         
         return new LinePacket(line, channelPacket);
     }

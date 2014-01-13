@@ -9,7 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
-import org.telehash.network.Endpoint;
+import org.telehash.network.Path;
 
 public class ChannelPacket extends Packet {
     private static final String CHANNEL_IDENTIFIER_KEY = "c";
@@ -149,17 +149,17 @@ public class ChannelPacket extends Packet {
     public static ChannelPacket parse(
             Telehash telehash,
             byte[] packetBuffer,
-            Endpoint endpoint
+            Path path
     ) throws TelehashException {
         JsonAndBody jsonAndBody = splitPacket(packetBuffer);
-        return parse(telehash, jsonAndBody.json, jsonAndBody.body, endpoint);
+        return parse(telehash, jsonAndBody.json, jsonAndBody.body, path);
     }
     
     public static ChannelPacket parse(
             Telehash telehash,
             JSONObject json,
             byte[] body,
-            Endpoint endpoint
+            Path path
     ) throws TelehashException {
         // extract required JSON values
         String channelIdentifierString = json.getString(CHANNEL_IDENTIFIER_KEY);

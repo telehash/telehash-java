@@ -15,8 +15,8 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.telehash.dht.DHT;
-import org.telehash.network.Endpoint;
-import org.telehash.network.impl.InetEndpoint;
+import org.telehash.network.InetPath;
+import org.telehash.network.Path;
 
 /**
  * The Switch class is the heart of Telehash. The switch is responsible for
@@ -116,7 +116,7 @@ public class Switch {
                     sb.append(line.getOutgoingLineIdentifier()+" ");
                 }
                 sb.append(line.getState().name()+" ");
-                sb.append(node.getEndpoint()+"\n");
+                sb.append(node.getPath()+"\n");
             }
             return sb.toString();
         }
@@ -138,11 +138,11 @@ public class Switch {
     public void start() throws TelehashException {
 
         // determine the local node information
-        Endpoint localEndpoint = mTelehash.getNetwork().getPreferredLocalEndpoint();
-        if (localEndpoint == null) {
+        Path localPath = mTelehash.getNetwork().getPreferredLocalPath();
+        if (localPath == null) {
             throw new TelehashException("no network");
         }
-        mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), localEndpoint);
+        mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), localPath);
         
         // provision datagram channel and selector
         try {
@@ -266,7 +266,7 @@ public class Switch {
         
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put("peer", destination.getHashName().asHex());
-        // TODO: if we have multiple public (non-site-local) endpoints, they
+        // TODO: if we have multiple public (non-site-local) paths, they
         // should be indicated in a "paths" key.
         try {
             channel.send(null, fields, true);
@@ -396,7 +396,7 @@ public class Switch {
             packet = Packet.parse(
                     mTelehash,
                     packetBuffer,
-                    mTelehash.getNetwork().socketAddressToEndpoint(socketAddress)
+                    mTelehash.getNetwork().socketAddressToPath(socketAddress)
             );
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -551,8 +551,8 @@ public class Switch {
         
         Node destination = packet.getDestinationNode();
         System.out.println("sending to hashname="+destination);
-        InetAddress destinationAddress = ((InetEndpoint)destination.getEndpoint()).getAddress();
-        int destinationPort = ((InetEndpoint)destination.getEndpoint()).getPort();
+        InetAddress destinationAddress = ((InetPath)destination.getPath()).getAddress();
+        int destinationPort = ((InetPath)destination.getPath()).getPort();
         
         // TODO: don't allocate a new buffer every time.
         ByteBuffer buffer = ByteBuffer.allocate(2048);
