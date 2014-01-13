@@ -2,9 +2,13 @@ package org.telehash.storage.impl;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.json.JSONArray;
@@ -31,6 +35,10 @@ public class StorageImpl implements Storage {
     private static final String DEFAULT_IDENTITY_FILENAME_BASE = "telehash-identity";
     private static final String PRIVATE_KEY_FILENAME_SUFFIX = ".key";
     private static final String PUBLIC_KEY_FILENAME_SUFFIX = ".pub";
+    private static final String IPV4_ADDRESS_KEY = "ip";
+    private static final String IPV4_PORT_KEY = "port";
+    private static final String IPV6_ADDRESS_KEY = "ip6";
+    private static final String IPV6_PORT_KEY = "port6";
 
     /**
      * Read the local Telehash identity (RSA key pair) from files named using
@@ -130,25 +138,44 @@ public class StorageImpl implements Storage {
             JSONObject seed = array.getJSONObject(i);
             String publicKeyString = seed.getString(PUBLICKEY_KEY);
             
-            String ipString = seed.getString("ip");
-            InetAddress address;
-            try {
-                address = InetAddress.getByName(ipString);  // TODO: ???
-            } catch (UnknownHostException e) {
-                throw new TelehashException(e);
+            // parse seed paths
+            List<Endpoint> paths = new ArrayList<Endpoint>();
+            if (seed.has(IPV4_ADDRESS_KEY)) {
+                String ipString = seed.getString(IPV4_ADDRESS_KEY);
+                InetAddress address;
+                try {
+                    address = InetAddress.getByName(ipString);  // TODO: ???
+                } catch (UnknownHostException e) {
+                    throw new TelehashException(e);
+                }
+                int port = seed.getInt(IPV4_PORT_KEY);
+                InetEndpoint ipv4Path = new InetEndpoint(address, port);
+                if (! (ipv4Path.getAddress() instanceof Inet4Address)) {
+                    ipv4Path = null;
+                }
+                paths.add(ipv4Path);
             }
-            int port = seed.getInt("port");
-            Endpoint endpoint = new InetEndpoint(address, port);
+            if (seed.has(IPV6_ADDRESS_KEY)) {
+                String ipString = seed.getString(IPV6_ADDRESS_KEY);
+                InetAddress address;
+                try {
+                    address = InetAddress.getByName(ipString);  // TODO: ???
+                } catch (UnknownHostException e) {
+                    throw new TelehashException(e);
+                }
+                int port = seed.getInt(IPV6_PORT_KEY);
+                InetEndpoint ipv6Path = new InetEndpoint(address, port);
+                if (! (ipv6Path.getAddress() instanceof Inet6Address)) {
+                    ipv6Path = null;
+                }
+                paths.add(ipv6Path);
+            }
+            if (paths.isEmpty()) {
+                throw new TelehashException("no valid network paths found for seed!");
+            }
             
-            /*
-            byte[] publicKeyBuffer = Util.hexToBytes(publicKeyString);
-            if (publicKeyBuffer == null) {
-                throw new TelehashException("cannot parse public key hex string");
-            }
-            RSAPublicKey publicKey = Util.getCryptoInstance().decodeRSAPublicKey(publicKeyBuffer);
-             */
             RSAPublicKey publicKey = Util.getCryptoInstance().parseRSAPublicKeyFromPEM(publicKeyString);
-            Node node = new Node(publicKey, endpoint);
+            Node node = new Node(publicKey, paths.get(0));
             nodes.add(node);
         }
         

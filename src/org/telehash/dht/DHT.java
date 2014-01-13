@@ -1,7 +1,5 @@
 package org.telehash.dht;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -208,12 +206,8 @@ xSeed = seeds.iterator().next();
         
         // send a connect message to the target with the originator's information
         Channel newChannel = line.openChannel(CONNECT_TYPE, null);
-        Map<String,Object> path = new HashMap<String,Object>();
-        path.put("type", endpoint.getType());
-        path.put("ip", endpoint.getAddress().getHostAddress());
-        path.put("port", endpoint.getPort());
-        List<Map<String,Object>> paths = new ArrayList<Map<String,Object>>(1);
-        paths.add(path);
+        List<JSONObject> paths = new ArrayList<JSONObject>(1);
+        paths.add(endpoint.toJSONObject());
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put("paths", paths);
         try {
@@ -234,42 +228,20 @@ xSeed = seeds.iterator().next();
         if (! (pathsObject instanceof JSONArray)) {
             return;
         }
-        JSONArray paths = (JSONArray)pathsObject;
-        if (paths.length() < 1) {
-            return;
-        }
-        Object pathObject = paths.get(0); // TODO: support multiple paths
-        if (! (pathObject instanceof JSONObject)) {
-            return;
-        }
-        JSONObject path = (JSONObject)pathObject;
-        String pathType = (String) path.get("type");
-        if (pathType == null || pathType.isEmpty()) {
-            return;
-        }
-        if (! pathType.equals("ipv4")) {
-            // TODO: support ipv6
+        List<Endpoint> paths = Endpoint.parsePathArray((JSONArray)pathsObject);
+        if (paths == null || paths.isEmpty()) {
             return;
         }
         
-        String ipString = (String) path.get("ip");
-        if (ipString == null || ipString.isEmpty()) {
-            return;
-        }
-        int port = ((Number)path.get("port")).intValue();
+        // TODO: support more than the first endpoint
+        Endpoint endpoint = paths.get(0);
+                
         byte[] body = channelPacket.getBody();
         if (body == null) {
             return;
         }
         RSAPublicKey publicKey = mTelehash.getCrypto().decodeRSAPublicKey(body);
-        InetAddress inetAddress;
-        try {
-            // TODO: is this safe?
-            inetAddress = InetAddress.getByName(ipString);
-        } catch (UnknownHostException e) {
-            throw new TelehashException(e);
-        }
-        Endpoint endpoint = new InetEndpoint(inetAddress, port);
+        
         Node node = new Node(publicKey, endpoint);
         mTelehash.getSwitch().openLine(node, null, null);
     }
