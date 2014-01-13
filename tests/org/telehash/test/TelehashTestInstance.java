@@ -17,9 +17,14 @@ import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
+import org.telehash.crypto.Crypto;
+import org.telehash.crypto.impl.CryptoImpl;
 import org.telehash.network.InetPath;
+import org.telehash.network.Network;
+import org.telehash.network.impl.NetworkImpl;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
+import org.telehash.test.network.NetworkSimulator;
 
 public class TelehashTestInstance {
     
@@ -33,11 +38,15 @@ public class TelehashTestInstance {
     private Identity mIdentity;
     private Set<Node> mSeeds;
     private Telehash mTelehash;
+    private Crypto mCrypto = new CryptoImpl();
+    private Network mNetwork = new NetworkImpl();
+    private Storage mStorage = new StorageImpl();
     
-    public static List<TelehashTestInstance> createNodes(int numNodes, int startPort) {
+    public static List<TelehashTestInstance> createStarTopology(int numNodes, int startPort) {
         Node seed = null;
         Set<Node> seeds = new HashSet<Node>();
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(numNodes);
+        NetworkSimulator networkSimulator = new NetworkSimulator();
         
         for (int i=0; i<numNodes; i++) {
             File configDirectory = new File(
@@ -46,7 +55,8 @@ public class TelehashTestInstance {
             configDirectory.mkdirs();
             
             System.out.println("node "+i+" dir: "+configDirectory);
-            TelehashTestInstance node = new TelehashTestInstance(i, configDirectory, startPort+i, seeds);
+            TelehashTestInstance node = new TelehashTestInstance(i, configDirectory, 42424, seeds);
+            node.setNetwork(networkSimulator.createNode("10.0.0."+i, 42424));
             node.start();
             list.add(node);
             
@@ -56,7 +66,7 @@ public class TelehashTestInstance {
             }
             
             try {
-                Thread.sleep(200);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -73,9 +83,21 @@ public class TelehashTestInstance {
         mSeeds = seeds;
     }
     
+    public void setCrypto(Crypto crypto) {
+        mCrypto = crypto;
+    }
+    
+    public void setNetwork(Network network) {
+        mNetwork = network;
+    }
+    
+    public void setStorage(Storage storage) {
+        mStorage = storage;
+    }
+    
     public void start() {
         loadIdentity();
-        mTelehash = new Telehash(mIdentity);
+        mTelehash = new Telehash(mIdentity, mCrypto, mStorage, mNetwork);
         
         // store a summary of this node
         try {
@@ -112,14 +134,12 @@ public class TelehashTestInstance {
     
     public Node getNode() {
         try {
+            InetPath path =
+                    new InetPath(((InetPath)mNetwork.getPreferredLocalPath()).getAddress(), mPort);
             return new Node(
                     mIdentity.getPublicKey(),
-                    new InetPath(InetAddress.getLocalHost(), mPort)
+                    path
             );
-        } catch (UnknownHostException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return null;
         } catch (TelehashException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

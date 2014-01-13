@@ -170,7 +170,7 @@ public class ReactorImpl implements Reactor {
      * @param datagram
      */
     @Override
-    public void sendPacket(Datagram datagram) {
+    public void sendDatagram(Datagram datagram) {
         System.out.println("enqueuing datagram");
         // TODO: synchronize writequeue
         // TODO: limit write queue (block if limit reached?)

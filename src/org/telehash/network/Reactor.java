@@ -9,5 +9,5 @@ public interface Reactor {
     void close() throws IOException;
     void wakeup();
     void select(long timeout) throws IOException;
-    void sendPacket(Datagram datagram);
+    void sendDatagram(Datagram datagram);
 }

@@ -19,7 +19,6 @@ import org.telehash.core.Identity;
 import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
-import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;

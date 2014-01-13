@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -20,13 +21,16 @@ import org.telehash.core.TelehashException;
 public class MeshTest {
     
     private static final int START_PORT = 6000;
-    private static final int NUM_NODES = 9;
+    private static final int NUM_NODES = 3;
+    private static final int NODE_SEED = 0;
+    private static final int NODE_A = 1;
+    private static final int NODE_B = 2;
     
     private List<TelehashTestInstance> mNodes;
 
     @Before
     public void setUp() throws Exception {
-        mNodes = TelehashTestInstance.createNodes(NUM_NODES, START_PORT);
+        mNodes = TelehashTestInstance.createStarTopology(NUM_NODES, START_PORT);
     }
 
     @After
@@ -38,8 +42,8 @@ public class MeshTest {
 
     @Test
     public void testOpenLine() throws Exception {
-        TelehashTestInstance src = mNodes.get(4);
-        TelehashTestInstance dst = mNodes.get(7);
+        TelehashTestInstance src = mNodes.get(NODE_A);
+        TelehashTestInstance dst = mNodes.get(NODE_B);
         
         src.getSwitch().openLine(dst.getNode(), new CompletionHandler<Line>() {
             @Override
@@ -52,20 +56,23 @@ public class MeshTest {
             }
         }, null);
         
+        // TODO: signal failure/success/timeout via Object.notify().
         Thread.sleep(1000);
+        
+        // assure src has a line open to dst.
+        assertLineOpen(src, dst);
+        assertLineOpen(dst, src);
     }
 
     // TODO: this doesn't do anything useful at the moment; it's just to
     // exercise code under development.  Fix.
     @Test
     public void testPeerConnect() throws Exception {
-        final TelehashTestInstance seed = mNodes.get(0);
-        final TelehashTestInstance src = mNodes.get(4);
-        final TelehashTestInstance dst = mNodes.get(7);
+        final TelehashTestInstance seed = mNodes.get(NODE_SEED);
+        final TelehashTestInstance src = mNodes.get(NODE_A);
+        final TelehashTestInstance dst = mNodes.get(NODE_B);
         System.out.println("OPEN "+src.getNode()+" -> "+dst.getNode());
-        
-        HashName destHashName = dst.getNode().getHashName();
-        
+
         // src opens a line to the seed
         src.getSwitch().openLine(seed.getNode(), new CompletionHandler<Line>() {
             @Override
@@ -100,9 +107,24 @@ public class MeshTest {
 
             }
         }, null);
-                
+        
         // TODO: signal failure/success/timeout via Object.notify().
-
         Thread.sleep(1000);
+
+        // assure src has a line open to dst.
+        assertLineOpen(src, dst);
+        assertLineOpen(dst, src);
+    }
+    
+    protected void assertLineOpen(TelehashTestInstance a, TelehashTestInstance b) {
+        // assure A has a line open to B.
+        boolean found = false;
+        Set<Line> aLines = a.getSwitch().getLines();
+        for (Line line : aLines) {
+            if (line.getRemoteNode().equals(b.getNode())) {
+                found = true;
+            }
+        }
+        assertTrue(found);        
     }
 }

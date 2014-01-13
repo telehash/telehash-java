@@ -31,6 +31,14 @@ public class Telehash {
         mSwitch = null;
     }
     
+    public Telehash(Identity identity, Crypto crypto, Storage storage, Network network) {
+        mIdentity = identity;
+        mCrypto = crypto;
+        mStorage = storage;
+        mNetwork = network;
+        mSwitch = null;
+    }
+    
     public Crypto getCrypto() {
         return mCrypto;
     }

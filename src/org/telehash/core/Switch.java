@@ -10,6 +10,7 @@ import java.util.Set;
 import org.telehash.dht.DHT;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
+import org.telehash.network.InetPath;
 import org.telehash.network.Path;
 import org.telehash.network.Reactor;
 
@@ -139,7 +140,12 @@ public class Switch implements DatagramHandler {
         if (localPath == null) {
             throw new TelehashException("no network");
         }
-        mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), localPath);
+        if (! (localPath instanceof InetPath)) {
+            throw new TelehashException("local network is not IP.");
+        }
+        InetPath inetPath = (InetPath)localPath;
+        inetPath = new InetPath(inetPath.getAddress(), mPort);
+        mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), inetPath);
         
         // provision the reactor
         mReactor = mTelehash.getNetwork().createReactor(mPort);
@@ -312,7 +318,7 @@ public class Switch implements DatagramHandler {
         
         System.out.println("enqueuing packet");
         if (mReactor != null) {
-            mReactor.sendPacket(datagram);
+            mReactor.sendDatagram(datagram);
         }
     }
 
@@ -359,7 +365,7 @@ public class Switch implements DatagramHandler {
             mStopLock.notify();
         }
         
-        System.out.println("loop ending");
+        System.out.println("Telehash switch "+mLocalNode+" ending.");
     }
     
     @Override

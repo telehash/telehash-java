@@ -19,7 +19,15 @@ public class Datagram {
         return mSource;
     }
     
+    public void setSource(Path source) {
+        mSource = source;
+    }
+    
     public Path getDestination() {
         return mDestination;
+    }
+    
+    public void setDestination(Path destination) {
+        mDestination = destination;
     }
 }
