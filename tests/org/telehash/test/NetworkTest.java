@@ -44,7 +44,7 @@ public class NetworkTest {
             // parse
             Path path;
             try {
-                path = mNetwork.parsePath(string);
+                path = Path.parsePath(string);
             } catch (TelehashException e) {
                 if (this.address == null) {
                     // failure expected.
@@ -72,10 +72,16 @@ public class NetworkTest {
     };
     
     ParsePathTest[] parsePathTests = new ParsePathTest[] {
-        new ParsePathTest("inet:10.0.0.1/4242", new byte[]{10,0,0,1}, 4242),
-        new ParsePathTest("inet:192.168.1.100/512", new byte[]{(byte)192,(byte)168,1,100}, 512),
         new ParsePathTest(
-                "inet:2001:0db8:85a3:0000:0000:8a2e:0370:7334/1234",
+                "{\"type\":\"ipv4\", \"ip\": \"10.0.0.1\", \"port\": 4242}",
+                new byte[]{10,0,0,1}, 4242
+        ),
+        new ParsePathTest(
+                "{\"type\":\"ipv4\", \"ip\": \"192.168.1.100\", \"port\": 512}",
+                new byte[]{(byte)192,(byte)168,1,100}, 512
+        ),
+        new ParsePathTest(
+                "{\"type\":\"ipv6\", \"ip\": \"2001:0db8:85a3:0000:0000:8a2e:0370:7334\", \"port\": 1234}",
                 new byte[]{
                         0x20, 0x01, 0x0d, (byte)0xb8, (byte)0x85, (byte)0xa3, 0x00, 0x00,
                         0x00, 0x00, (byte)0x8a, 0x2e, 0x03, 0x70, 0x73, 0x34
@@ -83,7 +89,7 @@ public class NetworkTest {
                 1234
         ),
         new ParsePathTest(
-                "inet:2001::1/2345",
+                "{\"type\":\"ipv6\", \"ip\": \"2001::1\", \"port\": 2345}",
                 new byte[]{
                         0x20, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01

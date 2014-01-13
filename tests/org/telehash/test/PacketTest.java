@@ -137,7 +137,9 @@ public class PacketTest {
     private static final byte[] EXPECTED_PACKET_SHA256 =
             Util.hexToBytes("545c2124151b86ff91038dcbbf0a4808419ba4f2f8236ae19c1cd531dea18854");
     
-    private static final String SAMPLE_PATH = "inet:127.0.0.1/4242";
+    private static final String SAMPLE_PATH =
+            "{\"type\": \"ipv4\", \"ip\": \"127.0.0.1\", \"port\": 4242}";
+    
     private Crypto mCrypto;
     private Network mNetwork;
     private Identity mIdentity;
@@ -181,7 +183,7 @@ public class PacketTest {
         RSAPublicKey destinationPublicKey = mCrypto.decodeRSAPublicKey(DESTINATION_PUBLIC_KEY);
         Node remoteNode = new Node(
                 destinationPublicKey,
-                mNetwork.parsePath(SAMPLE_PATH)
+                Path.parsePath(SAMPLE_PATH)
         );
         
         OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
@@ -204,8 +206,8 @@ public class PacketTest {
     
     @Test
     public void testOpenPacketParse() throws Exception {
-        Path localPath = mNetwork.parsePath(SAMPLE_PATH);
-        Path remotePath = mNetwork.parsePath(SAMPLE_PATH);
+        Path localPath = Path.parsePath(SAMPLE_PATH);
+        Path remotePath = Path.parsePath(SAMPLE_PATH);
         Node remoteNode = new Node(
                 mIdentity2.getPublicKey(),
                 remotePath

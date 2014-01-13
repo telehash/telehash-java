@@ -12,19 +12,6 @@ import org.telehash.core.TelehashException;
  */
 public interface Network {
     /**
-     * Parse a string representing a network path. The string must contain
-     * the address family tag, followed by a colon, followed by the
-     * family-specific address representation.
-     * 
-     * @param pathString
-     *            The path string to parse.
-     * @return The network path object.
-     * @throws TelehashException
-     *             If a problem occurred while parsing the path.
-     */
-    public Path parsePath(String pathString) throws TelehashException;
-
-    /**
      * Parse a string representing a network address. 
      * 
      * @param addressString

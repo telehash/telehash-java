@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.telehash.core.TelehashException;
 
@@ -15,6 +16,15 @@ public abstract class Path {
     public abstract String getType();
     public abstract JSONObject toJSONObject();
     
+    static public Path parsePath(String json) throws TelehashException {
+        JSONObject jsonObject;
+        try {
+            jsonObject = new JSONObject(json);
+        } catch (JSONException e) {
+            throw new TelehashException(e);
+        }
+        return parsePath(jsonObject);
+    }
     
     static public Path parsePath(JSONObject path) throws TelehashException {
         if (path == null) {

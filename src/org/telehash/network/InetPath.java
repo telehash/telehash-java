@@ -81,7 +81,7 @@ public class InetPath extends Path {
         if ( (! type.equals(IPV4_TYPE)) && (! type.equals(IPV6_TYPE)) ) {
             throw new TelehashException("unknown internet path type \""+type+"\".");
         }
-        if ( (!(address instanceof Inet4Address)) || (!(address instanceof Inet6Address)) ) {
+        if ( (!(address instanceof Inet4Address)) && (!(address instanceof Inet6Address)) ) {
             throw new TelehashException("path does not represent a valid address");
         }
         if ( (address instanceof Inet4Address && (! type.equals(IPV4_TYPE))) ||

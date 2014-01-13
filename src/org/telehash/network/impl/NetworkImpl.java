@@ -19,49 +19,10 @@ import org.telehash.network.Network;
  */
 public class NetworkImpl implements Network {
 
-    private static final String PATH_INET_PREFIX = "inet:";
-
     /**
-     * Parse a string representing a network path. The string must contain
-     * the address family tag, followed by a colon, followed by the
-     * family-specific address representation.
+     * Parse a string representing a network address.
      * 
-     * @param pathString
-     *            The path string to parse.
-     * @return The network path object.
-     * @throws TelehashException
-     *             If a problem occurred while parsing the path.
-     */
-    @Override
-    public Path parsePath(String pathString) throws TelehashException {
-        if (pathString.startsWith(PATH_INET_PREFIX)) {
-            String inetPathString = pathString.substring(PATH_INET_PREFIX.length());
-            int slashIndex = inetPathString.indexOf("/");
-            if (slashIndex == -1) {
-                throw new TelehashException("cannot parse inet path string");
-            }
-            String addressString = inetPathString.substring(0, slashIndex);
-            String portString = inetPathString.substring(slashIndex + 1);
-            InetAddress address;
-            try {
-                address = InetAddress.getByName(addressString);
-            } catch (UnknownHostException e) {
-                throw new TelehashException("invalid address or unknown host in path");
-            }
-            int port;
-            try {
-                port = Integer.parseInt(portString);
-            } catch (NumberFormatException e) {
-                throw new TelehashException("invalid port number in path");
-            }
-            return new InetPath(address, port);
-        } else {
-            throw new TelehashException("cannot parse path string");
-        }
-    }
-    
-    /**
-     * Parse a string representing a network address. 
+     * TODO: we shouldn't need this... why is "see" hard-coded for IP addressing in the protocol?
      * 
      * @param addressString
      *            The path string to parse.
