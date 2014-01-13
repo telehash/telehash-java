@@ -1,9 +1,7 @@
 package org.telehash.network.impl;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
@@ -12,6 +10,7 @@ import org.telehash.core.TelehashException;
 import org.telehash.network.InetPath;
 import org.telehash.network.Path;
 import org.telehash.network.Network;
+import org.telehash.network.Reactor;
 
 /**
  * This class contains implementations for the network operations needed by
@@ -40,21 +39,6 @@ public class NetworkImpl implements Network {
         return new InetPath(address, port);
     }
     
-    /**
-     * Convert a Java SocketAddress to a Path object.
-     * @param socketAddress
-     * @return The network path object.
-     * @throws TelehashException
-     */
-    @Override
-    public Path socketAddressToPath(SocketAddress socketAddress) throws TelehashException {
-        if (! (socketAddress instanceof InetSocketAddress)) {
-            throw new TelehashException("unknown socket address type");
-        }
-        InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
-        return new InetPath(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
-    }
-
     /**
      * Get preferred local path
      * TODO: This will certainly change... we need to support multiple network interfaces!
@@ -86,6 +70,17 @@ public class NetworkImpl implements Network {
             }
         }
         return null;
+    }
+
+    /**
+     * Provision a new reactor i/o engine listening on the specified port.
+     * 
+     * @param port The IP port on which to listen.
+     * @return The reactor. 
+     */
+    @Override
+    public Reactor createReactor(int port) {
+        return new ReactorImpl(port);
     }
 
 }

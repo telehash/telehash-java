@@ -24,6 +24,7 @@ import org.telehash.network.Path;
  */
 public class NodeSeekRequest {
     
+    private static final String SEEK_KEY = "seek";
     private static final String SEEK_TYPE = "seek";
 
     public static interface Handler {
@@ -86,7 +87,7 @@ public class NodeSeekRequest {
         });
         
         Map<String,Object> fields = new HashMap<String,Object>();
-        fields.put("seek", mTargetHashName.asHex());
+        fields.put(SEEK_KEY, mTargetHashName.asHex());
         try {
             channel.send(null, fields, false);
         } catch (TelehashException e) {

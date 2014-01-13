@@ -106,12 +106,6 @@ public class TelehashTestInstance {
     
     public void stop() {
         mTelehash.getSwitch().stop();
-        try {
-            // give the switch time to stop.
-            // TODO: remove this when we make Switch.stop() block until
-            // the switch has closed.
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {}
     }
     
     public Node getNode() {

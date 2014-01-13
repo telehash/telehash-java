@@ -1,5 +1,7 @@
 package org.telehash.network;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,4 +60,19 @@ public abstract class Path {
         }
         return paths;
     }
+    
+    /**
+     * Convert a Java SocketAddress to a Path object.
+     * @param socketAddress
+     * @return The network path object.
+     * @throws TelehashException
+     */
+    static public Path socketAddressToPath(SocketAddress socketAddress) {
+        if (! (socketAddress instanceof InetSocketAddress)) {
+            return null;
+        }
+        InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
+        return new InetPath(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
+    }
+
 }

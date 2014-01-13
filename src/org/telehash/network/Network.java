@@ -1,7 +1,5 @@
 package org.telehash.network;
 
-import java.net.SocketAddress;
-
 import org.telehash.core.TelehashException;
 
 /**
@@ -23,16 +21,16 @@ public interface Network {
     public Path parsePath(String addressString, int port) throws TelehashException;
 
     /**
-     * Convert a Java SocketAddress to a Path object.
-     * @param socketAddress
-     * @return The network path object.
-     * @throws TelehashException
-     */
-    public Path socketAddressToPath(SocketAddress socketAddress) throws TelehashException;
-
-    /**
      * Get preferred local path
      * TODO: This will certainly change... we need to support multiple network interfaces!
      */
     public Path getPreferredLocalPath() throws TelehashException;
+    
+    /**
+     * Provision a new reactor i/o engine listening on the specified port.
+     * 
+     * @param port The IP port on which to listen.
+     * @return The reactor. 
+     */
+    public Reactor createReactor(int port);
 }

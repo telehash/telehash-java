@@ -26,7 +26,6 @@ public class DHT {
     private static final String SEEK_TYPE = "seek";
     private static final String PEER_TYPE = "peer";
     private static final String CONNECT_TYPE = "connect";
-    private static final String SEEK_KEY = "seek";
     private static final String SEE_KEY = "see";
     private static final String PEER_KEY = "peer";
 
@@ -35,7 +34,6 @@ public class DHT {
     
     private NodeTracker mNodeTracker;
     
-private Node xSeed;
     public DHT(Telehash telehash, Node localNode, Set<Node> seeds) {
         mTelehash = telehash;
         mLocalNode = localNode;
@@ -43,7 +41,6 @@ private Node xSeed;
         
         // install seeds in k-buckets.
         if (seeds != null && (! seeds.isEmpty())) {
-xSeed = seeds.iterator().next();
             for (Node node : seeds) {
                 mNodeTracker.submitNode(node);
             }

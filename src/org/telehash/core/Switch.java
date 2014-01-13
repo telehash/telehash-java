@@ -1,41 +1,33 @@
 package org.telehash.core;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 
 import org.telehash.dht.DHT;
-import org.telehash.network.InetPath;
+import org.telehash.network.Datagram;
+import org.telehash.network.DatagramHandler;
 import org.telehash.network.Path;
+import org.telehash.network.Reactor;
 
 /**
  * The Switch class is the heart of Telehash. The switch is responsible for
  * managing identity and node information, maintaining the DHT, and facilitating
  * inter-node communication.
  */
-public class Switch {
+public class Switch implements DatagramHandler {
     
     private static final int DEFAULT_PORT = 42424;
 
     private Telehash mTelehash;
     private Set<Node> mSeeds;
     private int mPort;
+    private Reactor mReactor;
+    private Thread mThread;
+    private Object mStopLock = new Object();
     
-    private Selector mSelector;
-    private SelectionKey mSelectionKey;
-    private DatagramChannel mChannel;
     private boolean mStopRequested = false;
-    private Queue<Packet> mWriteQueue = new LinkedList<Packet>();
     
     private Node mLocalNode;
     private DHT mDHT;
@@ -144,40 +136,40 @@ public class Switch {
         }
         mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), localPath);
         
-        // provision datagram channel and selector
+        // provision the reactor
+        mReactor = mTelehash.getNetwork().createReactor(mPort);
+        mReactor.setDatagramHandler(this);
         try {
-            mSelector = Selector.open();
-            mChannel = DatagramChannel.open();
-            // TODO: configure port number
-            mChannel.socket().bind(new InetSocketAddress(mPort));
-            mChannel.configureBlocking(false);
-            mSelectionKey = mChannel.register(mSelector, SelectionKey.OP_READ);
+            mReactor.start();
         } catch (IOException e) {
-            try {
-                mSelector.close();
-                mChannel.close();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
             throw new TelehashException(e);
         }
         
         // launch thread
-        Thread thread = new Thread(new Runnable() {
+        mThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                // TODO: make Switch extend Thread, to save a stack frame here?
                 loop();
             }
         });
-        thread.start();
+        mThread.start();
     }
     
     public void stop() {
-        if (mSelector != null) {
-            mStopRequested = true;
-            mSelector.wakeup();
-            // TODO: wait for loop to finish?
+        synchronized (mStopLock) {
+            if (mReactor != null) {
+                mReactor.stop();
+                mStopRequested = true;
+                
+                if (! Thread.currentThread().equals(mThread)) {
+                    // wait for loop to finish
+                    try {
+                        mStopLock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
     
@@ -300,11 +292,18 @@ public class Switch {
     }
     
     public void sendPacket(Packet packet) throws TelehashException {
+        if (packet == null) {
+            return;
+        }
+        Node destination = packet.getDestinationNode();
+        System.out.println("sending to hashname="+destination);
+        Datagram datagram =
+                new Datagram(packet.render(), null, packet.getDestinationNode().getPath());
+        
         System.out.println("enqueuing packet");
-        // TODO: synchronize writequeue
-        // TODO: limit write queue (block if limit reached?)
-        mWriteQueue.offer(packet);
-        mSelector.wakeup();
+        if (mReactor != null) {
+            mReactor.sendPacket(datagram);
+        }
     }
 
     private void loop() {
@@ -315,15 +314,6 @@ public class Switch {
         
         try {
             while (true) {
-
-                // prepare for select
-                if (mWriteQueue.isEmpty()) {
-                    mSelectionKey.interestOps(SelectionKey.OP_READ);
-                } else {
-                    mSelectionKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                    System.out.println("selecting for write");
-                }
-                
                 long nextTaskTime = mScheduler.getNextTaskTime();
                 if (nextTaskTime == -1) {
                     // hack: if any tasks are currently runnable, use a select timeout
@@ -331,18 +321,8 @@ public class Switch {
                     nextTaskTime = 1;
                 }
                 
-                // select
-                mSelector.select(nextTaskTime);
-                
-                // dispatch
-                if (mSelector.selectedKeys().contains(mSelectionKey)) {
-                    if (mSelectionKey.isReadable()) {
-                        handleIncoming();
-                    }
-                    if (mSelectionKey.isWritable()) {
-                        handleOutgoing();
-                    }
-                }
+                // select and dispatch
+                mReactor.select(nextTaskTime);
                 
                 // run any timed tasks
                 mScheduler.runTasks();
@@ -356,48 +336,32 @@ public class Switch {
             e.printStackTrace();
         } finally {
             try {
-                mSelector.close();
-                mChannel.close();
+                mReactor.close();
             } catch (IOException e) {
-                System.out.println("error closing selector and/or channel.");
+                System.out.println("error closing reactor.");
                 e.printStackTrace();
             }
-            mSelector = null;
+        }
+        
+        // signal loop completion
+        synchronized (mStopLock) {
+            mReactor = null;
+            mStopLock.notify();
         }
         
         System.out.println("loop ending");
     }
     
-    private void handleIncoming() {
-        // TODO: don't allocate a new buffer every time.
-        ByteBuffer buffer = ByteBuffer.allocate(2048);
-        SocketAddress socketAddress;
-        try {
-            socketAddress = mChannel.receive(buffer);
-            if (socketAddress == null) {
-                // no datagram available to read.
-                return;
-            }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return;
-        }
-        System.out.println("received datagram of "+buffer.position()+" bytes from: "+socketAddress);
-
-        // extract a byte array of the datagram buffer
-        // TODO: retool parse() to take length/offset args to avoid excessive copying.
-        byte[] packetBuffer = new byte[buffer.position()];
-        System.arraycopy(buffer.array(), 0, packetBuffer, 0, buffer.position());
+    @Override
+    public void handleDatagram(Datagram datagram) {
+        byte[] buffer = datagram.getBytes();
+        Path source = datagram.getSource();
+        System.out.println("received datagram of "+buffer.length+" bytes from: "+source);
 
         // parse the packet
         Packet packet;
         try {
-            packet = Packet.parse(
-                    mTelehash,
-                    packetBuffer,
-                    mTelehash.getNetwork().socketAddressToPath(socketAddress)
-            );
+            packet = Packet.parse(mTelehash, buffer, source);
         } catch (RuntimeException e) {
             e.printStackTrace();
             return;            
@@ -541,38 +505,7 @@ public class Switch {
         }
         System.out.println("handleOpenPacket() bottom:\n"+mLineTracker);
     }
-    
-    private void handleOutgoing() {
-        Packet packet = mWriteQueue.poll();
-        if (packet == null) {
-            // the write queue is empty.
-            return;
-        }
         
-        Node destination = packet.getDestinationNode();
-        System.out.println("sending to hashname="+destination);
-        InetAddress destinationAddress = ((InetPath)destination.getPath()).getAddress();
-        int destinationPort = ((InetPath)destination.getPath()).getPort();
-        
-        // TODO: don't allocate a new buffer every time.
-        ByteBuffer buffer = ByteBuffer.allocate(2048);
-        buffer.clear();
-        try {
-            buffer.put(packet.render());
-        } catch (TelehashException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        buffer.flip();
-        try {
-            mChannel.send(buffer, new InetSocketAddress(destinationAddress, destinationPort));
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        System.out.println("datagram sent.");
-    }
-    
     public Line getLineByNode(Node node) {
         return mLineTracker.getByNode(node);
     }
