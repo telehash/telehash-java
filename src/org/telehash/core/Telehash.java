@@ -56,4 +56,19 @@ public class Telehash {
     public Switch getSwitch() {
         return mSwitch;
     }
+    
+    private static ThreadLocal<Telehash> sThreadLocal = new ThreadLocal<Telehash>();
+    
+    public static Telehash get() {
+        Telehash telehash = sThreadLocal.get();
+        if (telehash == null) {
+            telehash = new Telehash();
+            sThreadLocal.set(telehash);
+        }
+        return telehash;
+    }
+    
+    public void setThreadLocal() {
+        sThreadLocal.set(this);
+    }
 }

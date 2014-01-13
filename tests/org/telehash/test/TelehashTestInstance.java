@@ -18,6 +18,8 @@ import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.network.InetPath;
+import org.telehash.storage.Storage;
+import org.telehash.storage.impl.StorageImpl;
 
 public class TelehashTestInstance {
     
@@ -131,16 +133,17 @@ public class TelehashTestInstance {
     
     private void loadIdentity() {
         // load or create an identity
+        Storage storage = new StorageImpl();
         String identityBaseFilename =
                 mConfigDirectory.getAbsolutePath() + File.separator + IDENTITY_BASE_FILENAME;
         try {
-            mIdentity = Util.getStorageInstance().readIdentity(identityBaseFilename);
+            mIdentity = storage.readIdentity(identityBaseFilename);
         } catch (TelehashException e) {
             if (e.getCause() instanceof FileNotFoundException) {
                 // no identity found -- create a new one.
                 try {
-                    mIdentity = Util.getCryptoInstance().generateIdentity();
-                    Util.getStorageInstance().writeIdentity(mIdentity, identityBaseFilename);
+                    mIdentity = Telehash.get().getCrypto().generateIdentity();
+                    storage.writeIdentity(mIdentity, identityBaseFilename);
                 } catch (TelehashException e1) {
                     e1.printStackTrace();
                     return;

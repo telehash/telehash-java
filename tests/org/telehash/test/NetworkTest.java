@@ -15,8 +15,6 @@ import org.telehash.network.Network;
 
 public class NetworkTest {
     
-    private Network mNetwork = Util.getNetworkInstance();
-
     @Before
     public void setUp() throws Exception {
     }

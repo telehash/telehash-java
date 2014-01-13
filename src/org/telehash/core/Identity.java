@@ -18,7 +18,9 @@ public class Identity {
     public Identity(RSAKeyPair keyPair) {
         mKeyPair = keyPair;
         try {
-            mHashName = Util.getCryptoInstance().sha256Digest(mKeyPair.getPublicKey().getDEREncoded());
+            mHashName = Telehash.get().getCrypto().sha256Digest(
+                    mKeyPair.getPublicKey().getDEREncoded()
+            );
         } catch (TelehashException e) {
             e.printStackTrace();
             mHashName = null;

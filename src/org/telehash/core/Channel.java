@@ -15,7 +15,7 @@ public class Channel {
         mTelehash = telehash;
         mLine = line;
         mChannelIdentifier = new ChannelIdentifier(
-                Util.getCryptoInstance().getRandomBytes(ChannelIdentifier.CHANNEL_IDENTIFIER_SIZE)
+                telehash.getCrypto().getRandomBytes(ChannelIdentifier.CHANNEL_IDENTIFIER_SIZE)
         );
         mType = type;
     }

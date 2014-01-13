@@ -74,7 +74,7 @@ public class OpenPacket extends Packet {
         
         // generate a random line identifier
         mLineIdentifier = new LineIdentifier(
-                Util.getCryptoInstance().getRandomBytes(LINE_IDENTIFIER_SIZE)
+                Telehash.get().getCrypto().getRandomBytes(LINE_IDENTIFIER_SIZE)
         );
     }
     
@@ -134,7 +134,7 @@ public class OpenPacket extends Packet {
     public void preRender() throws TelehashException {
         mPreRendered = true;
 
-        Crypto crypto = Util.getCryptoInstance();
+        Crypto crypto = Telehash.get().getCrypto();
         
         // generate a random IV
         mPreRenderedIV = crypto.getRandomBytes(IV_SIZE);
@@ -195,7 +195,7 @@ public class OpenPacket extends Packet {
             byte[] iv,
             byte[] openParameter
     ) throws TelehashException {
-        Crypto crypto = Util.getCryptoInstance();
+        Crypto crypto = Telehash.get().getCrypto();
 
         byte[] encodedECPublicKey = mEllipticCurvePublicKey.getEncoded();
         

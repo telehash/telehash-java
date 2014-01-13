@@ -5,13 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import org.telehash.crypto.Crypto;
-import org.telehash.crypto.impl.CryptoImpl;
-import org.telehash.network.Network;
-import org.telehash.network.impl.NetworkImpl;
-import org.telehash.storage.Storage;
-import org.telehash.storage.impl.StorageImpl;
-
 /**
  * This class contains various static utility methods used throughout
  * the library.
@@ -20,48 +13,6 @@ public class Util {
     
     private static int IO_BUFFER_SIZE = 4096;
     
-    // poor man's dependency injection: static fields.
-    // TODO: come up with a better way
-    private static Crypto sCrypto;
-    private static Storage sStorage;
-    private static Network sNetwork;
-
-    /**
-     * Return a usable implementation of the Crypto interface.
-     * 
-     * @return the Crypto implementation.
-     */
-    public static Crypto getCryptoInstance() {
-        if (sCrypto == null) {
-            sCrypto = new CryptoImpl();
-        }
-        return sCrypto;
-    };
-
-    /**
-     * Return a usable implementation of the Storage interface.
-     *
-     * @return the Storage implementation.
-     */
-    public static Storage getStorageInstance() {
-        if (sStorage == null) {
-            sStorage = new StorageImpl();
-        }
-        return sStorage;
-    }
-
-    /**
-     * Return a usable implementation of the Network interface.
-     *
-     * @return the Network implementation.
-     */
-    public static Network getNetworkInstance() {
-        if (sNetwork == null) {
-            sNetwork = new NetworkImpl();
-        }
-        return sNetwork;
-    }
-
     /**
      * Encode the provided byte array as a string of hex digits.
      * 

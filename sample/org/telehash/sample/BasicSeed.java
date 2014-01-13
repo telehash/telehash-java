@@ -7,6 +7,8 @@ import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
+import org.telehash.storage.Storage;
+import org.telehash.storage.impl.StorageImpl;
 
 public class BasicSeed {
     
@@ -14,17 +16,19 @@ public class BasicSeed {
     private static final int PORT = 5001;
     
     public static final void main(String[] args) {
+        
+        Storage storage = new StorageImpl();
 
         // load or create an identity
         Identity identity;
         try {
-            identity = Util.getStorageInstance().readIdentity(IDENTITY_BASE_FILENAME);
+            identity = storage.readIdentity(IDENTITY_BASE_FILENAME);
         } catch (TelehashException e) {
             if (e.getCause() instanceof FileNotFoundException) {
                 // no identity found -- create a new one.
                 try {
-                    identity = Util.getCryptoInstance().generateIdentity();
-                    Util.getStorageInstance().writeIdentity(identity, IDENTITY_BASE_FILENAME);
+                    identity = Telehash.get().getCrypto().generateIdentity();
+                    storage.writeIdentity(identity, IDENTITY_BASE_FILENAME);
                 } catch (TelehashException e1) {
                     e1.printStackTrace();
                     return;

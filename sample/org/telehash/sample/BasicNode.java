@@ -14,6 +14,8 @@ import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.RSAPublicKey;
 import org.telehash.network.InetPath;
+import org.telehash.storage.Storage;
+import org.telehash.storage.impl.StorageImpl;
 
 public class BasicNode {
     
@@ -22,16 +24,18 @@ public class BasicNode {
 
     public static final void main(String[] args) {
         
+        Storage storage = new StorageImpl();
+        
         // load or create an identity
         Identity identity;
         try {
-            identity = Util.getStorageInstance().readIdentity(IDENTITY_BASE_FILENAME);
+            identity = storage.readIdentity(IDENTITY_BASE_FILENAME);
         } catch (TelehashException e) {
             if (e.getCause() instanceof FileNotFoundException) {
                 // no identity found -- create a new one.
                 try {
-                    identity = Util.getCryptoInstance().generateIdentity();
-                    Util.getStorageInstance().writeIdentity(identity, IDENTITY_BASE_FILENAME);
+                    identity = Telehash.get().getCrypto().generateIdentity();
+                    storage.writeIdentity(identity, IDENTITY_BASE_FILENAME);
                 } catch (TelehashException e1) {
                     e1.printStackTrace();
                     return;
@@ -46,7 +50,7 @@ public class BasicNode {
         
         Set<Node> seeds = null;
         try {
-            seeds = Util.getStorageInstance().readSeeds("seeds.json");
+            seeds = storage.readSeeds("seeds.json");
         } catch (TelehashException e2) {
             // TODO Auto-generated catch block
             e2.printStackTrace();

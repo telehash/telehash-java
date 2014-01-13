@@ -13,6 +13,7 @@ import org.telehash.core.Node;
 import org.telehash.core.Util;
 import org.telehash.network.InetPath;
 import org.telehash.storage.Storage;
+import org.telehash.storage.impl.StorageImpl;
 
 public class StorageTest {
 
@@ -66,7 +67,7 @@ public class StorageTest {
 
     @Before
     public void setUp() throws Exception {
-        mStorage = Util.getStorageInstance();
+        mStorage = new StorageImpl();
     }
 
     @After

@@ -17,6 +17,7 @@ import org.telehash.crypto.ECKeyPair;
 import org.telehash.crypto.ECPublicKey;
 import org.telehash.crypto.RSAPrivateKey;
 import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.impl.CryptoImpl;
 
 public class CryptoTest {
     
@@ -90,7 +91,7 @@ public class CryptoTest {
     
     @Before
     public void setUp() throws Exception {
-        mCrypto = Util.getCryptoInstance();
+        mCrypto = new CryptoImpl();
         mIdentity = new Identity(
                 mCrypto.createRSAKeyPair(
                         mCrypto.decodeRSAPublicKey(

@@ -100,13 +100,17 @@ TODO
 
 * ~~Move "path" concerns (type, map generation, encode/deocde) to Endpoint
   and rename Endpoint to Path.~~
+* ~~Factor network concerns out of the core and into a Reactor class.~~
+* ~~Use the "Telehash" object as context for accessing the crypto/storage/network
+  implementations, and remove the Util.get*Instance() methods.~~
+* Line and Channel objects returned by the switch should have their references
+  managed in such a way that they can be GC'ed and finalized if dereferenced
+  from the application.
 * The code needs some serious cleaning and refactoring at this point.
 * Search for TODO items in the code, and do them.
 * Implement timeouts and limits for bounded resource usage.
 * More elaborate mesh testing (see: MeshTest).
 * Improve the DHT to support node discovery based on hashname.
-* Factor network concerns out of the core and into the NetworkImpl
-  class.
 * Develop a fake network implementation that doesn't actually use the
   network.  This implementation will have programable parameters to
   allow for testing of NATs, lossy connections, congested links, etc.

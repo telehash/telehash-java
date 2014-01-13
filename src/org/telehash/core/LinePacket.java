@@ -75,7 +75,7 @@ public class LinePacket extends Packet {
      * @return The rendered open packet as a byte array.
      */
     public byte[] render() throws TelehashException {
-        Crypto crypto = Util.getCryptoInstance();
+        Crypto crypto = mLine.getTelehash().getCrypto();
 
         // serialize the channel packet
         if (mChannelPacket == null) {

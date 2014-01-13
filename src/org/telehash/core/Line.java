@@ -126,6 +126,10 @@ public class Line {
         }
     }
     
+    public Telehash getTelehash() {
+        return mTelehash;
+    }
+    
     public Channel openChannel(String type, ChannelHandler channelHandler) {
         // create a channel object and establish a callback
         Channel channel = new Channel(mTelehash, this, type);

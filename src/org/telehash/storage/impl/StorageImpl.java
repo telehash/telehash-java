@@ -17,6 +17,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.telehash.core.Identity;
 import org.telehash.core.Node;
+import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
@@ -56,10 +57,10 @@ public class StorageImpl implements Storage {
         
         // read keys
         RSAPrivateKey privateKey =
-                Util.getCryptoInstance().readRSAPrivateKeyFromFile(privateKeyFilename);
+                Telehash.get().getCrypto().readRSAPrivateKeyFromFile(privateKeyFilename);
         RSAPublicKey publicKey =
-                Util.getCryptoInstance().readRSAPublicKeyFromFile(publicKeyFilename);
-        return new Identity(Util.getCryptoInstance().createRSAKeyPair(publicKey, privateKey));        
+                Telehash.get().getCrypto().readRSAPublicKeyFromFile(publicKeyFilename);
+        return new Identity(Telehash.get().getCrypto().createRSAKeyPair(publicKey, privateKey));        
     }
 
     /**
@@ -89,7 +90,7 @@ public class StorageImpl implements Storage {
             throws TelehashException {
         String privateKeyFilename = identityBaseFilename + PRIVATE_KEY_FILENAME_SUFFIX;
         String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;
-        Crypto crypto = Util.getCryptoInstance();
+        Crypto crypto = Telehash.get().getCrypto();
         crypto.writeRSAPublicKeyToFile(publicKeyFilename, identity.getPublicKey());
         crypto.writeRSAPrivateKeyToFile(privateKeyFilename, identity.getPrivateKey());
     }
@@ -172,7 +173,8 @@ public class StorageImpl implements Storage {
                 throw new TelehashException("no valid network paths found for seed!");
             }
             
-            RSAPublicKey publicKey = Util.getCryptoInstance().parseRSAPublicKeyFromPEM(publicKeyString);
+            RSAPublicKey publicKey =
+                    Telehash.get().getCrypto().parseRSAPublicKeyFromPEM(publicKeyString);
             Node node = new Node(publicKey, paths.get(0));
             nodes.add(node);
         }

@@ -149,6 +149,7 @@ public class Switch implements DatagramHandler {
         mThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                mTelehash.setThreadLocal();
                 loop();
             }
         });

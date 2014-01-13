@@ -141,7 +141,6 @@ public class PacketTest {
             "{\"type\": \"ipv4\", \"ip\": \"127.0.0.1\", \"port\": 4242}";
     
     private Crypto mCrypto;
-    private Network mNetwork;
     private Identity mIdentity;
     private Identity mIdentity2;
     private Telehash mTelehash = new Telehash();
@@ -150,7 +149,6 @@ public class PacketTest {
     @Before
     public void setUp() throws Exception {
         mCrypto = mTelehash.getCrypto();
-        mNetwork = mTelehash.getNetwork();
         
         mIdentity = new Identity(
                 mCrypto.createRSAKeyPair(
@@ -200,7 +198,7 @@ public class PacketTest {
         assertNotNull(openPacketBuffer);
         assertArrayEquals(
                 EXPECTED_PACKET_SHA256,
-                Util.getCryptoInstance().sha256Digest(openPacketBuffer)
+                mTelehash.getCrypto().sha256Digest(openPacketBuffer)
         );        
     }
     

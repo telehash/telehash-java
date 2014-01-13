@@ -16,7 +16,9 @@ public class Node {
     public Node(RSAPublicKey publicKey, Path path) throws TelehashException {
         mPublicKey = publicKey;
         mPath = path;
-        mHashName = new HashName(Util.getCryptoInstance().sha256Digest(mPublicKey.getDEREncoded()));
+        mHashName = new HashName(
+                Telehash.get().getCrypto().sha256Digest(mPublicKey.getDEREncoded())
+        );
     }
 
     public Node(HashName hashName, Path path) throws TelehashException {

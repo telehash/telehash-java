@@ -1,9 +1,0 @@
-
-1. Use the "Telehash" object as context for accessing the
-crypto/storage/network implementations, and remove the Util.get*Instance()
-methods.
-
-2. Line and Channel objects returned by the switch should have their references
-managed in such a way that they can be GC'ed and finalized if dereferenced from
-the application.
-
