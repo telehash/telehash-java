@@ -60,12 +60,12 @@ public class Switch implements DatagramHandler {
             // TODO: remove this debugging block
             if (mIncomingLineIdentifierToLineMap.get(lineIdentifier) == null) {
                 if (mIncomingLineIdentifierToLineMap.containsKey(lineIdentifier)) {
-                    System.out.println("XXX has key, but value is null");
+                    Log.i("XXX has key, but value is null");
                 } else {
-                    System.out.println("XXX cannot find "+
+                    Log.i("XXX cannot find "+
                             lineIdentifier+" ; candidates include:");
                     for (LineIdentifier id : mIncomingLineIdentifierToLineMap.keySet()) {
-                        System.out.println("XXX     "+id+" "+id.hashCode());
+                        Log.i("XXX     "+id+" "+id.hashCode());
                     }
                 }
             }
@@ -224,7 +224,7 @@ public class Switch implements DatagramHandler {
         Line line = new Line(mTelehash);
         // note: this open packet is *outgoing* but its embedded line identifier
         // is to be used for *incoming* line packets.
-        System.out.println("openPacket.lineid="+openPacket.getLineIdentifier());
+        Log.i("openPacket.lineid="+openPacket.getLineIdentifier());
         line.setIncomingLineIdentifier(openPacket.getLineIdentifier());
         line.setLocalOpenPacket(openPacket);
         line.setRemoteNode(destination);
@@ -312,18 +312,17 @@ public class Switch implements DatagramHandler {
             return;
         }
         Node destination = packet.getDestinationNode();
-        System.out.println("sending to hashname="+destination);
+        Log.i("sending to hashname="+destination);
         Datagram datagram =
                 new Datagram(packet.render(), null, packet.getDestinationNode().getPath());
         
-        System.out.println("enqueuing packet");
         if (mReactor != null) {
             mReactor.sendDatagram(datagram);
         }
     }
 
     private void loop() {
-        System.out.println("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
+        Log.i("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
         
         mDHT = new DHT(mTelehash, mLocalNode, mSeeds);
         mDHT.init();
@@ -348,13 +347,13 @@ public class Switch implements DatagramHandler {
                 }
             }
         } catch (IOException e) {
-            System.out.println("loop ending abnormaly");
+            Log.i("loop ending abnormaly");
             e.printStackTrace();
         } finally {
             try {
                 mReactor.close();
             } catch (IOException e) {
-                System.out.println("error closing reactor.");
+                Log.i("error closing reactor.");
                 e.printStackTrace();
             }
         }
@@ -365,14 +364,14 @@ public class Switch implements DatagramHandler {
             mStopLock.notify();
         }
         
-        System.out.println("Telehash switch "+mLocalNode+" ending.");
+        Log.i("Telehash switch "+mLocalNode+" ending.");
     }
     
     @Override
     public void handleDatagram(Datagram datagram) {
         byte[] buffer = datagram.getBytes();
         Path source = datagram.getSource();
-        System.out.println("received datagram of "+buffer.length+" bytes from: "+source);
+        Log.i("received datagram of "+buffer.length+" bytes from: "+source);
 
         // parse the packet
         Packet packet;
@@ -395,7 +394,7 @@ public class Switch implements DatagramHandler {
     }
     
     private void handleIncomingPacket(Packet packet) {
-        System.out.println("incoming packet: "+packet);
+        Log.i("incoming packet: "+packet);
         try {
             if (packet instanceof OpenPacket) {
                 handleOpenPacket((OpenPacket)packet);
@@ -404,7 +403,7 @@ public class Switch implements DatagramHandler {
                 linePacket.getLine().handleIncoming(linePacket);
             }
         } catch (TelehashException e) {
-            System.out.println("error handling incoming packet: "+e);
+            Log.i("error handling incoming packet: "+e);
             e.printStackTrace();
         }
     }
@@ -441,7 +440,6 @@ public class Switch implements DatagramHandler {
     }
     
     private void handleOpenPacket(OpenPacket incomingOpenPacket) throws TelehashException {
-        System.out.println("handleOpenPacket() top:\n"+mLineTracker);
         // is there a pending line for this?
         Node remoteNode = incomingOpenPacket.getSourceNode();
         Line line = mLineTracker.getByNode(remoteNode);
@@ -462,7 +460,7 @@ public class Switch implements DatagramHandler {
             calculateLineKeys(line, incomingOpenPacket, line.getLocalOpenPacket());
             line.setState(Line.State.ESTABLISHED);
             line.callOpenCompletionHandler();            
-            System.out.println("new line established for local initiator");
+            Log.i("new line established for local initiator");
         } else {
             // no pending line for this open -- enqueue a response open
             // packet to be sent and calculate ECDH
@@ -485,7 +483,7 @@ public class Switch implements DatagramHandler {
             line.setState(Line.State.ESTABLISHED);
             
             // TODO: alert interested parties of the new line?
-            System.out.println("new line established for remote initiator");
+            Log.i("new line established for remote initiator");
 
             // alert the DHT of the new line
             mDHT.handleNewLine(line);
@@ -519,7 +517,6 @@ public class Switch implements DatagramHandler {
             }
 
         }
-        System.out.println("handleOpenPacket() bottom:\n"+mLineTracker);
     }
         
     public Line getLineByNode(Node node) {

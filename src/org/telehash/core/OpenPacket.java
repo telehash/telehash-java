@@ -379,4 +379,15 @@ public class OpenPacket extends Packet {
 
         return new OpenPacket(sourceNode, ellipticCurvePublicKey, openTime, lineIdentifier);
     }
+    
+    public String toString() {
+        String s = "OPEN["+mLineIdentifier+"@"+mOpenTime+"]";
+        if (mSourceNode != null) {
+            s += " <"+mSourceNode;
+        }
+        if (mDestinationNode != null) {
+            s += " <"+mDestinationNode;
+        }
+        return s;
+    }
 }

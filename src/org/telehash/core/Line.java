@@ -163,13 +163,13 @@ public class Line {
             // (it will have a type field)
             String type = channelPacket.getType();
             if (type == null) {
-                System.out.println("dropping packet for unknown channel without type");
+                Log.i("dropping packet for unknown channel without type");
                 return;
             }
             // is anyone interested in channels of this type?
             ChannelHandler channelHandler = mTelehash.getSwitch().getChannelHandler(type);
             if (channelHandler == null) {
-                System.out.println("no channel handler for type");
+                Log.i("no channel handler for type");
                 return;
             }
             
@@ -198,5 +198,9 @@ public class Line {
         });
         set.addAll(lines);
         return set;
+    }
+    
+    public String toString() {
+        return "Line["+mIncomingLineIdentifier+"->"+mOutgoingLineIdentifier+"@"+getOpenTime()+"]";
     }
 }

@@ -13,6 +13,7 @@ import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
 import org.telehash.core.HashName;
 import org.telehash.core.Line;
+import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -59,21 +60,21 @@ public class DHT {
 
         /*
         Set<Node> closestNodes = mNodeTracker.getClosestNodes(xSeed.getHashName(), 12);
-        System.out.println("closest nodes in tracker:");
+        Log.i("closest nodes in tracker:");
         for (Node node : closestNodes) {
-            System.out.println(node);
+            Log.i(node);
         }
 
         NodeSeekRequest nodeSeeker = new NodeSeekRequest(mTelehash, xSeed, mLocalNode.getHashName(), new NodeSeekRequest.Handler() {
             @Override
             public void handleError(NodeSeekRequest seek, Throwable e) {
-                System.out.println("cannot seek node: "+e);
+                Log.i("cannot seek node: "+e);
             }
             @Override
             public void handleCompletion(NodeSeekRequest seek) {
-                System.out.println("found nodes: ");
+                Log.i("found nodes: ");
                 for (Node node : seek.getResultNodes()) {
-                    System.out.println(node);
+                    Log.i(node);
                 }
             }
         });
@@ -163,6 +164,8 @@ public class DHT {
         HashName target = new HashName(Util.hexToBytes(seekString));
         Set<Node> nodes = mNodeTracker.getClosestNodes(target, MAX_SEEK_NODES_RETURNED);
         
+        Log.i("processing: seek "+target);
+        
         JSONArray see = new JSONArray();
         for (Node node : nodes) {
             if (node.getPath() instanceof InetPath) {
@@ -172,6 +175,7 @@ public class DHT {
                         path.getAddress().getHostAddress() + "," +
                         path.getPort(); 
                 see.put(seeNode);
+                Log.i("\tsee: "+seeNode);
             }
         }
         Map<String,Object> fields = new HashMap<String,Object>();

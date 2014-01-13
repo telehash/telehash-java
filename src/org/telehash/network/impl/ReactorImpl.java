@@ -11,6 +11,7 @@ import java.nio.channels.Selector;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.telehash.core.Log;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
 import org.telehash.network.InetPath;
@@ -89,7 +90,7 @@ public class ReactorImpl implements Reactor {
             mSelectionKey.interestOps(SelectionKey.OP_READ);
         } else {
             mSelectionKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-            System.out.println("selecting for write");
+            Log.i("selecting for write");
         }
 
         // select
@@ -161,7 +162,7 @@ public class ReactorImpl implements Reactor {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        System.out.println("datagram sent.");
+        Log.i("datagram sent.");
     }
     
     /**
@@ -171,7 +172,6 @@ public class ReactorImpl implements Reactor {
      */
     @Override
     public void sendDatagram(Datagram datagram) {
-        System.out.println("enqueuing datagram");
         // TODO: synchronize writequeue
         // TODO: limit write queue (block if limit reached?)
         mWriteQueue.offer(datagram);

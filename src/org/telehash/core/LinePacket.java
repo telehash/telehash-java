@@ -156,4 +156,17 @@ public class LinePacket extends Packet {
         
         return new LinePacket(line, channelPacket);
     }
+    
+    public String toString() {
+        String s = "LINE["+mLine+"]";
+        if (mSourceNode != null) {
+            s += " <"+mSourceNode;
+        }
+        if (mDestinationNode != null) {
+            s += " <"+mDestinationNode;
+        }
+        return s;
+    }
+
+
 }

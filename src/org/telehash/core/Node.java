@@ -71,6 +71,7 @@ public class Node {
     
     @Override
     public String toString() {
-        return "Node["+mHashName+"]"+((mPublicKey!=null)?"*":"")+mPath;
+        String hashName = mHashName.toString().substring(0, 8);
+        return "Node["+hashName+"]"+((mPublicKey!=null)?"*":"")+mPath;
     }
 }

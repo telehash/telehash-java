@@ -1,17 +1,15 @@
-package org.telehash.test;
+package org.telehash.test.mesh;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.telehash.core.Identity;
+import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
@@ -31,6 +29,7 @@ public class TelehashTestInstance {
     private static final String IDENTITY_BASE_FILENAME = "telehash-node";
     private static final String BASE_DIRECTORY =
             System.getProperty("user.dir")+File.separator+"nodes";
+    private static final int PORT = 42424;
     
     private int mIndex;
     private File mConfigDirectory;
@@ -42,47 +41,74 @@ public class TelehashTestInstance {
     private Network mNetwork = new NetworkImpl();
     private Storage mStorage = new StorageImpl();
     
-    public static List<TelehashTestInstance> createStarTopology(int numNodes, int startPort) {
+    private static TelehashTestInstance createInstance(
+            NetworkSimulator networkSimulator,
+            int index,
+            Node seed
+    ) {
+        Set<Node> seeds = null;
+        if (seed != null) {
+            seeds = new HashSet<Node>();
+            seeds.add(seed);
+        }
+        TelehashTestInstance node = new TelehashTestInstance(index, PORT, seeds);
+        node.setNetwork(networkSimulator.createNode("10.0.0."+index, PORT));
+        node.start();
+        
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return node;
+    }
+    
+    public static List<TelehashTestInstance> createStarTopology(int numNodes) {
         Node seed = null;
-        Set<Node> seeds = new HashSet<Node>();
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(numNodes);
         NetworkSimulator networkSimulator = new NetworkSimulator();
         
         for (int i=0; i<numNodes; i++) {
-            File configDirectory = new File(
-                    String.format("%s%s%03d", BASE_DIRECTORY, File.separator, i)
-            );
-            configDirectory.mkdirs();
-            
-            System.out.println("node "+i+" dir: "+configDirectory);
-            TelehashTestInstance node = new TelehashTestInstance(i, configDirectory, 42424, seeds);
-            node.setNetwork(networkSimulator.createNode("10.0.0."+i, 42424));
-            node.start();
-            list.add(node);
-            
+            TelehashTestInstance instance = createInstance(networkSimulator, i, seed);
             if (seed == null) {
-                seed = node.getNode();
-                seeds.add(seed);
-            }
-            
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+                seed = instance.getNode();
+            }            
+            list.add(instance);
         }
 
         return list;
     }
 
-    public TelehashTestInstance(int index, File configDirectory, int port, Set<Node> seeds) {
+    public static List<TelehashTestInstance> createThreeLevelTopology() {
+        List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(5);
+        NetworkSimulator networkSimulator = new NetworkSimulator();
+        TelehashTestInstance i0 = createInstance(networkSimulator, 0, null);
+        TelehashTestInstance i1 = createInstance(networkSimulator, 1, i0.getNode());
+        TelehashTestInstance i2 = createInstance(networkSimulator, 2, i0.getNode());
+        TelehashTestInstance i3 = createInstance(networkSimulator, 3, i1.getNode());
+        TelehashTestInstance i4 = createInstance(networkSimulator, 4, i2.getNode());
+        list.add(i0);
+        list.add(i1);
+        list.add(i2);
+        list.add(i3);
+        list.add(i4);
+        return list;
+    }
+
+    public TelehashTestInstance(int index, int port, Set<Node> seeds) {
+        File configDirectory = new File(
+                String.format("%s%s%03d", BASE_DIRECTORY, File.separator, index)
+        );
+        configDirectory.mkdirs();
+        Log.i("creating test instance ["+index+"] dir: "+configDirectory);
+        
         mIndex = index;
         mConfigDirectory = configDirectory;
         mPort = port;
         mSeeds = seeds;
     }
-    
+
     public void setCrypto(Crypto crypto) {
         mCrypto = crypto;
     }
@@ -107,7 +133,7 @@ public class TelehashTestInstance {
             PrintWriter out = new PrintWriter(summaryFile);
             out.println("index: "+mIndex);
             out.println("hashname: "+Util.bytesToHex(mIdentity.getHashName()));
-            System.out.println("pub: "+mIdentity.getPublicKey());
+            Log.i("pub: "+mIdentity.getPublicKey());
             out.println("rsa pub: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getDEREncoded())));
             out.println("rsa pri: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getDEREncoded())));
             out.close();

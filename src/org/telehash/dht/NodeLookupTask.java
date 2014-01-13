@@ -9,6 +9,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.telehash.core.HashName;
+import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 
@@ -129,7 +130,7 @@ public class NodeLookupTask {
                         //       among all seeks, instead of a separate Handler for each.
                         @Override
                         public void handleError(NodeSeekRequest seek, Throwable e) {
-                            System.out.println("error during seek");
+                            Log.i("error during seek");
                             e.printStackTrace();
                             mOutstandingSeeks.remove(seek);
                             iterate();
@@ -150,11 +151,11 @@ public class NodeLookupTask {
     }
     
     public void fail(Throwable e) {
-        System.out.println("node lookup failure: "+e);
+        Log.i("node lookup failure: "+e);
         
     }
     
     public void complete(Node node) {
-        System.out.println("node lookup completion: "+node);
+        Log.i("node lookup completion: "+node);
     }
 }
