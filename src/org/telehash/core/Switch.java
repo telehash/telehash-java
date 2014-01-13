@@ -1,7 +1,9 @@
 package org.telehash.core;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -86,6 +88,9 @@ public class Switch implements DatagramHandler {
             mHashNameToLineMap.remove(line.getRemoteNode().getHashName());
             mNodeToLineMap.remove(line.getRemoteNode());
             mIncomingLineIdentifierToLineMap.remove(line.getIncomingLineIdentifier());
+        }
+        public Collection<Line> getLines() {
+            return mNodeToLineMap.values();
         }
         // TODO: purge()
         
@@ -176,6 +181,10 @@ public class Switch implements DatagramHandler {
     
     public Line getLine(LineIdentifier lineIdentifier) {
         return mLineTracker.getByIncomingLineIdentifier(lineIdentifier);
+    }
+    
+    public Set<Line> getLines() {
+        return Line.sortByOpenTime(mLineTracker.getLines());
     }
     
     // TODO: timeout?

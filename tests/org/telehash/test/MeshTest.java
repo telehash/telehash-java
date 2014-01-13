@@ -2,12 +2,9 @@ package org.telehash.test;
 
 import static org.junit.Assert.*;
 
-import java.io.File;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -18,7 +15,6 @@ import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
 import org.telehash.core.HashName;
 import org.telehash.core.Line;
-import org.telehash.core.Node;
 import org.telehash.core.TelehashException;
 
 public class MeshTest {

@@ -1,7 +1,11 @@
 package org.telehash.core;
 
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Line {
     
@@ -130,6 +134,14 @@ public class Line {
         return mTelehash;
     }
     
+    public long getOpenTime() {
+        if (mLocalOpenPacket != null) {
+            return mLocalOpenPacket.getOpenTime();
+        } else {
+            return 0L;
+        }
+    }
+    
     public Channel openChannel(String type, ChannelHandler channelHandler) {
         // create a channel object and establish a callback
         Channel channel = new Channel(mTelehash, this, type);
@@ -176,5 +188,15 @@ public class Line {
         }
         // dispatch to channel handler
         channel.getChannelHandler().handleIncoming(channel, channelPacket);
+    }
+    
+    public static Set<Line> sortByOpenTime(Collection<Line> lines) {
+        TreeSet<Line> set = new TreeSet<Line>(new Comparator<Line>() {
+            public int compare(Line a, Line b) {
+                return (int)(a.getOpenTime() - b.getOpenTime());
+            }
+        });
+        set.addAll(lines);
+        return set;
     }
 }
