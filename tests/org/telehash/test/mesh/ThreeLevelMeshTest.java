@@ -91,6 +91,11 @@ public class ThreeLevelMeshTest {
                     @Override
                     public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
                     }
+                    @Override
+                    public void handleOpen(Channel channel) {
+                        // nothing to do, since line.openChannel()
+                        // always opens channel immediately.
+                    }
                 });
 
                 Log.i("peer channel open success");

@@ -103,23 +103,14 @@ TODO
 * ~~Factor network concerns out of the core and into a Reactor class.~~
 * ~~Use the "Telehash" object as context for accessing the crypto/storage/network
   implementations, and remove the Util.get*Instance() methods.~~
-* Line and Channel objects returned by the switch should have their references
-  managed in such a way that they can be GC'ed and finalized if dereferenced
-  from the application.
-* The code needs some serious cleaning and refactoring at this point.
-* Search for TODO items in the code, and do them.
-* Implement timeouts and limits for bounded resource usage.
-* More elaborate mesh testing (see: MeshTest).
+* Open lines for DHT-tracked nodes
+* Use the new "bucket channel" DHT maintenance scheme
 * Improve the DHT to support node discovery based on hashname.
-* Develop a fake network implementation that doesn't actually use the
-  network.  This implementation will have programable parameters to
-  allow for testing of NATs, lossy connections, congested links, etc.
 * NAT considerations
     * The switch should learn its public IP address by performing a
       self-seek.
     * A switch initiating contact with a new node via peer/connect
       should also send a hole-punching open packet.
-* Support IPv6
 * The API currently requires the caller to successively open a line
   (Switch.openLine()) and a channel (Line.openChannel()) before communicating
   with a remote node (Channel.send()).  The Telehash protocol specification
@@ -128,6 +119,16 @@ TODO
   recognizes that a line doesn't exist yet and attempts to create one."
   Therefore, we should invert the initiation flow: Channel.send() should open a
   line and a channel the first time it is run.
+* Line and Channel objects returned by the switch should have their references
+  managed in such a way that they can be GC'ed and finalized if dereferenced
+  from the application.
+* The code needs some serious cleaning and refactoring at this point.
+* Search for TODO items in the code, and do them.
+* Implement timeouts and limits for bounded resource usage.
+* Develop a fake network implementation that doesn't actually use the
+  network.  This implementation will have programable parameters to
+  allow for testing of NATs, lossy connections, congested links, etc.
+* Support IPv6
 * Specialized exception classes.
 * Android
     * Decide on a minimum supported version of Android.

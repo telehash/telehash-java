@@ -262,4 +262,30 @@ public class Util {
             System.out.println();
         }
     }
+    
+    /**
+     * Coerce a byte array into a specified size. If the provided byte array is
+     * smaller, it will be left-padded to the desired size. If larger, it will
+     * be left-truncated to the specified size.
+     * 
+     * @param bytes
+     *            The byte array to be coerced.
+     * @param size
+     *            The desired byte array size.
+     * @return The coerced byte array. This may be the same byte array passed,
+     *         if it was already the desired size.
+     */
+    public static byte[] fixedSizeBytes(byte[] bytes, int size) {
+        if (bytes.length == size) {
+            return bytes;
+        } else if (bytes.length > size) {
+            byte[] truncated = new byte[size];
+            System.arraycopy(bytes, bytes.length-size, truncated, 0, size);
+            return truncated;
+        } else {
+            byte[] padded = new byte[size];
+            System.arraycopy(bytes, 0, padded, size-bytes.length, bytes.length);
+            return padded;
+        }
+    }
 }

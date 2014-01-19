@@ -1,8 +1,10 @@
 package org.telehash.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -17,6 +19,16 @@ public class Line {
         CLOSED
     };
     private State mState = State.CLOSED;
+    
+    private static class Completion<T> {
+        public CompletionHandler<T> mHandler;
+        public Object mAttachment;
+        public Completion(CompletionHandler<T> handler, Object attachment) {
+            this.mHandler = handler;
+            this.mAttachment = attachment;
+        }
+    }
+    private List<Completion<Line>> mOpenCompletionHandlers = new ArrayList<Completion<Line>>();
 
     private LineIdentifier mIncomingLineIdentifier;
     private LineIdentifier mOutgoingLineIdentifier;
@@ -26,8 +38,6 @@ public class Line {
     private byte[] mSharedSecret;
     private byte[] mEncryptionKey;
     private byte[] mDecryptionKey;
-    private CompletionHandler<Line> mOpenCompletionHandler;
-    private Object mOpenCompletionAttachment;
 
     private Telehash mTelehash;
     private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
@@ -116,17 +126,21 @@ public class Line {
         return mDecryptionKey;
     }
     
-    public void setOpenCompletionHandler(
+    public void addOpenCompletionHandler(
             CompletionHandler<Line> openCompletionHandler,
             Object openCompletionAttachment
     ) {
-        mOpenCompletionHandler = openCompletionHandler;
-        mOpenCompletionAttachment = openCompletionAttachment;
+        if (mState == State.ESTABLISHED) {
+            // line is already established, so complete immediately.
+            openCompletionHandler.completed(this, openCompletionAttachment);
+        } else {
+            mOpenCompletionHandlers.add(new Completion<Line>(openCompletionHandler, openCompletionAttachment));
+        }
     }
     
-    public void callOpenCompletionHandler() {
-        if (mOpenCompletionHandler != null) {
-            mOpenCompletionHandler.completed(this, mOpenCompletionAttachment);
+    public void callOpenCompletionHandlers() {
+        for (Completion<Line> completion : mOpenCompletionHandlers) {
+            completion.mHandler.completed(this, completion.mAttachment);
         }
     }
     
@@ -152,6 +166,10 @@ public class Line {
         // track channel
         mChannels.put(channel.getChannelIdentifier(), channel);
         
+        // consider the channel to be "open" even though we don't know
+        // if the remote side will be happy with this channel type.
+        channelHandler.handleOpen(channel);
+
         return channel;
     }
     

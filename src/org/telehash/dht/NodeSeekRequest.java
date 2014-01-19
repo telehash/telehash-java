@@ -13,6 +13,7 @@ import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
 import org.telehash.core.HashName;
 import org.telehash.core.Line;
+import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -51,48 +52,33 @@ public class NodeSeekRequest {
     }
     
     public void start() {
-        Line line = mTelehash.getSwitch().getLineByNode(mQueryNode);
-        if (line != null) {
-            mLine = line;
-            sendSeek();
-        } else {
-            try {
-                mTelehash.getSwitch().openLine(mQueryNode, new CompletionHandler<Line>() {
-                    @Override
-                    public void failed(Throwable e, Object attachment) {
-                        fail(e);
-                    }
-                    @Override
-                    public void completed(Line result, Object attachment) {
-                        mLine = result;
-                        sendSeek();
-                    }
-                }, null);
-            } catch (TelehashException e) {
-                fail(e);
-            }
-        }
-    }
-    
-    private void sendSeek() {
-        Channel channel = mLine.openChannel(SEEK_TYPE, new ChannelHandler() {
-            @Override
-            public void handleError(Channel channel, Throwable error) {
-                fail(error);
-            }
-            @Override
-            public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
-                parseResult(channelPacket);
-            }
-        });
-        
-        Map<String,Object> fields = new HashMap<String,Object>();
-        fields.put(SEEK_KEY, mTargetHashName.asHex());
         try {
-            channel.send(null, fields, false);
+            mTelehash.getSwitch().openChannel(mQueryNode, SEEK_TYPE, new ChannelHandler() {
+                @Override
+                public void handleError(Channel channel, Throwable error) {
+                    Log.i("seek channel error");
+                    fail(error);
+                }
+                @Override
+                public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
+                    Log.i("seek channel incoming");
+                    parseResult(channelPacket);
+                }
+                @Override
+                public void handleOpen(Channel channel) {
+                    Log.i("seek channel open");
+                    Map<String,Object> fields = new HashMap<String,Object>();
+                    fields.put(SEEK_KEY, mTargetHashName.asHex());
+                    try {
+                        channel.send(null, fields, false);
+                    } catch (TelehashException e) {
+                        fail(e);
+                        return;
+                    }
+                }
+            });
         } catch (TelehashException e) {
             fail(e);
-            return;
         }
     }
     

@@ -1,5 +1,6 @@
 package org.telehash.dht;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,10 +81,18 @@ public class DHT {
         });
         nodeSeeker.start();
         */
-        
+
+        // TODO: remove this hard-coded seed lookup.
+        /*
         HashName seedName = new HashName(Util.hexToBytes("484aa23a17d259906144d36d7ccddbb583a63702a9253c29d41cff13a07954a6"));
-        NodeLookupTask lookup = new NodeLookupTask(mTelehash, mNodeTracker, seedName);
+        NodeLookupTask lookup = new NodeLookupTask(mTelehash, mNodeTracker, seedName, null);
         lookup.start();
+        */
+        mNodeTracker.refreshBuckets();
+    }
+    
+    public void close() {
+        mNodeTracker.dump();
     }
     
     public void handleNewLine(Line line) {
@@ -129,6 +138,38 @@ public class DHT {
         }
         return -1;
     }
+
+    /**
+     * Return a random hashname located with the specified bucket
+     * (relative to the provided origin hashname).
+     * 
+     * @param originHashName The origin hashname.  (i.e., your own hashname.)
+     * @param bucket The bucket index.
+     * @return The random hashname within the bucket.
+     */
+    public static HashName getRandomHashName(HashName originHashName, int bucket) {
+        // start with the origin hashname
+        BigInteger hash = new BigInteger(1, originHashName.getBytes());
+        
+        // randomize all bits below the bucket bit
+        if (bucket > 0) {
+            byte[] randomBytes = Telehash.get().getCrypto().getRandomBytes(HashName.SIZE);
+            BigInteger random = new BigInteger(1, randomBytes);
+            BigInteger mask = BigInteger.ONE.shiftLeft(bucket).subtract(BigInteger.ONE);
+            
+            hash = hash.andNot(mask);  // chop off right part of origin
+            random = random.and(mask); // chop off left part of random
+            hash = hash.or(random);    // combine left-origin and right-random
+        }
+
+        // flip the bucket bit
+        hash = hash.flipBit(bucket);
+        
+        // the byte array may have an extra leading byte to hold the sign bit,
+        // so trim to size.
+        byte[] randomHashNameBytes = Util.fixedSizeBytes(hash.toByteArray(), HashName.SIZE);
+        return new HashName(randomHashNameBytes);
+    }
     
     private ChannelHandler mChannelHandler = new ChannelHandler() {
         public void handleError(Channel channel, Throwable error) {
@@ -151,6 +192,10 @@ public class DHT {
                 // best-effort only
                 e.printStackTrace();
             }
+        }
+        @Override
+        public void handleOpen(Channel channel) {
+            // not needed since this is a listening channel.
         };
     };
     
@@ -224,7 +269,7 @@ public class DHT {
     }
 
     private void handleConnect(Channel channel, ChannelPacket channelPacket) throws TelehashException {
-        // TODO: move paths/path encode/decode into a separate Path class
+        // parse the paths
         Object pathsObject = channelPacket.get("paths");
         if (! (pathsObject instanceof JSONArray)) {
             return;
@@ -236,7 +281,8 @@ public class DHT {
         
         // TODO: support more than the first path
         Path path = paths.get(0);
-                
+
+        // extract the peer's public key
         byte[] body = channelPacket.getBody();
         if (body == null) {
             return;

@@ -193,6 +193,32 @@ public class Switch implements DatagramHandler {
         return Line.sortByOpenTime(mLineTracker.getLines());
     }
     
+    public void openChannel(Node destination, final String type, final ChannelHandler channelHandler) throws TelehashException {
+        CompletionHandler<Line> lineOpenCompletionHandler = new CompletionHandler<Line>() {
+            @Override
+            public void completed(Line line, Object attachment) {
+                Channel channel = line.openChannel(type, channelHandler);
+                
+            }
+
+            @Override
+            public void failed(Throwable throwable, Object attachment) {
+                channelHandler.handleError(null, throwable);
+            }
+        };
+        
+        Line line = mLineTracker.getByNode(destination);
+        if (line == null) {
+            // open a new line
+            openLine(destination, lineOpenCompletionHandler, null);
+        } else {
+            // add our completion handler to the existing line.
+            // if it is PENDING, the handler will be called with the line is ESTABLISHED.
+            // if it is ESTABLISHED, the handler will be called immediately.
+            line.addOpenCompletionHandler(lineOpenCompletionHandler, null);
+        }
+    }
+    
     // TODO: timeout?
     public void openLine(
             Node destination,
@@ -229,7 +255,7 @@ public class Switch implements DatagramHandler {
         line.setLocalOpenPacket(openPacket);
         line.setRemoteNode(destination);
         line.setState(Line.State.PENDING);
-        line.setOpenCompletionHandler(handler, attachment);
+        line.addOpenCompletionHandler(handler, attachment);
         
         // TODO: synchronize
         mLineTracker.add(line);
@@ -258,7 +284,7 @@ public class Switch implements DatagramHandler {
         if (line == null) {
             throw new TelehashException("no line to referring node");
         }
-        Channel channel = line.openChannel("peer", new ChannelHandler() {
+        line.openChannel("peer", new ChannelHandler() {
             @Override
             public void handleError(Channel channel, Throwable error) {
                 if (handler != null) {
@@ -270,30 +296,30 @@ public class Switch implements DatagramHandler {
             public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
                 // do nothing -- there is no response expected
             }
-        });
-        
-        Map<String,Object> fields = new HashMap<String,Object>();
-        fields.put("peer", destination.getHashName().asHex());
-        // TODO: if we have multiple public (non-site-local) paths, they
-        // should be indicated in a "paths" key.
-        try {
-            channel.send(null, fields, true);
-        } catch (TelehashException e) {
-            if (handler != null) {
-                handler.failed(e, attachment);
+            @Override
+            public void handleOpen(Channel channel) {
+                Map<String,Object> fields = new HashMap<String,Object>();
+                fields.put("peer", destination.getHashName().asHex());
+                // TODO: if we have multiple public (non-site-local) paths, they
+                // should be indicated in a "paths" key.
+                try {
+                    channel.send(null, fields, true);
+                } catch (TelehashException e) {
+                    if (handler != null) {
+                        handler.failed(e, attachment);
+                    }
+                    mPendingReverseOpens.remove(destination.getHashName());
+                    return;
+                }
+                
+                // track the reverse open
+                PendingReverseOpen pendingReverseOpen = new PendingReverseOpen();
+                pendingReverseOpen.destination = destination.getHashName();
+                pendingReverseOpen.completionHandler = handler;
+                pendingReverseOpen.attachment = attachment;
+                mPendingReverseOpens.put(destination.getHashName(), pendingReverseOpen);                
             }
-            mPendingReverseOpens.remove(destination.getHashName());
-            return;
-        }
-        
-        // track the reverse open
-        PendingReverseOpen pendingReverseOpen = new PendingReverseOpen();
-        pendingReverseOpen.destination = destination.getHashName();
-        pendingReverseOpen.completionHandler = handler;
-        pendingReverseOpen.attachment = attachment;
-        mPendingReverseOpens.put(destination.getHashName(), pendingReverseOpen);
-
-        return;
+        });
     }
     
     public void sendLinePacket(
@@ -364,6 +390,7 @@ public class Switch implements DatagramHandler {
             mStopLock.notify();
         }
         
+        mDHT.close();
         Log.i("Telehash switch "+mLocalNode+" ending.");
     }
     
@@ -459,7 +486,7 @@ public class Switch implements DatagramHandler {
             line.setOutgoingLineIdentifier(incomingOpenPacket.getLineIdentifier());
             calculateLineKeys(line, incomingOpenPacket, line.getLocalOpenPacket());
             line.setState(Line.State.ESTABLISHED);
-            line.callOpenCompletionHandler();            
+            line.callOpenCompletionHandlers();            
             Log.i("new line established for local initiator");
         } else {
             // no pending line for this open -- enqueue a response open
@@ -486,6 +513,7 @@ public class Switch implements DatagramHandler {
             Log.i("new line established for remote initiator");
 
             // alert the DHT of the new line
+            // TODO: this should be abstracted into some sort of LineObserver
             mDHT.handleNewLine(line);
             
             // TODO: synchronize

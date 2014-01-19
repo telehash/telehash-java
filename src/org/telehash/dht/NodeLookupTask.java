@@ -42,33 +42,55 @@ public class NodeLookupTask {
     private Node mClosestNode = null;
     private BigInteger mClosestNodeDistance = null;
     
-    public NodeLookupTask(Telehash telehash, NodeTracker nodeTracker, HashName targetHashName) {
+    public static interface Handler {
+        void handleError(NodeLookupTask task, Throwable e);
+        void handleCompletion(NodeLookupTask task, Node result);
+    }
+    private Handler mHandler;
+    
+    public NodeLookupTask(Telehash telehash, NodeTracker nodeTracker, HashName targetHashName, Handler handler) {
         mTelehash = telehash;
         mNodeTracker = nodeTracker;
         mTargetHashName = targetHashName;
+        mHandler = handler;
         
         mQueryNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
         mVisitedNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
     }
+    
+    public Node getClosestVisitedNode() {
+        return mVisitedNodes.first();
+    }
+    
+    public Node getFarthestVisitedNode() {
+        return mVisitedNodes.last();
+    }
 
     public void start() {
         // start with the set of nodes in our tracker that are closest to the target.
+        Log.i("tracked nodes = "+mNodeTracker.size());
         mQueryNodes.addAll(mNodeTracker.getClosestNodes(mTargetHashName, CLOSENESS));
+        Log.i("adding initial query nodes = "+mNodeTracker.getClosestNodes(mTargetHashName, CLOSENESS));
         iterate();
     }
     
-    public void iterate() {
+    private void iterate() {
+        Log.d("node lookup iteration");
+        Log.d("  querynodes="+mQueryNodes);
+        Log.d("  visitednodes="+mVisitedNodes);
         // remove already visited nodes from our set of queryable nodes
         mQueryNodes.removeAll(mVisitedNodes);
         
         // if there are no queryable nodes, signal completion
         if (mQueryNodes.isEmpty()) {
+            Log.d("node lookup complete: no queryable nodes.");
             complete(null);
             return;
         }
         
         // if the target node is present in our set, signal completion
         if (mTargetHashName.equals(mQueryNodes.first().getHashName())) {
+            Log.d("node lookup complete: "+mQueryNodes.first());
             complete(mQueryNodes.first());
             return;
         }
@@ -77,6 +99,7 @@ public class NodeLookupTask {
         if (mIterations > 0 && mClosestNode != null && (mIterations % QUERY_CONCURRENCY_PARAMETER) == 0) {
             BigInteger distanceToClosestQueryNode = mQueryNodes.first().getHashName().distance(mTargetHashName);
             if (distanceToClosestQueryNode.compareTo(mClosestNodeDistance) >= 0) {
+                Log.d("node lookup complete: converged");
                 complete(null);
                 return;
             }
@@ -137,7 +160,16 @@ public class NodeLookupTask {
                         }
                         @Override
                         public void handleCompletion(NodeSeekRequest seek) {
+                            Log.i("seek complete");
                             mOutstandingSeeks.remove(seek);
+                            // if we want to track nodes that we don't have a public key for yet,
+                            // uncomment this.
+                            /*
+                            for (Node node : seek.getResultNodes()) {
+                                // track this encountered node
+                                mNodeTracker.submitNode(node);
+                            }
+                            */
                             mQueryNodes.addAll(seek.getResultNodes());
                             iterate();
                         }
@@ -150,12 +182,16 @@ public class NodeLookupTask {
         mIterations++;
     }
     
-    public void fail(Throwable e) {
+    private void fail(Throwable e) {
         Log.i("node lookup failure: "+e);
-        
+        if (mHandler != null) {
+            mHandler.handleError(this, e);
+        }
     }
     
-    public void complete(Node node) {
-        Log.i("node lookup completion: "+node);
+    private void complete(Node node) {
+        if (mHandler != null) {
+            mHandler.handleCompletion(this, node);
+        }
     }
 }
