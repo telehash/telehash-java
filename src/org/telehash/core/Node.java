@@ -9,6 +9,7 @@ import org.telehash.network.Path;
  */
 public class Node {
     private RSAPublicKey mPublicKey;
+    // TODO: support multiple paths per node.
     private Path mPath;
     private HashName mHashName = null;
     private Node mReferringNode;

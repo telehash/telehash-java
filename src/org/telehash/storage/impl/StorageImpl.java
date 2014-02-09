@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.telehash.core.Identity;
+import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -35,10 +36,7 @@ public class StorageImpl implements Storage {
     private static final String DEFAULT_IDENTITY_FILENAME_BASE = "telehash-identity";
     private static final String PRIVATE_KEY_FILENAME_SUFFIX = ".key";
     private static final String PUBLIC_KEY_FILENAME_SUFFIX = ".pub";
-    private static final String IPV4_ADDRESS_KEY = "ip";
-    private static final String IPV4_PORT_KEY = "port";
-    private static final String IPV6_ADDRESS_KEY = "ip6";
-    private static final String IPV6_PORT_KEY = "port6";
+    private static final String PATHS_KEY = "paths";
 
     /**
      * Read the local Telehash identity (RSA key pair) from files named using
@@ -138,35 +136,9 @@ public class StorageImpl implements Storage {
             
             // parse seed paths
             List<Path> paths = new ArrayList<Path>();
-            if (seed.has(IPV4_ADDRESS_KEY)) {
-                String ipString = seed.getString(IPV4_ADDRESS_KEY);
-                InetAddress address;
-                try {
-                    address = InetAddress.getByName(ipString);  // TODO: ???
-                } catch (UnknownHostException e) {
-                    throw new TelehashException(e);
-                }
-                int port = seed.getInt(IPV4_PORT_KEY);
-                InetPath ipv4Path = new InetPath(address, port);
-                if (! (ipv4Path.getAddress() instanceof Inet4Address)) {
-                    ipv4Path = null;
-                }
-                paths.add(ipv4Path);
-            }
-            if (seed.has(IPV6_ADDRESS_KEY)) {
-                String ipString = seed.getString(IPV6_ADDRESS_KEY);
-                InetAddress address;
-                try {
-                    address = InetAddress.getByName(ipString);  // TODO: ???
-                } catch (UnknownHostException e) {
-                    throw new TelehashException(e);
-                }
-                int port = seed.getInt(IPV6_PORT_KEY);
-                InetPath ipv6Path = new InetPath(address, port);
-                if (! (ipv6Path.getAddress() instanceof Inet6Address)) {
-                    ipv6Path = null;
-                }
-                paths.add(ipv6Path);
+            if (seed.has(PATHS_KEY)) {
+                JSONArray pathsArray = seed.getJSONArray(PATHS_KEY);
+                paths.addAll(Path.parsePathArray(pathsArray));
             }
             if (paths.isEmpty()) {
                 throw new TelehashException("no valid network paths found for seed!");
@@ -174,6 +146,7 @@ public class StorageImpl implements Storage {
             
             RSAPublicKey publicKey =
                     Telehash.get().getCrypto().parseRSAPublicKeyFromPEM(publicKeyString);
+            // TODO: support multiple paths per node.
             Node node = new Node(publicKey, paths.get(0));
             nodes.add(node);
         }
