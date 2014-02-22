@@ -117,7 +117,7 @@ public class NodeTracker {
         if (node.getPublicKey() == null) {
             throw new IllegalArgumentException("attempt to track node without RSA public key.");
         }
-        int distance = DHT.logDistance(mLocalNode.getHashName(), node.getHashName());
+        int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());
         if (distance == -1) {
             // the referenced node is us.
             return;
@@ -140,7 +140,7 @@ public class NodeTracker {
         SortedSet<Node> sortedNodes = new TreeSet<Node>(new NodeDistanceComparator(targetHashName));
 
         // determine the starting bucket based on the distance from me.
-        int startingBucket = DHT.logDistance(mLocalNode.getHashName(), targetHashName);
+        int startingBucket = mLocalNode.getHashName().distanceMagnitude(targetHashName);
         if (startingBucket == -1) {
             // the target node is ourself -- scan all buckets
             for (int i=0; i<BUCKET_COUNT && sortedNodes.size() < maxNodes; i++) {
@@ -196,7 +196,7 @@ public class NodeTracker {
                 int neighborDistance = 0;
                 Node neighbor = task.getClosestVisitedNode();
                 if (neighbor != null) {
-                    neighborDistance =  DHT.logDistance(mLocalNode.getHashName(), neighbor.getHashName());
+                    neighborDistance =  mLocalNode.getHashName().distanceMagnitude(neighbor.getHashName());
                     Log.i("nearest neighbor = "+neighbor+" distance="+neighborDistance);
                 } else {
                     Log.i("no nearest neighbor");

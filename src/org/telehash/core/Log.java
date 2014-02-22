@@ -24,7 +24,7 @@ public class Log {
         if (identity == null) {
             tag = "[        ] ";
         } else {
-            byte[] hashName = identity.getHashName();
+            byte[] hashName = identity.getHashName().getBytes();
             int a = hashName[0] & 0xFF;
             int b = hashName[1] & 0xFF;
             int c = hashName[2] & 0xFF;

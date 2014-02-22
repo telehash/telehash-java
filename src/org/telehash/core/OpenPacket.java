@@ -336,7 +336,7 @@ public class OpenPacket extends Packet {
         LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
         
         // Verify the to value of the inner packet matches your hashname
-        if (! Arrays.equals(destination, telehash.getIdentity().getHashName())) {
+        if (! Arrays.equals(destination, telehash.getIdentity().getHashName().getBytes())) {
             throw new TelehashException("received packet not destined for this identity.");
         }
         

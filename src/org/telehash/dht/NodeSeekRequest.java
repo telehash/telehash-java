@@ -68,7 +68,23 @@ public class NodeSeekRequest {
                 public void handleOpen(Channel channel) {
                     Log.i("seek channel open");
                     Map<String,Object> fields = new HashMap<String,Object>();
-                    fields.put(SEEK_KEY, mTargetHashName.asHex());
+                    
+                    // To product the user's privacy, only provide enough of the target hashname
+                    // to get useful results -- the distance to the query node plus one bytes.
+                    HashName localHashName = mTelehash.getIdentity().getHashName();
+                    byte[] target;
+                    if (! mTargetHashName.equals(localHashName)) {
+                        int prefixLength = mQueryNode.getHashName().distanceMagnitude(localHashName)+1;
+                        if (prefixLength > HashName.SIZE) {
+                            prefixLength = HashName.SIZE;
+                        }
+                        target = new byte[prefixLength];
+                        System.arraycopy(mTargetHashName.getBytes(), 0, target, 0, prefixLength);
+                    } else {
+                        target = mTargetHashName.getBytes();
+                    }
+                    
+                    fields.put(SEEK_KEY, Util.bytesToHex(target));
                     try {
                         channel.send(null, fields, false);
                     } catch (TelehashException e) {

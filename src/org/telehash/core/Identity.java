@@ -9,7 +9,8 @@ import org.telehash.crypto.RSAPublicKey;
  */
 public class Identity {
     private RSAKeyPair mKeyPair;
-    private transient byte[] mHashName;
+    //private transient byte[] mHashName;
+    private transient HashName mHashName;
 
     /**
      * Create an Identity object based on the provided RSA key pair.
@@ -18,9 +19,10 @@ public class Identity {
     public Identity(RSAKeyPair keyPair) {
         mKeyPair = keyPair;
         try {
-            mHashName = Telehash.get().getCrypto().sha256Digest(
+            byte[] hashNameBytes = Telehash.get().getCrypto().sha256Digest(
                     mKeyPair.getPublicKey().getDEREncoded()
             );
+            mHashName = new HashName(hashNameBytes);
         } catch (TelehashException e) {
             e.printStackTrace();
             mHashName = null;
@@ -49,7 +51,7 @@ public class Identity {
      * 
      * @return The hashname.
      */
-    public byte[] getHashName() {
+    public HashName getHashName() {
         return mHashName;
     }    
 }
