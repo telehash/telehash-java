@@ -197,8 +197,7 @@ public class Switch implements DatagramHandler {
         CompletionHandler<Line> lineOpenCompletionHandler = new CompletionHandler<Line>() {
             @Override
             public void completed(Line line, Object attachment) {
-                Channel channel = line.openChannel(type, channelHandler);
-                
+                line.openChannel(type, channelHandler);
             }
 
             @Override

@@ -4,11 +4,13 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
@@ -27,9 +29,11 @@ import org.telehash.network.Path;
 public class DHT {
     
     private static final String SEEK_TYPE = "seek";
+    private static final String LINK_TYPE = "link";
     private static final String PEER_TYPE = "peer";
     private static final String CONNECT_TYPE = "connect";
     private static final String SEEK_KEY = "seek";
+    private static final String SEED_KEY = "seed";
     private static final String SEE_KEY = "see";
     private static final String PEER_KEY = "peer";
 
@@ -54,6 +58,7 @@ public class DHT {
     public void init() {
         // register to receive channel packets for our types
         mTelehash.getSwitch().registerChannelHandler(SEEK_TYPE, mChannelHandler);
+        mTelehash.getSwitch().registerChannelHandler(LINK_TYPE, mChannelHandler);
         mTelehash.getSwitch().registerChannelHandler(PEER_TYPE, mChannelHandler);
         mTelehash.getSwitch().registerChannelHandler(CONNECT_TYPE, mChannelHandler);
         
@@ -102,6 +107,13 @@ public class DHT {
         // TODO: relay to refresher?
     }
     
+    public void submitNode(Node node) {
+        // TODO
+        // 1. is a line already open for this node?
+        // 2. open line
+        // 3. open link channel
+    }
+    
     /**
      * Return a random hashname located with the specified bucket
      * (relative to the provided origin hashname).
@@ -146,6 +158,8 @@ public class DHT {
             try {
                 if (type.equals(SEEK_TYPE)) {
                     handleSeek(channel, channelPacket);
+                } else if (type.equals(LINK_TYPE)) {
+                    handleLink(channel, channelPacket);
                 } else if (type.equals(PEER_TYPE)) {
                     handlePeer(channel, channelPacket);
                 } else if (type.equals(CONNECT_TYPE)) {
@@ -202,6 +216,29 @@ public class DHT {
         } catch (TelehashException e) {
             return;
         }
+    }
+    
+    private void handleLink(Channel channel, ChannelPacket channelPacket) {
+        // TODO: handle the "seed" boolean
+        channelPacket.get(SEED_KEY);
+
+        Set<Node> seeNodes;
+        try {
+            seeNodes = parseSee(channelPacket.get(SEE_KEY), mLocalNode);
+        } catch (TelehashException e) {
+            Log.e("bad see object in link channel");
+            return;
+        }
+        
+        // submit seeNodes to DHT for possible inclusion in buckets.
+        for (Node node : seeNodes) {
+            submitNode(node);
+        }
+        
+        // TODO: if this is a keepalive, then respond in kind.
+        // TODO: (even if it's not a keepalive!)
+        
+        // TODO: complete!
     }
     
     private void handlePeer(Channel channel, ChannelPacket channelPacket) {
@@ -264,5 +301,40 @@ public class DHT {
         Node node = new Node(publicKey, path);
         mTelehash.getSwitch().openLine(node, null, null);
     }
-}
+    
+    private static Set<Node> parseSee(Object seeObject, Node referringNode) throws TelehashException {
+        if (! (seeObject instanceof JSONArray)) {
+            throw new TelehashException("'see' object not an array");
+        }
+        JSONArray seeNodes = (JSONArray)seeObject;
+        
+        Set<Node> sees = new HashSet<Node>(seeNodes.length());
+        for (int i=0; i<seeNodes.length(); i++) {
+            String seeNode;
+            try {
+                seeNode = seeNodes.getString(i);
+            } catch (JSONException e) {
+                throw new TelehashException(e);
+            }
+            String[] parts = seeNode.split(",", 3);
+            if (parts.length < 3) {
+                // TODO: support see nodes with hashname-only?  (i.e. reachable via non-IP paths)
+                throw new TelehashException("invalid see record");
+            }
+            HashName hashName = new HashName(Util.hexToBytes(parts[0]));
+            Path path;
+            try {
+                path = Telehash.get().getNetwork().parsePath(
+                        parts[1], Integer.parseInt(parts[2])
+                );
+                Node node = new Node(hashName, path);
+                node.setReferringNode(referringNode);
+                sees.add(node);
+            } catch (NumberFormatException e) {
+                throw new TelehashException(e);
+            }
+        }
+        return sees;
+    }
 
+}

@@ -10,7 +10,6 @@ import org.json.JSONException;
 import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
-import org.telehash.core.CompletionHandler;
 import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
@@ -25,8 +24,9 @@ import org.telehash.network.Path;
  */
 public class NodeSeekRequest {
     
-    private static final String SEEK_KEY = "seek";
     private static final String SEEK_TYPE = "seek";
+    private static final String SEEK_KEY = "seek";
+    private static final String SEE_KEY = "see";
 
     public static interface Handler {
         void handleError(NodeSeekRequest seek, Throwable e);
@@ -99,7 +99,7 @@ public class NodeSeekRequest {
     }
     
     private void parseResult(ChannelPacket channelPacket) {
-        Object seeObject = channelPacket.get("see");
+        Object seeObject = channelPacket.get(SEE_KEY);
         if (! (seeObject instanceof JSONArray)) {
             fail(new TelehashException("'see' object not an array"));
             return;
