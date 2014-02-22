@@ -247,7 +247,7 @@ public class DHT {
             return;
         }
         HashName target = new HashName(Util.hexToBytes(peerString));
-        Line line = mTelehash.getSwitch().getLineByHashName(target);
+        Line line = mTelehash.getSwitch().getLineManager().getLineByHashName(target);
         if (line == null) {
             // no line to the target
             return;
@@ -299,7 +299,7 @@ public class DHT {
         RSAPublicKey publicKey = mTelehash.getCrypto().decodeRSAPublicKey(body);
         
         Node node = new Node(publicKey, path);
-        mTelehash.getSwitch().openLine(node, null, null);
+        mTelehash.getSwitch().getLineManager().openLine(node, false, null, null);
     }
     
     private static Set<Node> parseSee(Object seeObject, Node referringNode) throws TelehashException {
@@ -337,4 +337,18 @@ public class DHT {
         return sees;
     }
 
+    /**
+     * Initiate a node lookup of the specified hashname. The caller should
+     * maintain a reference to the returned NodeLookupTask until it is no longer
+     * needed, to avoid early garbage collection.
+     * 
+     * @param hashName
+     * @param handler
+     * @return
+     */
+    public NodeLookupTask nodeLookup(HashName hashName, NodeLookupTask.Handler handler) {
+        NodeLookupTask lookup = new NodeLookupTask(mTelehash, mNodeTracker, hashName, handler);
+        lookup.start();
+        return lookup;
+    }
 }

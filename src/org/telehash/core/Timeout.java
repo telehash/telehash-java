@@ -1,15 +1,17 @@
 package org.telehash.core;
 
+import java.lang.ref.WeakReference;
+
 public class Timeout implements Runnable {
     
     private Scheduler mScheduler;
-    private OnTimeoutListener mListener;
+    private WeakReference<OnTimeoutListener> mListener;
     private long mDelay;
     private Scheduler.Task mTask;
 
     public Timeout(Scheduler scheduler, OnTimeoutListener listener, long delay) {
         mScheduler = scheduler;
-        mListener = listener;
+        mListener = new WeakReference<OnTimeoutListener>(listener);
         mDelay = 0;
         mTask = null;
         setDelay(delay);
@@ -35,7 +37,7 @@ public class Timeout implements Runnable {
         return mDelay;
     }
     
-    public void update() {
+    public void reset() {
         if (mDelay > 0) {
             if (mTask != null) {
                 mScheduler.updateTask(mTask, null, mDelay);
@@ -46,11 +48,19 @@ public class Timeout implements Runnable {
     }
     
     public void cancel() {
-        mTask = null;
+        if (mTask != null) {
+            mScheduler.removeTask(mTask);
+            mTask = null;
+        }
     }
 
     @Override
     public void run() {
-        mListener.handleTimeout();
+        OnTimeoutListener listener = mListener.get();
+        if (listener != null) {
+            listener.handleTimeout();
+        } else {
+            Log.e("timeout lost reference to listener");
+        }
     }
 }

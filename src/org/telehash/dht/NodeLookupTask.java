@@ -11,9 +11,12 @@ import java.util.TreeSet;
 import org.telehash.core.HashName;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
+import org.telehash.core.OnTimeoutListener;
 import org.telehash.core.Telehash;
+import org.telehash.core.TelehashException;
+import org.telehash.core.Timeout;
 
-public class NodeLookupTask {
+public class NodeLookupTask implements OnTimeoutListener {
     
     /**
      * The Kademlia "query concurrency parameter", represented in the paper as
@@ -31,6 +34,11 @@ public class NodeLookupTask {
      */
     private static final int CLOSENESS = 9;
     
+    /**
+     * By default, node lookup operations will timeout after this many milliseconds.
+     */
+    private static final int DEFAULT_NODE_LOOKUP_TIMEOUT = 15000;
+    
     private Telehash mTelehash;
     private NodeTracker mNodeTracker;
     private HashName mTargetHashName;
@@ -41,6 +49,11 @@ public class NodeLookupTask {
     private int mIterations = 0;
     private Node mClosestNode = null;
     private BigInteger mClosestNodeDistance = null;
+    
+    private int mTimeoutInterval = DEFAULT_NODE_LOOKUP_TIMEOUT;
+    private Timeout mTimeout;
+    private boolean mActive = false;
+    private boolean mFinished = false;
     
     public static interface Handler {
         void handleError(NodeLookupTask task, Throwable e);
@@ -56,6 +69,19 @@ public class NodeLookupTask {
         
         mQueryNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
         mVisitedNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
+        
+        mTimeout = mTelehash.getSwitch().getTimeout(this, 0);
+    }
+    
+    /**
+     * Allow the caller to specify a custom timeout interval in milliseconds.
+     * @param timeout
+     */
+    public void setTimeout(int timeout) {
+        mTimeoutInterval = timeout;
+        if (mActive) {
+            mTimeout.setDelay(mTimeoutInterval);
+        }
     }
     
     public Node getClosestVisitedNode() {
@@ -68,6 +94,8 @@ public class NodeLookupTask {
 
     public void start() {
         // start with the set of nodes in our tracker that are closest to the target.
+        mActive = true;
+        mTimeout.setDelay(mTimeoutInterval);
         Log.i("tracked nodes = "+mNodeTracker.size());
         mQueryNodes.addAll(mNodeTracker.getClosestNodes(mTargetHashName, CLOSENESS));
         Log.i("adding initial query nodes = "+mNodeTracker.getClosestNodes(mTargetHashName, CLOSENESS));
@@ -183,6 +211,13 @@ public class NodeLookupTask {
     }
     
     private void fail(Throwable e) {
+        if (mFinished) {
+            Log.e("node lookup task fail after finished!");
+            return;
+        }
+        mFinished = true;
+        mTimeout.cancel();
+        
         Log.i("node lookup failure: "+e);
         if (mHandler != null) {
             mHandler.handleError(this, e);
@@ -190,8 +225,20 @@ public class NodeLookupTask {
     }
     
     private void complete(Node node) {
+        if (mFinished) {
+            Log.e("node lookup task fail after finished!");
+            return;
+        }
+        mFinished = true;
+        mTimeout.cancel();
+        
         if (mHandler != null) {
             mHandler.handleCompletion(this, node);
         }
+    }
+
+    @Override
+    public void handleTimeout() {
+        fail(new TelehashException("node lookup timeout"));
     }
 }

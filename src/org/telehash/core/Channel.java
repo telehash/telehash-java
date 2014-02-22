@@ -74,7 +74,7 @@ public class Channel implements OnTimeoutListener {
     }
     
     public void receive(ChannelPacket channelPacket) {
-        mTimeout.update();
+        mTimeout.reset();
         mChannelHandler.handleIncoming(this, channelPacket);
     }
     
@@ -100,14 +100,14 @@ public class Channel implements OnTimeoutListener {
             // TODO: remove from Line's channel tracking
         }
         channelPacket.setBody(body);
-        mTelehash.getSwitch().sendLinePacket(
+        mTelehash.getSwitch().getLineManager().sendLinePacket(
                 mLine,
                 channelPacket,
                 null,
                 null
         );
 
-        mTimeout.update();
+        mTimeout.reset();
     }
 
     @Override

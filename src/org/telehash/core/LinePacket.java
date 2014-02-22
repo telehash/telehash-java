@@ -143,7 +143,7 @@ public class LinePacket extends Packet {
         LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
         
         // lookup the line
-        Line line = telehash.getSwitch().getLine(lineIdentifier);
+        Line line = telehash.getSwitch().getLineManager().getLine(lineIdentifier);
         if (line == null) {
             throw new TelehashException("unknown line id: "+Util.bytesToHex(lineIdentifierBytes));
         }

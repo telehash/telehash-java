@@ -1,6 +1,8 @@
 package org.telehash.core;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -108,14 +110,17 @@ public class Scheduler {
     public void runTasks() {
         long time = System.nanoTime();
         Iterator<Task> iterator = mTasks.iterator();
+        Set<Task> removalSet = new HashSet<Task>();
         while (iterator.hasNext()) {
             Task task = iterator.next();
             if (task.mTime > time) {
                 break;
             }
             task.mRunnable.run();
-            iterator.remove();
+            //iterator.remove();
+            removalSet.add(task);
         }
+        mTasks.removeAll(removalSet);
     }
     
     /**

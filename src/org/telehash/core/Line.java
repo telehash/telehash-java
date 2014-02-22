@@ -9,16 +9,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class Line {
+public class Line implements OnTimeoutListener {
     
     private static final int SHA256_DIGEST_SIZE = 32;
+    private static final int LINE_OPEN_TIMEOUT = 5000;
     
     public enum State {
-        PENDING,
+        INITIAL,
+        NODE_LOOKUP,
+        DIRECT_OPEN_PENDING,
+        REVERSE_OPEN_PENDING,
         ESTABLISHED,
-        CLOSED
+        TIMEOUT,
+        ERROR
     };
-    private State mState = State.CLOSED;
+    private State mState = State.INITIAL;
     
     private static class Completion<T> {
         public CompletionHandler<T> mHandler;
@@ -38,12 +43,16 @@ public class Line {
     private byte[] mSharedSecret;
     private byte[] mEncryptionKey;
     private byte[] mDecryptionKey;
+    
+    private Timeout mTimeout;
 
     private Telehash mTelehash;
     private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
+    private boolean mFinished = false;
     
     public Line(Telehash telehash) {
         mTelehash = telehash;
+        mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
     
     public void setState(State state) {
@@ -138,10 +147,47 @@ public class Line {
         }
     }
     
-    public void callOpenCompletionHandlers() {
-        for (Completion<Line> completion : mOpenCompletionHandlers) {
-            completion.mHandler.completed(this, completion.mAttachment);
+    /* intentionally package-private */
+    void fail(Throwable e) {
+        if (mFinished) {
+            Log.e("line "+this+" fail after finish!");
+            return;
         }
+        mState = State.ERROR;
+        mFinished = true;
+        
+        // cancel timeout
+        mTimeout.cancel();
+        
+        // signal error
+        for (Completion<Line> completion : mOpenCompletionHandlers) {
+            if (completion.mHandler != null) {
+                completion.mHandler.failed(e, completion.mAttachment);
+            }
+        }
+    }
+    
+    public void completeOpen() {
+        if (mFinished) {
+            Log.e("line "+this+" complete after finish!");
+            return;
+        }
+        mState = State.ESTABLISHED;
+        mFinished = true;
+
+        // cancel timeout
+        mTimeout.cancel();
+        
+        // signal open completion
+        for (Completion<Line> completion : mOpenCompletionHandlers) {
+            if (completion.mHandler != null) {
+                completion.mHandler.completed(this, completion.mAttachment);
+            }
+        }
+    }
+    
+    public void startOpenTimer() {
+        mTimeout.setDelay(LINE_OPEN_TIMEOUT);
     }
     
     public Telehash getTelehash() {
@@ -168,7 +214,9 @@ public class Line {
         
         // consider the channel to be "open" even though we don't know
         // if the remote side will be happy with this channel type.
-        channelHandler.handleOpen(channel);
+        if (channelHandler != null) {
+            channelHandler.handleOpen(channel);
+        }
 
         return channel;
     }
@@ -221,4 +269,31 @@ public class Line {
     public String toString() {
         return "Line["+mIncomingLineIdentifier+"->"+mOutgoingLineIdentifier+"@"+getOpenTime()+"]";
     }
+
+    @Override
+    public void handleTimeout() {
+        TelehashException exception;
+        switch (mState) {
+        case NODE_LOOKUP:
+            exception = new TelehashException("node lookup timeout");
+            break;
+        case DIRECT_OPEN_PENDING:
+            exception = new TelehashException("line open timeout");
+            break;
+        default:
+            exception = new TelehashException("unknown line timeout");
+            break;
+        }
+        
+        mState = State.TIMEOUT;
+
+        // dereference from switch
+        mTelehash.getSwitch().getLineManager().clearLine(this);
+
+        // signal error
+        for (Completion<Line> completion : mOpenCompletionHandlers) {
+            completion.mHandler.failed(exception, completion.mAttachment);
+        }
+    }
+
 }

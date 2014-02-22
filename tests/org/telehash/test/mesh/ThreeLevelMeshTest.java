@@ -46,7 +46,7 @@ public class ThreeLevelMeshTest {
         TelehashTestInstance src = mNodes.get(NODE_A);
         TelehashTestInstance dst = mNodes.get(NODE_B);
         
-        src.getSwitch().openLine(dst.getNode(), new CompletionHandler<Line>() {
+        src.getSwitch().getLineManager().openLine(dst.getNode(), false, new CompletionHandler<Line>() {
             @Override
             public void failed(Throwable exc, Object attachment) {
                 Log.i("line open failed");
@@ -73,7 +73,7 @@ public class ThreeLevelMeshTest {
         Log.i("OPEN "+src.getNode()+" -> "+dst.getNode());
 
         // src opens a line to the seed
-        src.getSwitch().openLine(seed.getNode(), new CompletionHandler<Line>() {
+        src.getSwitch().getLineManager().openLine(seed.getNode(), false, new CompletionHandler<Line>() {
             @Override
             public void failed(Throwable exc, Object attachment) {
                 Log.i("line open failed");
@@ -123,7 +123,7 @@ public class ThreeLevelMeshTest {
     protected void assertLineOpen(TelehashTestInstance a, TelehashTestInstance b) {
         // assure A has a line open to B.
         boolean found = false;
-        Set<Line> aLines = a.getSwitch().getLines();
+        Set<Line> aLines = a.getSwitch().getLineManager().getLines();
         for (Line line : aLines) {
             if (line.getRemoteNode().equals(b.getNode())) {
                 found = true;
