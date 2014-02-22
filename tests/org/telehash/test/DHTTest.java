@@ -50,7 +50,7 @@ public class DHTTest {
         }
         public void test() {
             System.out.print("distance "+mOrigin+" -> "+mRemote+" = ");
-            int measuredDistance = DHT.logDistance(mOrigin, mRemote);
+            int measuredDistance = mOrigin.distanceMagnitude(mRemote);
             System.out.println(measuredDistance+" (expect: "+mDistance+")");
             assertEquals(mDistance, measuredDistance);
         }
@@ -126,7 +126,7 @@ public class DHTTest {
             for (int bucket=0; bucket<256; bucket++) {
                 for (int y=0; y<NUM_RANDOMS; y++) {
                     HashName random = DHT.getRandomHashName(origin, bucket);
-                    int measuredDistance = DHT.logDistance(origin, random);
+                    int measuredDistance = origin.distanceMagnitude(random);
                     /*
                     System.out.print("random("+origin+", "+bucket+") = ");
                     System.out.println(random+" ("+measuredDistance+")");

@@ -46,7 +46,7 @@ public class BasicNode {
             }
         }
         
-        System.out.println("my hash name: "+Util.bytesToHex(identity.getHashName()));
+        System.out.println("my hash name: "+identity.getHashName());
         
         Set<Node> seeds = null;
         try {

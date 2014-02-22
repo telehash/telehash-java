@@ -10,6 +10,7 @@ import java.io.File;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.telehash.core.HashName;
 import org.telehash.core.Identity;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
@@ -117,9 +118,11 @@ public class CryptoTest {
     @Test
     public void testGenerateIdentity() throws Exception {
         Identity identity = mCrypto.generateIdentity();
-        byte[] hashName = identity.getHashName();
+        HashName hashName = identity.getHashName();
         assertNotNull(hashName);
-        assertTrue(hashName.length == 32);
+        byte[] hashNameBytes = hashName.getBytes();
+        assertNotNull(hashNameBytes);
+        assertTrue(hashNameBytes.length == 32);
     }
 
     @Test

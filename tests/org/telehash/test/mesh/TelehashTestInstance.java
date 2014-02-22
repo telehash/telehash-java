@@ -132,7 +132,7 @@ public class TelehashTestInstance {
             );
             PrintWriter out = new PrintWriter(summaryFile);
             out.println("index: "+mIndex);
-            out.println("hashname: "+Util.bytesToHex(mIdentity.getHashName()));
+            out.println("hashname: "+mIdentity.getHashName());
             Log.i("pub: "+mIdentity.getPublicKey());
             out.println("rsa pub: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getDEREncoded())));
             out.println("rsa pri: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getDEREncoded())));
