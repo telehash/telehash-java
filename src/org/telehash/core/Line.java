@@ -204,8 +204,8 @@ public class Line {
         if (channelPacket.isEnd()) {
             mChannels.remove(channel.getChannelIdentifier());
         }
-        // dispatch to channel handler
-        channel.getChannelHandler().handleIncoming(channel, channelPacket);
+        // dispatch to channel
+        channel.receive(channelPacket);
     }
     
     public static Set<Line> sortByOpenTime(Collection<Line> lines) {

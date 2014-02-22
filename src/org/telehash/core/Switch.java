@@ -565,4 +565,12 @@ public class Switch implements DatagramHandler {
     public ChannelHandler getChannelHandler(String type) {
         return mRegisteredChannelHandlers.get(type);
     }
+    
+    public Scheduler getScheduler() {
+        return mScheduler;
+    }
+    
+    public Timeout getTimeout(OnTimeoutListener listener, long delay) {
+        return new Timeout(mScheduler, listener, delay);
+    }
 }

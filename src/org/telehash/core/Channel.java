@@ -2,7 +2,7 @@ package org.telehash.core;
 
 import java.util.Map;
 
-public class Channel {
+public class Channel implements OnTimeoutListener {
     private ChannelIdentifier mChannelIdentifier;
     private String mType;
     private ChannelHandler mChannelHandler;
@@ -10,7 +10,8 @@ public class Channel {
     private Telehash mTelehash;
     private Line mLine;
     private boolean mSentFirstPacket = false;
-    
+    private Timeout mTimeout;
+
     public Channel(Telehash telehash, Line line, String type) {
         mTelehash = telehash;
         mLine = line;
@@ -18,6 +19,7 @@ public class Channel {
                 telehash.getCrypto().getRandomBytes(ChannelIdentifier.CHANNEL_IDENTIFIER_SIZE)
         );
         mType = type;
+        mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
     
     public Channel(Telehash telehash, Line line, ChannelIdentifier channelIdentifer, String type) {
@@ -63,6 +65,19 @@ public class Channel {
         mChannelHandler = channelHandler;
     }
     
+    public void setTimeout(long timeout) {
+        mTimeout.setDelay(timeout);
+    }
+    
+    public long getTimeout() {
+        return mTimeout.getDelay();
+    }
+    
+    public void receive(ChannelPacket channelPacket) {
+        mTimeout.update();
+        mChannelHandler.handleIncoming(this, channelPacket);
+    }
+    
     public void send(byte[] body) throws TelehashException {
         send(body, null, false);
     }
@@ -92,5 +107,13 @@ public class Channel {
                 null
         );
 
+        mTimeout.update();
+    }
+
+    @Override
+    public void handleTimeout() {
+        mChannelHandler.handleError(this, new TelehashException("timeout"));
+        mTimeout.cancel();
+        // TODO: close channel / dereference from switch
     }
 }

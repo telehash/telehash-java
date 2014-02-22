@@ -9,8 +9,8 @@ public class Scheduler {
     private static final int NANOSECONDS_IN_MILLISECOND = 1000000;
     
     public static class Task implements Comparable<Task> {
-        public Runnable mRunnable;
-        public long mTime;
+        private Runnable mRunnable;
+        private long mTime;
         
         public Task(Runnable runnable, long time) {
             mRunnable = runnable;
@@ -66,10 +66,42 @@ public class Scheduler {
      * @param runnable
      * @param delay The delay in milliseconds.
      */
-    public void addTask(Runnable runnable, long delay) {
-        new Task(runnable, System.nanoTime() + delay*NANOSECONDS_IN_MILLISECOND);
+    public Task addTask(Runnable runnable, long delay) {
+        Task task = new Task(runnable, System.nanoTime() + delay*NANOSECONDS_IN_MILLISECOND);
+        mTasks.add(task);
+        return task;
     }
-
+    
+    /**
+     * Remove the specified task from the scheduler.
+     * 
+     * @param task
+     */
+    public void removeTask(Task task) {
+        mTasks.remove(task);
+    }
+    
+    /**
+     * Updated an existing task to use a new delay and/or runnable.
+     * 
+     * @param runnable
+     *            The runnable to run at the specified time, or null if the
+     *            runnable should not be updated.
+     * @param delay
+     *            The delay in milliseconds, or -1 if the delay should not be
+     *            updated.
+     */
+    public void updateTask(Task task, Runnable runnable, long delay) {
+        mTasks.remove(task);
+        if (runnable != null) {
+            task.mRunnable = runnable;
+        }
+        if (delay != -1) {
+            task.mTime = System.nanoTime() + delay*NANOSECONDS_IN_MILLISECOND;
+        }
+        mTasks.add(task);
+    }
+    
     /**
      * Run all tasks that are ready for execution.
      */
