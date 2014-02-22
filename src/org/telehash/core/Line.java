@@ -232,15 +232,17 @@ public class Line implements OnTimeoutListener {
                 Log.i("dropping packet for unknown channel without type");
                 return;
             }
+            
             // is anyone interested in channels of this type?
             ChannelHandler channelHandler = mTelehash.getSwitch().getChannelHandler(type);
             if (channelHandler == null) {
-                Log.i("no channel handler for type");
+                Log.i("no channel handler for type; type=\""+channelPacket.getType()+
+                        "\" cid="+channelPacket.getChannelIdentifier());
                 return;
             }
             
             // create channel
-            channel = new Channel(mTelehash, this, type);
+            channel = new Channel(mTelehash, this, channelPacket.getChannelIdentifier(), type);
             channel.setChannelHandler(channelHandler);
             mChannels.put(channel.getChannelIdentifier(), channel);
             

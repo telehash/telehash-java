@@ -2,7 +2,9 @@ package org.telehash.core;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 import org.telehash.dht.DHT;
@@ -26,8 +28,9 @@ public class Switch implements DatagramHandler {
     private int mPort;
     private Reactor mReactor;
     private Thread mThread;
-    private Object mStopLock = new Object();
     
+    private Flag mStartFlag = new Flag();
+    private Flag mStopFlag = new Flag();
     private boolean mStopRequested = false;
     
     private Node mLocalNode;
@@ -35,6 +38,20 @@ public class Switch implements DatagramHandler {
     
     private DHT mDHT;
     private LineManager mLineManager;
+    
+    private static class Command {
+    }
+    private static class OpenChannelCommand extends Command {
+        final Node destination;
+        final String type;
+        final ChannelHandler channelHandler;
+        public OpenChannelCommand(Node destination, String type, ChannelHandler channelHandler) {
+            this.destination = destination;
+            this.type = type;
+            this.channelHandler = channelHandler;
+        }
+    }
+    private Queue<Command> mCommandQueue = new LinkedList<Command>();
 
     public Switch(Telehash telehash, Set<Node> seeds) {
         mTelehash = telehash;
@@ -48,9 +65,6 @@ public class Switch implements DatagramHandler {
         mPort = port;
     }
     
-    private Object mStartLock = new Object();
-    private boolean mStartLockState = false;
-
     public void start() throws TelehashException {
 
         // determine the local node information
@@ -85,33 +99,23 @@ public class Switch implements DatagramHandler {
         mThread.start();
         
         // block until the start tasks in loop() have finished.
-        synchronized (mStartLock) {
-            while (mStartLockState == false) {
-                try {
-                    mStartLock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        mStartFlag.waitForSignal();
+        mStartFlag.reset();
     }
     
     public void stop() {
-        synchronized (mStopLock) {
+        synchronized (this) {
             if (mReactor != null) {
-                mReactor.stop();
                 mStopRequested = true;
+                mReactor.stop();
                 
                 if (! Thread.currentThread().equals(mThread)) {
-                    // wait for loop to finish
-                    try {
-                        mStopLock.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    mStopFlag.waitForSignal();
                 }
             }
         }
+        
+        mStopFlag.reset();
     }
     
     public DHT getDHT() {
@@ -122,7 +126,12 @@ public class Switch implements DatagramHandler {
         return mLineManager;
     }
     
-    public void openChannel(Node destination, final String type, final ChannelHandler channelHandler) throws TelehashException {
+    public void openChannel(Node destination, final String type, final ChannelHandler channelHandler) {
+        mCommandQueue.offer(new OpenChannelCommand(destination, type, channelHandler));
+        mReactor.wakeup();
+    }
+    
+    public void openChannelNow(Node destination, final String type, final ChannelHandler channelHandler) {
         CompletionHandler<Line> lineOpenCompletionHandler = new CompletionHandler<Line>() {
             @Override
             public void completed(Line line, Object attachment) {
@@ -136,7 +145,11 @@ public class Switch implements DatagramHandler {
         };
         
         // open a new line (or re-use an existing line)
-        mLineManager.openLine(destination, false, lineOpenCompletionHandler, null);
+        try {
+            mLineManager.openLine(destination, false, lineOpenCompletionHandler, null);
+        } catch (IllegalArgumentException e) {
+            channelHandler.handleError(null, e);
+        }
     }
     
     public void sendPacket(Packet packet) throws TelehashException {
@@ -163,10 +176,7 @@ public class Switch implements DatagramHandler {
         mDHT.init();
         
         // signal start completion
-        synchronized (mStartLock) {
-            mStartLockState = true;
-            mStartLock.notify();
-        }
+        mStartFlag.signal();
 
         try {
             while (true) {
@@ -183,12 +193,22 @@ public class Switch implements DatagramHandler {
                 // run any timed tasks
                 mScheduler.runTasks();
                 
+                // process any commands
+                Command command = mCommandQueue.poll();
+                if (command != null) {
+                    if (command instanceof OpenChannelCommand) {
+                        OpenChannelCommand c = (OpenChannelCommand)command;
+                        openChannelNow(c.destination, c.type, c.channelHandler);
+                    }
+                }
+                
                 if (mStopRequested) {
+                    Log.i("switch stop requested");
                     break;
                 }
             }
         } catch (IOException e) {
-            Log.i("loop ending abnormaly");
+            Log.i("switch loop ending abnormaly");
             e.printStackTrace();
         } finally {
             try {
@@ -198,15 +218,12 @@ public class Switch implements DatagramHandler {
                 e.printStackTrace();
             }
         }
-        
-        // signal loop completion
-        synchronized (mStopLock) {
-            mReactor = null;
-            mStopLock.notify();
-        }
-        
+
         mDHT.close();
         Log.i("Telehash switch "+mLocalNode+" ending.");
+        
+        // signal loop completion
+        mStopFlag.signal();
     }
     
     @Override

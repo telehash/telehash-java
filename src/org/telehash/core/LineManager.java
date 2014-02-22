@@ -196,7 +196,7 @@ public class LineManager {
             boolean reopen,
             CompletionHandler<Line> handler,
             Object attachment
-    ) throws TelehashException {
+    ) {
         // NOTE: if this is called twice, the latter call supersedes the
         // previous line entry.  Perhaps instead we should throw an exception,
         // or simply return the current line.

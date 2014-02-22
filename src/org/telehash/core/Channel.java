@@ -27,6 +27,7 @@ public class Channel implements OnTimeoutListener {
         mLine = line;
         mChannelIdentifier = channelIdentifer;
         mType = type;
+        mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
     
     public void setLine(Line line) {

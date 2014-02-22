@@ -14,14 +14,11 @@ import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
-import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.TelehashException;
 
 public class StarMeshTest {
-    
-    private static final int START_PORT = 6000;
     private static final int NUM_NODES = 3;
     private static final int NODE_SEED = 0;
     private static final int NODE_A = 1;
@@ -31,10 +28,7 @@ public class StarMeshTest {
 
     @Before
     public void setUp() throws Exception {
-        Log.i("before createStar");
-        
         mNodes = TelehashTestInstance.createStarTopology(NUM_NODES);
-        Log.i("after createStar");
     }
 
     @After
