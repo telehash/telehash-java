@@ -2,6 +2,7 @@ package org.telehash.dht;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class DHT {
     private static final String SEEK_TYPE = "seek";
     private static final String PEER_TYPE = "peer";
     private static final String CONNECT_TYPE = "connect";
+    private static final String SEEK_KEY = "seek";
     private static final String SEE_KEY = "see";
     private static final String PEER_KEY = "peer";
 
@@ -202,10 +204,19 @@ public class DHT {
     private static final int MAX_SEEK_NODES_RETURNED = 9;
 
     private void handleSeek(Channel channel, ChannelPacket channelPacket) {
-        String seekString = (String) channelPacket.get(PEER_KEY);
+        String seekString = (String) channelPacket.get(SEEK_KEY);
         if (seekString == null || seekString.isEmpty()) {
             return;
         }
+        
+        // support prefix seeks by coercing the string to 64 characters.
+        if (seekString.length() < HashName.SIZE*2) {
+            char[] chars = new char[HashName.SIZE*2];
+            Arrays.fill(chars, '0');
+            seekString.getChars(0, seekString.length(), chars, 0);
+            seekString = new String(chars);
+        }
+        
         HashName target = new HashName(Util.hexToBytes(seekString));
         Set<Node> nodes = mNodeTracker.getClosestNodes(target, MAX_SEEK_NODES_RETURNED);
         
@@ -293,3 +304,4 @@ public class DHT {
         mTelehash.getSwitch().openLine(node, null, null);
     }
 }
+
