@@ -5,8 +5,10 @@ package org.telehash.core;
  * its readiness (or signals an error).
  */
 public class Flag {
-    private boolean flagged = false;
-    private Throwable error = null;
+    private static final int NANOSECONDS_IN_MILLISECOND = 1000000;
+    private boolean mFlagged = false;
+    private boolean mTimeoutOccurred = false;
+    private Throwable mError = null;
     
     /**
      * Wait until another thread signals its readiness (or error).
@@ -14,22 +16,47 @@ public class Flag {
      */
     public Throwable waitForSignal() {
         synchronized (this) {
-            while (flagged == false) {
+            while (mFlagged == false) {
                 try {
                     this.wait();
                 } catch (InterruptedException e) {
                 }
             }
         }
-        return error;
+        return mError;
     }
-    
+
+    /**
+     * Wait until another thread signals its readiness (or error), or until the
+     * specified time elapses.
+     * 
+     * @return An error, if the other thread indicated such.
+     */
+    public Throwable waitForSignal(int timeout) {
+        long now = System.nanoTime();
+        long stopTime = now + (long)timeout*NANOSECONDS_IN_MILLISECOND;
+        synchronized (this) {
+            while (mFlagged == false && now <= stopTime) {
+                int remainingTime = (int)((stopTime-now)/NANOSECONDS_IN_MILLISECOND);
+                try {
+                    this.wait(remainingTime);
+                } catch (InterruptedException e) {
+                }
+                now = System.nanoTime();
+            }
+            if (mFlagged == false) {
+                mTimeoutOccurred = true;
+            }
+        }
+        return mError;
+    }
+
     /**
      * Signal readiness to the blocked thread.
      */
     public void signal() {
         synchronized (this) {
-            flagged = true;
+            mFlagged = true;
             this.notify();
         }            
     }
@@ -39,8 +66,9 @@ public class Flag {
      */
     public void reset() {            
         synchronized (this) {
-            flagged = false;
-            error = null;
+            mFlagged = false;
+            mError = null;
+            mTimeoutOccurred = false;
         }
     }
     
@@ -49,7 +77,17 @@ public class Flag {
      * @param e The error to signal.
      */
     public void signalError(Throwable e) {
-        error = e;
+        mError = e;
         signal();
+    }
+    
+    /**
+     * After waitForSignal(int) returns, this method will return true if the
+     * wait timed out.
+     * 
+     * @return
+     */
+    public boolean timeoutOccurred() {
+        return mTimeoutOccurred;
     }
 }
