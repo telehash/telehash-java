@@ -1,0 +1,58 @@
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,calc}
+\begin{document}
+\pagestyle{empty}
+
+% Define block styles
+\tikzstyle{decision} = [diamond, aspect=1.8, draw, fill=blue!10,
+    text width=12em,
+    minimum width=20em,
+    text badly centered, inner sep=0pt]
+\tikzstyle{start} = [rectangle, draw, fill=green!10, 
+    text width=12em, text centered, rounded corners=12, minimum height=4em]
+\tikzstyle{stop} = [rectangle, draw, fill=green!10, 
+    text width=12em, text centered, rounded corners=12, minimum height=4em]
+\tikzstyle{block} = [rectangle, draw, fill=blue!10, 
+    text width=12em, text centered, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+    
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=0.8, transform shape, node distance = 2em, auto]
+    % Place nodes
+    \node [start] (start) {\tt{\mbox{openLine(hashName)}}};
+    \node [decision, below=of start] (islineopen) {Is there an existing line open to this node?};
+    \node [decision, below=of islineopen] (haspath) {Is the provided node a seed?  (i.e. we have full path and public key information.)};
+    \node [block, right=of haspath] (openline) {Open a line to the node directly.};
+    \node [block, below=of openline] (waitforremote2) {Wait for the remote node's {\tt open} response.};
+    \node [decision, below=of haspath] (isintable) {Is this hash name in the routing table?};
+    \node [block, right=of isintable] (nodelookup) {Perform node lookup to find the node.};
+    \node [block, below=of isintable] (peerconnect) {UDP hole-punch if needed, and ask the referring node to introduce us via \tt{peer/connect}.};
+    \node [block, below=of peerconnect] (waitforremote1) {Wait for the remote node's {\tt open} packet.};
+    \node [block, below=of waitforremote1] (sendopenresponse) {Send our {\tt open} packet in response.};
+    \node [stop, below=of sendopenresponse] (lineisopen) {Line is open.};
+    % Draw edges
+    \path [line] (start) -- (islineopen);
+    \path [line] (islineopen) -- node [near start] {no} (haspath);
+    \path [line] (haspath) -- node [near start] {yes} (openline);
+    \path [line] (haspath) -- node [near start] {no} (isintable);
+    \path [line] (openline) -- (waitforremote2);
+    \path [line] (isintable) -- node [near start] {no} (nodelookup);
+    \path [line] (isintable) -- node [near start] {yes} (peerconnect);
+    \path [line] (nodelookup) |- (peerconnect);
+    \path [line] (peerconnect) -- (waitforremote1);
+    \path [line] (waitforremote1) -- (sendopenresponse);
+    \path [line] (sendopenresponse) -- (lineisopen);
+    \path [line] (waitforremote2.east) -- ++(0.5,0) |- (lineisopen.east);
+    \path [line] (islineopen.west) -- node [near start] {yes} ++(-1.2,0) |- (lineisopen.west);
+\end{tikzpicture}
+\caption{Steps to open a Telehash line.}
+\end{figure}
+
+\end{document}
+
