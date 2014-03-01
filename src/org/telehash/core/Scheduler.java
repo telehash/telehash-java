@@ -109,7 +109,17 @@ public class Scheduler {
      */
     public void runTasks() {
         long time = System.nanoTime();
-        Iterator<Task> iterator = mTasks.iterator();
+        
+        // iterate over a copy of the task list, since otherwise
+        // the called runnable may add a task and cause us to
+        // receive a ConcurrentModificationException.
+        //
+        // TODO: adding all the tasks into a separate sorted tree is a lot
+        // of work to do for every iteration of the switch's select loop.
+        // find a better way.
+        Set<Task> tasks = new TreeSet<Task>(mTasks);
+        
+        Iterator<Task> iterator = tasks.iterator();
         Set<Task> removalSet = new HashSet<Task>();
         while (iterator.hasNext()) {
             Task task = iterator.next();
@@ -117,7 +127,6 @@ public class Scheduler {
                 break;
             }
             task.mRunnable.run();
-            //iterator.remove();
             removalSet.add(task);
         }
         mTasks.removeAll(removalSet);

@@ -37,6 +37,9 @@ public class Timeout implements Runnable {
         return mDelay;
     }
     
+    /**
+     * Reset (and re-start) the timer with the previously established delay.
+     */
     public void reset() {
         if (mDelay > 0) {
             if (mTask != null) {
@@ -46,7 +49,7 @@ public class Timeout implements Runnable {
             }
         }
     }
-    
+
     public void cancel() {
         if (mTask != null) {
             mScheduler.removeTask(mTask);
