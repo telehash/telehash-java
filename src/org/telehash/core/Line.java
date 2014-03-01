@@ -13,6 +13,7 @@ public class Line implements OnTimeoutListener {
     
     private static final int SHA256_DIGEST_SIZE = 32;
     private static final int LINE_OPEN_TIMEOUT = 5000;
+    private static final int LINE_RECEIVE_TIMEOUT = 60000;
     
     public enum State {
         INITIAL,
@@ -175,8 +176,8 @@ public class Line implements OnTimeoutListener {
         mState = State.ESTABLISHED;
         mFinished = true;
 
-        // cancel timeout
-        mTimeout.cancel();
+        // reset the timeout (it will now be a line receive timeout.)
+        mTimeout.setDelay(LINE_RECEIVE_TIMEOUT);
         
         // signal open completion
         for (Completion<Line> completion : mOpenCompletionHandlers) {
@@ -188,10 +189,6 @@ public class Line implements OnTimeoutListener {
     
     public void startOpenTimer() {
         mTimeout.setDelay(LINE_OPEN_TIMEOUT);
-    }
-    
-    public Telehash getTelehash() {
-        return mTelehash;
     }
     
     public long getOpenTime() {
@@ -281,6 +278,9 @@ public class Line implements OnTimeoutListener {
             break;
         case DIRECT_OPEN_PENDING:
             exception = new TelehashException("line open timeout");
+            break;
+        case ESTABLISHED:
+            exception = new TelehashException("line receive timeout");
             break;
         default:
             exception = new TelehashException("unknown line timeout");
