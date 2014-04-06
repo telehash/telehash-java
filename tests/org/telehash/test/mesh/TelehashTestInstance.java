@@ -97,13 +97,6 @@ public class TelehashTestInstance {
         Log.i("Telehash star topology created: ");
         dumpNodeList(list);
         
-        try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        Log.i("-----return");
         return list;
     }
 

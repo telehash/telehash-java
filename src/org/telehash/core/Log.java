@@ -2,9 +2,24 @@ package org.telehash.core;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Log {
-    
+	
+	private static final boolean ENABLE_COLOR = true;
+	private static final String COLOR_RESET = new String(new char[] {0x1B, '[', '3', '9', ';', '4', '9', 'm'});
+	private static final String COLOR_RED = new String(new char[] {0x1B, '[', '3', '1', 'm'});
+	private static final String COLOR_GREEN = new String(new char[] {0x1B, '[', '3', '2', 'm'});
+	private static final String COLOR_BLUE = new String(new char[] {0x1B, '[', '3', '4', 'm'});
+	private static final String COLOR_MAGENTA = new String(new char[] {0x1B, '[', '5', '1', 'm'});
+	private static final String COLOR_CYAN = new String(new char[] {0x1B, '[', '3', '6', 'm'});
+	private static final String COLOR_YELLOW = new String(new char[] {0x1B, '[', '3', '3', 'm'});
+	private static final String COLORS[] = new String[] {
+		COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_MAGENTA, COLOR_CYAN
+	};
+	private static final Map<HashName,String> sColorMap = new HashMap<HashName,String>();
+	
     public static void d(String msg, Object... args) {
         println(msg, args);
     }
@@ -21,6 +36,7 @@ public class Log {
     public static void println(String msg, Object... args) {
         String tag;
         Identity identity = Telehash.get().getIdentity();
+        
         if (identity == null) {
             tag = "[        ] ";
         } else {
@@ -31,6 +47,24 @@ public class Log {
             int d = hashName[3] & 0xFF;
             tag = String.format("[%02x%02x%02x%02x] ", a,b,c,d);
         }
+        
+        if (ENABLE_COLOR) {
+        	if (identity != null) {
+	        	HashName hashName = identity.getHashName();
+	        	String color = sColorMap.get(hashName);
+	        	if (color == null) {
+	        		int size = sColorMap.size();
+	        		if (size >= COLORS.length) {
+	        			color = COLOR_YELLOW;
+	        		} else {
+	        			color = COLORS[size];
+	        		}
+	        		sColorMap.put(hashName, color);
+	        	}
+	        	System.out.print(color);
+        	}
+        }
+        
         System.out.println(tag+String.format(msg, args));
         
         if (args.length > 0 && (args[args.length-1] instanceof Throwable)) {
@@ -42,6 +76,10 @@ public class Log {
                 line.trim();
                 System.out.println(tag+line);
             }
+        }
+        
+        if (ENABLE_COLOR && identity != null) {
+        	System.out.print(COLOR_RESET);
         }
         
     }
