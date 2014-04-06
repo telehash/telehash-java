@@ -11,6 +11,8 @@ import org.telehash.dht.DHT;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
 import org.telehash.network.InetPath;
+import org.telehash.network.Message;
+import org.telehash.network.MessageHandler;
 import org.telehash.network.Path;
 import org.telehash.network.Reactor;
 
@@ -19,7 +21,7 @@ import org.telehash.network.Reactor;
  * managing identity and node information, maintaining the DHT, and facilitating
  * inter-node communication.
  */
-public class Switch implements DatagramHandler {
+public class Switch implements DatagramHandler, MessageHandler {
     
     private static final int DEFAULT_PORT = 42424;
 
@@ -39,19 +41,16 @@ public class Switch implements DatagramHandler {
     private DHT mDHT;
     private LineManager mLineManager;
     
-    private static class Command {
-    }
-    private static class OpenChannelCommand extends Command {
+    private static class OpenChannelMessage extends Message {
         final Node destination;
         final String type;
         final ChannelHandler channelHandler;
-        public OpenChannelCommand(Node destination, String type, ChannelHandler channelHandler) {
+        public OpenChannelMessage(Node destination, String type, ChannelHandler channelHandler) {
             this.destination = destination;
             this.type = type;
             this.channelHandler = channelHandler;
         }
     }
-    private Queue<Command> mCommandQueue = new LinkedList<Command>();
 
     public Switch(Telehash telehash, Set<Node> seeds) {
         mTelehash = telehash;
@@ -82,6 +81,7 @@ public class Switch implements DatagramHandler {
         // provision the reactor
         mReactor = mTelehash.getNetwork().createReactor(mPort);
         mReactor.setDatagramHandler(this);
+        mReactor.setMessageHandler(this);
         try {
             mReactor.start();
         } catch (IOException e) {
@@ -127,11 +127,17 @@ public class Switch implements DatagramHandler {
     }
     
     public void openChannel(Node destination, final String type, final ChannelHandler channelHandler) {
-        mCommandQueue.offer(new OpenChannelCommand(destination, type, channelHandler));
-        mReactor.wakeup();
+        Message message = new OpenChannelMessage(destination, type, channelHandler);
+        mReactor.sendMessage(message);
     }
     
     public void openChannelNow(Node destination, final String type, final ChannelHandler channelHandler) {
+        if (mLocalNode.equals(destination)) {
+            channelHandler.handleError(null,
+                    new TelehashException("attempt to open a channel to myself")
+            );
+            return;
+        }
         CompletionHandler<Line> lineOpenCompletionHandler = new CompletionHandler<Line>() {
             @Override
             public void completed(Line line, Object attachment) {
@@ -157,7 +163,8 @@ public class Switch implements DatagramHandler {
             return;
         }
         Node destination = packet.getDestinationNode();
-        Log.i("sending to hashname="+destination);
+        Log.i("outgoing packet: "+packet);
+        
         Datagram datagram =
                 new Datagram(packet.render(), null, packet.getDestinationNode().getPath());
         
@@ -180,27 +187,19 @@ public class Switch implements DatagramHandler {
 
         try {
             while (true) {
-                long nextTaskTime = mScheduler.getNextTaskTime();
+                long nextTaskTime;
+                nextTaskTime = mScheduler.getNextTaskTime();
                 if (nextTaskTime == -1) {
                     // hack: if any tasks are currently runnable, use a select timeout
                     // of 1ms and then run them.
                     nextTaskTime = 1;
                 }
-                
+
                 // select and dispatch
                 mReactor.select(nextTaskTime);
-                
+            	
                 // run any timed tasks
                 mScheduler.runTasks();
-                
-                // process any commands
-                Command command = mCommandQueue.poll();
-                if (command != null) {
-                    if (command instanceof OpenChannelCommand) {
-                        OpenChannelCommand c = (OpenChannelCommand)command;
-                        openChannelNow(c.destination, c.type, c.channelHandler);
-                    }
-                }
                 
                 if (mStopRequested) {
                     Log.i("switch stop requested");
@@ -250,6 +249,17 @@ public class Switch implements DatagramHandler {
         
         // process the packet
         handleIncomingPacket(packet);
+    }
+    
+    @Override
+    public void handleMessage(Message message) {
+        // process any pending messages
+        if (message != null) {
+            if (message instanceof OpenChannelMessage) {
+                OpenChannelMessage m = (OpenChannelMessage)message;
+                openChannelNow(m.destination, m.type, m.channelHandler);
+            }
+        }
     }
     
     private void handleIncomingPacket(Packet packet) {

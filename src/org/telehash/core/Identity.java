@@ -53,5 +53,16 @@ public class Identity {
      */
     public HashName getHashName() {
         return mHashName;
-    }    
+    }
+    
+    /**
+     * Return a node representation of this identity.
+     */
+    public Node getNode() {
+    	try {
+			return new Node(mKeyPair.getPublicKey(), null);
+		} catch (TelehashException e) {
+			return null;
+		}
+    }
 }

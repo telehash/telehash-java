@@ -220,6 +220,7 @@ public class Line implements OnTimeoutListener {
     
     public void handleIncoming(LinePacket linePacket) {
         ChannelPacket channelPacket = linePacket.getChannelPacket();
+        Log.i("decoded channel packet: "+channelPacket);
         Channel channel = mChannels.get(channelPacket.getChannelIdentifier());
         if (channel == null) {
             // is this the first communication of a new channel?

@@ -43,6 +43,7 @@ public class NodeLookupTask implements OnTimeoutListener {
     private NodeTracker mNodeTracker;
     private HashName mTargetHashName;
     
+    private Node mSelfNode;
     private SortedSet<Node> mQueryNodes;
     private SortedSet<Node> mVisitedNodes;
     private Set<NodeSeekRequest> mOutstandingSeeks = new HashSet<NodeSeekRequest>();
@@ -52,6 +53,7 @@ public class NodeLookupTask implements OnTimeoutListener {
     
     private int mTimeoutInterval = DEFAULT_NODE_LOOKUP_TIMEOUT;
     private Timeout mTimeout;
+    private boolean mSelfSeek = false;
     private boolean mActive = false;
     private boolean mFinished = false;
     
@@ -67,10 +69,15 @@ public class NodeLookupTask implements OnTimeoutListener {
         mTargetHashName = targetHashName;
         mHandler = handler;
         
+        mSelfNode = telehash.getIdentity().getNode();
         mQueryNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
         mVisitedNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
         
         mTimeout = mTelehash.getSwitch().getTimeout(this, 0);
+        
+        if (mSelfNode.getHashName().equals(targetHashName)) {
+        	mSelfSeek = true;
+        }
     }
     
     /**
@@ -181,8 +188,7 @@ public class NodeLookupTask implements OnTimeoutListener {
                         //       among all seeks, instead of a separate Handler for each.
                         @Override
                         public void handleError(NodeSeekRequest seek, Throwable e) {
-                            Log.i("error during seek");
-                            e.printStackTrace();
+                            Log.i("error during seek: "+e.getMessage(), e);
                             mOutstandingSeeks.remove(seek);
                             iterate();
                         }
@@ -198,6 +204,24 @@ public class NodeLookupTask implements OnTimeoutListener {
                                 mNodeTracker.submitNode(node);
                             }
                             */
+                            
+                            // in case our node is present in the list, remove it
+                            // since there's no point opening a line to ourselves.
+                            
+                            // remove ourselves from the returned list of nodes, unless
+                            // this is a self-seek.
+                            Set<Node> nodes = seek.getResultNodes();
+                            if (mSelfSeek) {
+                            	for (Node node : nodes) {
+                            		if (mTargetHashName.equals(node.getHashName())) {
+                                		complete(node);
+                                		return;
+                            		}
+                            	}
+                            } else {
+                                nodes.remove(mSelfNode);
+                            }
+                            
                             mQueryNodes.addAll(seek.getResultNodes());
                             iterate();
                         }

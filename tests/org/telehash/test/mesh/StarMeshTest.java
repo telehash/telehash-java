@@ -69,35 +69,19 @@ public class StarMeshTest {
         final TelehashTestInstance src = mNodes.get(NODE_A);
         final TelehashTestInstance dst = mNodes.get(NODE_B);
         Log.i("OPEN "+src.getNode()+" -> "+dst.getNode());
-
-        // src opens a line to the seed
-        src.getSwitch().getLineManager().openLine(seed.getNode(), false, new CompletionHandler<Line>() {
-            @Override
-            public void failed(Throwable exc, Object attachment) {
-                Log.i("line open failed");
-            }
-            @Override
-            public void completed(Line line, Object attachment) {
-                Log.i("line open success");
-                
-                // src seeks the dst
-                Channel channel = line.openChannel("peer", new ChannelHandler() {
-                    @Override
-                    public void handleError(Channel channel, Throwable error) {
-                        Log.i("peer failed");
-                    }
-                    @Override
-                    public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
-                    }
-                    @Override
-                    public void handleOpen(Channel channel) {
-                        // nothing to do, since line.openChannel()
-                        // always opens channel immediately.
-                    }
-                });
-
-                Log.i("peer channel open success");
-                
+        
+        src.getSwitch().openChannel(seed.getNode(), "peer", new ChannelHandler() {
+			@Override
+			public void handleError(Channel channel, Throwable error) {
+				Log.i("cannot open peer channel");
+			}
+			@Override
+			public void handleIncoming(Channel channel,
+					ChannelPacket channelPacket) {
+				Log.i("expected silence, but received on channel: "+channelPacket);
+			}
+			@Override
+			public void handleOpen(Channel channel) {
                 Map<String,Object> fields = new HashMap<String,Object>();
                 fields.put("peer", dst.getNode().getHashName().asHex());
                 try {
@@ -106,9 +90,8 @@ public class StarMeshTest {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-
-            }
-        }, null);
+			}
+		});
         
         // TODO: signal failure/success/timeout via Object.notify().
         Thread.sleep(1000);

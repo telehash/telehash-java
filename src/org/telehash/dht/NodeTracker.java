@@ -178,7 +178,6 @@ public class NodeTracker {
      * past hour.
      */
     public void refreshBuckets() {
-        
         Log.i("perform self-seek");
         NodeLookupTask lookup = new NodeLookupTask(Telehash.get(), this, mLocalNode.getHashName(), new NodeLookupTask.Handler() {
             @Override

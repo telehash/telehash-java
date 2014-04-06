@@ -6,6 +6,8 @@ import org.telehash.network.Path;
 /**
  * This class represents a Telehash node, including its public key and network
  * path.
+ * 
+ * TODO: A node can have multiple network paths.
  */
 public class Node {
     private RSAPublicKey mPublicKey;

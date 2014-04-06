@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.telehash.core.Log;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
 import org.telehash.network.InetPath;
+import org.telehash.network.Message;
+import org.telehash.network.MessageHandler;
 import org.telehash.network.Reactor;
 
 public class FakeReactorImpl implements Reactor {
@@ -16,8 +19,10 @@ public class FakeReactorImpl implements Reactor {
 
     private int mPort;
     private DatagramHandler mDatagramHandler;
+    private MessageHandler mMessageHandler;
     private Queue<Datagram> mWriteQueue = new LinkedList<Datagram>();
     private Queue<Datagram> mReadQueue = new LinkedList<Datagram>();
+    private Queue<Message> mMessageQueue = new LinkedList<Message>();
     private Object mLock = new Object();
     
     /**
@@ -42,6 +47,11 @@ public class FakeReactorImpl implements Reactor {
     }
 
     @Override
+    public void setMessageHandler(MessageHandler messageHandler) {
+        mMessageHandler = messageHandler;
+    }
+    
+    @Override
     public void start() throws IOException {
     }
 
@@ -65,10 +75,11 @@ public class FakeReactorImpl implements Reactor {
     public void select(long timeout) throws IOException {
         Datagram writeDatagram;
         Datagram readDatagram;
+        Message message;
 
         synchronized (mLock) {
             // select
-            if (mWriteQueue.isEmpty() && mReadQueue.isEmpty()) {
+            if (mWriteQueue.isEmpty() && mReadQueue.isEmpty() && mMessageQueue.isEmpty() && timeout != -1) {
                 try {
                     mLock.wait(timeout);
                 } catch (InterruptedException e) {
@@ -78,6 +89,7 @@ public class FakeReactorImpl implements Reactor {
             
             writeDatagram = mWriteQueue.poll();
             readDatagram = mReadQueue.poll();
+            message = mMessageQueue.poll();
         }
         
         // dispatch
@@ -88,6 +100,11 @@ public class FakeReactorImpl implements Reactor {
             if (mDatagramHandler != null) {
                 mDatagramHandler.handleDatagram(readDatagram);
             }
+        }
+        if (message != null) {
+        	if (mMessageHandler != null) {
+        		mMessageHandler.handleMessage(message);
+        	}
         }
     }
     
@@ -104,4 +121,13 @@ public class FakeReactorImpl implements Reactor {
             wakeup();
         }
     }
+    
+    @Override
+    public void sendMessage(Message message) {
+        synchronized (mLock) {
+        	mMessageQueue.offer(message);
+        	wakeup();
+        }
+    }
+    
 }

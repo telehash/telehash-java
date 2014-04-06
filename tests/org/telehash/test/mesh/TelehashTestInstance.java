@@ -40,6 +40,22 @@ public class TelehashTestInstance {
     private Crypto mCrypto = new CryptoImpl();
     private Network mNetwork = new NetworkImpl();
     private Storage mStorage = new StorageImpl();
+
+    private static void dumpNode(TelehashTestInstance node) {
+    	String path;
+    	try {
+    		path = node.mNetwork.getPreferredLocalPath().toString();
+    	} catch (TelehashException e) {
+    		path = "?";
+    	}
+    	Log.i("  ["+node.mIndex+"] "+node.mIdentity.getHashName()+" "+path);    	
+    }
+
+    private static void dumpNodeList(List<TelehashTestInstance> list) {
+        for (TelehashTestInstance i : list) {
+        	dumpNode(i);
+        }
+    }
     
     private static TelehashTestInstance createInstance(
             NetworkSimulator networkSimulator,
@@ -61,6 +77,7 @@ public class TelehashTestInstance {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        
         return node;
     }
     
@@ -76,7 +93,17 @@ public class TelehashTestInstance {
             }            
             list.add(instance);
         }
-
+        
+        Log.i("Telehash star topology created: ");
+        dumpNodeList(list);
+        
+        try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        Log.i("-----return");
         return list;
     }
 
@@ -93,6 +120,8 @@ public class TelehashTestInstance {
         list.add(i2);
         list.add(i3);
         list.add(i4);
+        Log.i("Telehash three-level topology created: ");
+        dumpNodeList(list);
         return list;
     }
 

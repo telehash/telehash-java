@@ -52,10 +52,11 @@ public class NodeSeekRequest {
     }
     
     public void start() {
+        Log.i("open seek channel to node: "+mQueryNode);
         mTelehash.getSwitch().openChannel(mQueryNode, SEEK_TYPE, new ChannelHandler() {
             @Override
             public void handleError(Channel channel, Throwable error) {
-                Log.i("seek channel error");
+                Log.i("seek channel error: "+error.getMessage());
                 fail(error);
             }
             @Override
@@ -68,7 +69,7 @@ public class NodeSeekRequest {
                 Log.i("seek channel open");
                 Map<String,Object> fields = new HashMap<String,Object>();
                 
-                // To product the user's privacy, only provide enough of the target hashname
+                // To protect the user's privacy, only provide enough of the target hashname
                 // to get useful results -- the distance to the query node plus one bytes.
                 HashName localHashName = mTelehash.getIdentity().getHashName();
                 byte[] target;

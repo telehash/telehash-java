@@ -15,6 +15,8 @@ import org.telehash.core.Log;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
 import org.telehash.network.InetPath;
+import org.telehash.network.Message;
+import org.telehash.network.MessageHandler;
 import org.telehash.network.Path;
 import org.telehash.network.Reactor;
 
@@ -25,7 +27,9 @@ public class ReactorImpl implements Reactor {
     private SelectionKey mSelectionKey;
     private DatagramChannel mChannel;
     private DatagramHandler mDatagramHandler;
+    private MessageHandler mMessageHandler;
     private Queue<Datagram> mWriteQueue = new LinkedList<Datagram>();
+    private Queue<Message> mMessageQueue = new LinkedList<Message>();
     
     /**
      * Construct a new ReactorImpl.
@@ -41,6 +45,11 @@ public class ReactorImpl implements Reactor {
         mDatagramHandler = datagramHandler;
     }
 
+    @Override
+    public void setMessageHandler(MessageHandler messageHandler) {
+        mMessageHandler = messageHandler;
+    }
+    
     @Override
     public void start() throws IOException {
         // provision datagram channel and selector
@@ -94,7 +103,7 @@ public class ReactorImpl implements Reactor {
         }
 
         // select
-        mSelector.select(timeout);
+        mSelector.select(timeout);        	
         
         // dispatch
         if (mSelector.selectedKeys().contains(mSelectionKey)) {
@@ -104,6 +113,12 @@ public class ReactorImpl implements Reactor {
             if (mSelectionKey.isWritable()) {
                 handleOutgoing();
             }
+        }
+        synchronized (mMessageQueue) {
+	        Message message = mMessageQueue.poll();
+	        if (message != null && mMessageHandler != null) {
+	        	mMessageHandler.handleMessage(message);
+	        }
         }
     }
     
@@ -177,4 +192,13 @@ public class ReactorImpl implements Reactor {
         mWriteQueue.offer(datagram);
         mSelector.wakeup();
     }
+    
+    @Override
+    public void sendMessage(Message message) {
+    	synchronized (mMessageQueue) {
+    		mMessageQueue.offer(message);
+            mSelector.wakeup();
+    	}
+    }
+    
 }
