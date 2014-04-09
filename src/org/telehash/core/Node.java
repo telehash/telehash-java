@@ -1,6 +1,6 @@
 package org.telehash.core;
 
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.Path;
 
 /**
@@ -10,17 +10,17 @@ import org.telehash.network.Path;
  * TODO: A node can have multiple network paths.
  */
 public class Node {
-    private RSAPublicKey mPublicKey;
+    private HashNamePublicKey mPublicKey;
     // TODO: support multiple paths per node.
     private Path mPath;
     private HashName mHashName = null;
     private Node mReferringNode;
     
-    public Node(RSAPublicKey publicKey, Path path) throws TelehashException {
+    public Node(HashNamePublicKey publicKey, Path path) throws TelehashException {
         mPublicKey = publicKey;
         mPath = path;
         mHashName = new HashName(
-                Telehash.get().getCrypto().sha256Digest(mPublicKey.getDEREncoded())
+                Telehash.get().getCrypto().sha256Digest(mPublicKey.getEncoded())
         );
     }
 
@@ -30,11 +30,11 @@ public class Node {
         mHashName = hashName;
     }
 
-    public void setPublicKey(RSAPublicKey publicKey) {
+    public void setPublicKey(HashNamePublicKey publicKey) {
         mPublicKey = publicKey;
     }
     
-    public RSAPublicKey getPublicKey() {
+    public HashNamePublicKey getPublicKey() {
         return mPublicKey;
     }
     

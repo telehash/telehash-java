@@ -7,10 +7,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.ECKeyPair;
-import org.telehash.crypto.ECPrivateKey;
-import org.telehash.crypto.ECPublicKey;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.LineKeyPair;
+import org.telehash.crypto.LinePrivateKey;
+import org.telehash.crypto.LinePublicKey;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.Path;
 
 /**
@@ -23,18 +23,17 @@ import org.telehash.network.Path;
  * </p>
  * 
  * <ol>
- * <li>The public key from an elliptic curve key pair uniquely generated for
- * this open. This key is RSA-OAEP encrypted using the destination's RSA public
- * key.</li>
+ * <li>The public key from a line key pair uniquely generated for this open.
+ * This key is encrypted using the destination's hashname public key.</li>
  * <li>A random initialization vector (IV) used for the AES encryption of other
  * components within this packet.</li>
  * <li>An embedded "inner packet" containing the time, destination hash name,
- * line identifier, and the RSA public key of the initiator. This inner packet
- * is AES-CTR encrypted using the SHA-256 hash of the generated elliptic curve
+ * line identifier, and the hashname public key of the initiator. This inner
+ * packet is AES-CTR encrypted using the SHA-256 hash of the generated line
  * public key, and attached to the outer packet as the body.</li>
- * <li>An RSA signature of the encrypted inner packet, proving the authenticity
- * of the sender. The signature itself is AES-CTR encrypted using the SHA-256
- * hash of the elliptic curve public key and the line identifier.</li>
+ * <li>An signature of the encrypted inner packet, proving the authenticity of
+ * the sender. The signature itself is encrypted using the SHA-256 hash of the
+ * line public key and the line identifier.</li>
  * </ol>
  */
 public class OpenPacket extends Packet {
@@ -57,16 +56,16 @@ public class OpenPacket extends Packet {
     }
     
     private Identity mIdentity;
-    private RSAPublicKey mSenderRSAPublicKey;
-    private ECPublicKey mEllipticCurvePublicKey;
-    private ECPrivateKey mEllipticCurvePrivateKey;
+    private HashNamePublicKey mSenderHashNamePublicKey;
+    private LinePublicKey mLinePublicKey;
+    private LinePrivateKey mLinePrivateKey;
     private long mOpenTime;
     private LineIdentifier mLineIdentifier;
 
     public OpenPacket(Identity identity, Node destinationNode) {
         mIdentity = identity;
         mDestinationNode = destinationNode;
-        mSenderRSAPublicKey = identity.getPublicKey();
+        mSenderHashNamePublicKey = identity.getPublicKey();
         
         if (destinationNode.getPublicKey() == null) {
             throw new IllegalArgumentException("attempt to open a line to a node with unknown public key");
@@ -78,39 +77,39 @@ public class OpenPacket extends Packet {
         );
     }
     
-    private OpenPacket(
+    public OpenPacket(
             Node sourceNode,
-            ECPublicKey ellipticCurvePublicKey,
+            LinePublicKey linePublicKey,
             long openTime,
             LineIdentifier lineIdentifier
     ) {
         mSourceNode = sourceNode;
-        mEllipticCurvePublicKey = ellipticCurvePublicKey;
+        mLinePublicKey = linePublicKey;
         mOpenTime = openTime;
         mLineIdentifier = lineIdentifier;
     }
     
     // accessor methods
     
-    public void setSenderRSAPublicKey(RSAPublicKey senderRSAPublicKey) {
-        mSenderRSAPublicKey = senderRSAPublicKey;
+    public void setSenderHashNamePublicKey(HashNamePublicKey senderHashNamePublicKey) {
+        mSenderHashNamePublicKey = senderHashNamePublicKey;
     }
-    public RSAPublicKey getSenderRSAPublicKey() {
-        return mSenderRSAPublicKey;
-    }
-    
-    public void setEllipticCurvePublicKey(ECPublicKey publicKey) {
-        mEllipticCurvePublicKey = publicKey;
-    }
-    public ECPublicKey getEllipticCurvePublicKey() {
-        return mEllipticCurvePublicKey;
+    public HashNamePublicKey getSenderHashNamePublicKey() {
+        return mSenderHashNamePublicKey;
     }
     
-    public void setEllipticCurvePrivateKey(ECPrivateKey privateKey) {
-        mEllipticCurvePrivateKey = privateKey;
+    public void setLinePublicKey(LinePublicKey publicKey) {
+        mLinePublicKey = publicKey;
     }
-    public ECPrivateKey getEllipticCurvePrivateKey() {
-        return mEllipticCurvePrivateKey;
+    public LinePublicKey getLinePublicKey() {
+        return mLinePublicKey;
+    }
+    
+    public void setLinePrivateKey(LinePrivateKey privateKey) {
+        mLinePrivateKey = privateKey;
+    }
+    public LinePrivateKey getLinePrivateKey() {
+        return mLinePrivateKey;
     }
     
     public void setOpenTime(long openTime) {
@@ -144,20 +143,19 @@ public class OpenPacket extends Packet {
         // interpret this as the number of milliseconds since 1970,
         // but merely as an ever-incrementing value where a greater
         // value indicates a newer open packet.  This timestamp should
-        // be the time of elliptic curve key generation.
+        // be the time of line key generation.
         mOpenTime = System.currentTimeMillis();
         
-        // generate the elliptic curve key pair, based on the "nistp256" curve
-        ECKeyPair ellipticCurveKeyPair = crypto.generateECKeyPair();
-        mEllipticCurvePublicKey = ellipticCurveKeyPair.getPublicKey();
-        mEllipticCurvePrivateKey = ellipticCurveKeyPair.getPrivateKey();
+        // generate the line key pair
+        LineKeyPair lineKeyPair = crypto.generateLineKeyPair();
+        mLinePublicKey = lineKeyPair.getPublicKey();
+        mLinePrivateKey = lineKeyPair.getPrivateKey();
 
-        // generate the "open" parameter by encrypting the public elliptic curve
-        // key (in ANSI X9.63 format) with the recipient's
-        // RSA public key and OAEP padding.
+        // generate the "open" parameter by encrypting the public line
+        // key with the recipient's hashname public key.
         mPreRenderedOpenParameter = crypto.encryptRSAOAEP(
                 mDestinationNode.getPublicKey(),
-                ellipticCurveKeyPair.getPublicKey().getEncoded()
+                mLinePublicKey.getEncoded()
         );
     }
     
@@ -185,9 +183,8 @@ public class OpenPacket extends Packet {
      * @param iv
      *            The initialization vector to use for this open packet.
      * @param openParameter
-     *            The "open" parameter -- the public EC key (in ANSI X9.63
-     *            format) encrypted with the recipient's RSA public key with
-     *            OAEP padding.
+     *            The "open" parameter -- the public line key encrypted
+     *            with the recipient's hashname public key.
      * @return The rendered open packet as a byte array.
      * @throws TelehashException
      */
@@ -197,16 +194,16 @@ public class OpenPacket extends Packet {
     ) throws TelehashException {
         Crypto crypto = Telehash.get().getCrypto();
 
-        byte[] encodedECPublicKey = mEllipticCurvePublicKey.getEncoded();
+        byte[] encodedECPublicKey = mLinePublicKey.getEncoded();
         
-        // SHA-256 hash the public elliptic key to form the encryption
+        // SHA-256 hash the public line key to form the encryption
         // key for the inner packet
         byte[] innerPacketAESKey = crypto.sha256Digest(encodedECPublicKey);
         
-        // Form the inner packet containing a current timestamp at, line
-        // identifier, recipient hashname, and family (if you have such a
-        // value). Your own RSA public key is the packet BODY in the binary DER
-        // format.
+		// Form the inner packet containing a current timestamp at, line
+		// identifier, recipient hashname, and family (if you have such a
+		// value). Your own hashname public key is the packet BODY in
+		// the encoded binary format.
         byte[] innerPacket;
         try {
             innerPacket = new JSONStringer()
@@ -231,19 +228,19 @@ public class OpenPacket extends Packet {
                         (byte)(innerPacket.length & 0xFF)
                 },
                 innerPacket,
-                mIdentity.getPublicKey().getDEREncoded()
+                mIdentity.getPublicKey().getEncoded()
         );
 
-        // Encrypt the inner packet using the hashed public elliptic key from #4
+        // Encrypt the inner packet using the hashed line public key from #4
         // and the IV you generated at #2 using AES-256-CTR.
         byte[] encryptedInnerPacket = crypto.encryptAES256CTR(innerPacket, iv, innerPacketAESKey);
 
-        // Create a signature from the encrypted inner packet using your own RSA
+        // Create a signature from the encrypted inner packet using your own hashname
         // keypair, a SHA 256 digest, and PKCSv1.5 padding
         byte[] signature = crypto.signRSA(mIdentity.getPrivateKey(), encryptedInnerPacket);
         
         // Encrypt the signature using a new AES-256-CTR cipher with the same IV
-        // and a new SHA-256 key hashed from the public elliptic curve key + the
+        // and a new SHA-256 key hashed from the line public key + the
         // line value (16 bytes from #5), then base64 encode the result as the
         // value for the sig param.
         byte[] signatureKey = crypto.sha256Digest(
@@ -308,22 +305,20 @@ public class OpenPacket extends Packet {
         assertNotNull(openString);
         byte[] openParameter = Util.base64Decode(openString);
         assertNotNull(openParameter);
-        
-        // Using your private key and OAEP padding, decrypt the open param,
-        // extracting the ECC public key (in uncompressed form) of the sender
-        byte[] ellipticCurvePublicKeyBuffer =
-                crypto.decryptRSAOAEP(telehash.getIdentity().getPrivateKey(), openParameter);
-        ECPublicKey ellipticCurvePublicKey = crypto.decodeECPublicKey(ellipticCurvePublicKeyBuffer);
-        
-        // Hash the ECC public key with SHA-256 to generate the AES key
-        byte[] innerPacketKey = crypto.sha256Digest(ellipticCurvePublicKeyBuffer);
-        
-        // Decrypt the inner packet using the generated key and IV value with
-        // the AES-256-CTR algorithm.
-        byte[] innerPacketBuffer = crypto.decryptAES256CTR(body, iv, innerPacketKey);
-        JsonAndBody innerPacket = splitPacket(innerPacketBuffer);
+
+        // unwrap the open packet using the relevant cipher set
+        UnwrappedOpenPacket unwrappedOpenPacket =
+        		telehash.getCrypto().getCipherSet().unwrapOpenPacket(
+        				telehash.getIdentity().getPrivateKey(),
+        				iv,
+        				encryptedSignature,
+        				openParameter,
+        				body,
+        				path
+        		);
         
         // extract required JSON values from the inner packet
+        JsonAndBody innerPacket = splitPacket(unwrappedOpenPacket.innerPacketBuffer);
         long openTime = innerPacket.json.getLong(OPEN_TIME_KEY);
         String destinationString = innerPacket.json.getString(DESTINATION_KEY);
         assertNotNull(destinationString);
@@ -335,49 +330,20 @@ public class OpenPacket extends Packet {
         assertBufferSize(lineIdentifierBytes, LINE_IDENTIFIER_SIZE);
         LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
         
-        // Verify the to value of the inner packet matches your hashname
+        // Verify the "to" value of the inner packet matches your hashname
         if (! Arrays.equals(destination, telehash.getIdentity().getHashName().getBytes())) {
             throw new TelehashException("received packet not destined for this identity.");
         }
         
-        // Extract the RSA public key of the sender from the inner packet BODY
-        // (binary DER format)
-        RSAPublicKey senderRSAPublicKey = crypto.decodeRSAPublicKey(innerPacket.body);
-        
-        // SHA-256 hash the RSA public key to derive the sender's hashname
-        Node sourceNode = new Node(senderRSAPublicKey, path);
-        
-        // Verify the at timestamp is newer than any other 'open'
-        // requests received from the sender.
-        // TODO: "newer than any other open..." <-- should be handled at higher level
-        
-        // SHA-256 hash the ECC public key with the 16 bytes derived from the
-        // inner line hex value to generate a new AES key
-        byte[] signatureKey = crypto.sha256Digest(
-                Util.concatenateByteArrays(ellipticCurvePublicKeyBuffer, lineIdentifierBytes)
+        // verify and assemble the parsed open packet using the relevant cipher set.
+        return telehash.getCrypto().getCipherSet().verifyOpenPacket(
+        		unwrappedOpenPacket,
+        		destination,
+        		lineIdentifierBytes,
+        		lineIdentifier,
+        		openTime,
+        		innerPacket.body
         );
-        
-        // Decrypt the outer packet sig value using AES-256-CTR with the key
-        // from #8 and the same IV value as #3.
-        byte[] signature = crypto.decryptAES256CTR(encryptedSignature, iv, signatureKey);
-        
-        // Using the RSA public key of the sender, verify the signature
-        // (decrypted in #9) of the original (encrypted) form of the inner
-        // packet
-        if (! crypto.verifyRSA(senderRSAPublicKey, body, signature)) {
-            throw new TelehashException("signature verification failed.");
-        }
-        
-        // If an open packet has not already been sent to this hashname, do so
-        // by creating one following the steps above
-        // TODO: handle at higher level
-        
-        // After sending your own open packet in response, you may now generate
-        // a line shared secret using the received and sent ECC public keys and
-        // Elliptic Curve Diffie-Hellman (ECDH).
-        // TODO: handle at higher level
-
-        return new OpenPacket(sourceNode, ellipticCurvePublicKey, openTime, lineIdentifier);
     }
     
     public String toString() {

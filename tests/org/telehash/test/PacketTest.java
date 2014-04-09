@@ -13,8 +13,8 @@ import org.telehash.core.Packet;
 import org.telehash.core.Telehash;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.ECKeyPair;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.LineKeyPair;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.Path;
 import org.telehash.network.Network;
 
@@ -125,7 +125,7 @@ public class PacketTest {
     
     private static final long TEST_OPEN_TIME = 1385581521161L;
     
-    private static ECKeyPair mECKeyPair;
+    private static LineKeyPair mECKeyPair;
     private static final byte[] TEST_EC_PUBLIC_KEY =
             Util.hexToBytes(
                     "047878818c43ce15c7cfe8831257d520f6834d4b55e8c3a545ba4e6e563fc40a672e0" +
@@ -151,24 +151,24 @@ public class PacketTest {
         mCrypto = mTelehash.getCrypto();
         
         mIdentity = new Identity(
-                mCrypto.createRSAKeyPair(
-                        mCrypto.decodeRSAPublicKey(IDENTITY_PUBLIC_KEY),
-                        mCrypto.decodeRSAPrivateKey(IDENTITY_PRIVATE_KEY)
+                mCrypto.createHashNameKeyPair(
+                        mCrypto.decodeHashNamePublicKey(IDENTITY_PUBLIC_KEY),
+                        mCrypto.decodeHashNamePrivateKey(IDENTITY_PRIVATE_KEY)
                 )
         );
         mTelehash.setIdentity(mIdentity);
 
         mIdentity2 = new Identity(
-                mCrypto.createRSAKeyPair(
-                        mCrypto.decodeRSAPublicKey(IDENTITY_PUBLIC_KEY_2),
-                        mCrypto.decodeRSAPrivateKey(IDENTITY_PRIVATE_KEY_2)
+                mCrypto.createHashNameKeyPair(
+                        mCrypto.decodeHashNamePublicKey(IDENTITY_PUBLIC_KEY_2),
+                        mCrypto.decodeHashNamePrivateKey(IDENTITY_PRIVATE_KEY_2)
                 )
         );
         mTelehash2.setIdentity(mIdentity2);
         
         mECKeyPair = mCrypto.createECKeyPair(
-                mCrypto.decodeECPublicKey(TEST_EC_PUBLIC_KEY),
-                mCrypto.decodeECPrivateKey(TEST_EC_PRIVATE_KEY)
+                mCrypto.decodeLinePublicKey(TEST_EC_PUBLIC_KEY),
+                mCrypto.decodeLinePrivateKey(TEST_EC_PRIVATE_KEY)
         );
     }
 
@@ -178,7 +178,7 @@ public class PacketTest {
 
     @Test
     public void testOpenPacket() throws Exception {
-        RSAPublicKey destinationPublicKey = mCrypto.decodeRSAPublicKey(DESTINATION_PUBLIC_KEY);
+        HashNamePublicKey destinationPublicKey = mCrypto.decodeHashNamePublicKey(DESTINATION_PUBLIC_KEY);
         Node remoteNode = new Node(
                 destinationPublicKey,
                 Path.parsePath(SAMPLE_PATH)
@@ -186,8 +186,8 @@ public class PacketTest {
         
         OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
         
-        openPacket.setEllipticCurvePublicKey(mECKeyPair.getPublicKey());
-        openPacket.setEllipticCurvePrivateKey(mECKeyPair.getPrivateKey());
+        openPacket.setLinePublicKey(mECKeyPair.getPublicKey());
+        openPacket.setLinePrivateKey(mECKeyPair.getPrivateKey());
         openPacket.setOpenTime(TEST_OPEN_TIME);
         openPacket.setLineIdentifier(new LineIdentifier(TEST_LINE_ID));
         
@@ -219,8 +219,8 @@ public class PacketTest {
         assertTrue(packet instanceof OpenPacket);
         OpenPacket openPacket2 = (OpenPacket)packet;
         assertEquals(
-                openPacket.getEllipticCurvePublicKey(),
-                openPacket2.getEllipticCurvePublicKey()
+                openPacket.getLinePublicKey(),
+                openPacket2.getLinePublicKey()
         );
         assertEquals(openPacket.getOpenTime(), openPacket2.getOpenTime());
         assertEquals(openPacket.getLineIdentifier(), openPacket2.getLineIdentifier());

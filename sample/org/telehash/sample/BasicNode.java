@@ -12,7 +12,7 @@ import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.InetPath;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;

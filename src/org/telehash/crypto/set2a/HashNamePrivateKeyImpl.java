@@ -1,4 +1,4 @@
-package org.telehash.crypto.impl;
+package org.telehash.crypto.set2a;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -12,17 +12,17 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.telehash.core.TelehashException;
-import org.telehash.crypto.RSAPrivateKey;
+import org.telehash.crypto.HashNamePrivateKey;
 
-public class RSAPrivateKeyImpl implements RSAPrivateKey {
+public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
 
     RSAPrivateCrtKeyParameters mKey;
     
-    public RSAPrivateKeyImpl(RSAPrivateCrtKeyParameters key) {
+    public HashNamePrivateKeyImpl(RSAPrivateCrtKeyParameters key) {
         mKey = key;
     }
     
-    public RSAPrivateKeyImpl(byte[] derBuffer) throws TelehashException {
+    public HashNamePrivateKeyImpl(byte[] derBuffer) throws TelehashException {
         try {
             ASN1InputStream asn1InputStream =
                     new ASN1InputStream(new ByteArrayInputStream(derBuffer)); 
@@ -56,7 +56,7 @@ public class RSAPrivateKeyImpl implements RSAPrivateKey {
     }
 
     @Override
-    public byte[] getDEREncoded() throws TelehashException {
+    public byte[] getEncoded() throws TelehashException {
         org.bouncycastle.asn1.pkcs.RSAPrivateKey asn1Key;
         asn1Key =
                 new org.bouncycastle.asn1.pkcs.RSAPrivateKey(

@@ -9,7 +9,6 @@ import java.security.SecureRandom;
 import java.security.Security;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.CryptoException;
@@ -22,17 +21,11 @@ import org.bouncycastle.crypto.encodings.OAEPEncoding;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
-import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.modes.SICBlockCipher;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
-import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
-import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.crypto.signers.RSADigestSigner;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.ECNamedCurveTable;
@@ -43,16 +36,20 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 import org.telehash.core.Identity;
-import org.telehash.core.Log;
 import org.telehash.core.TelehashException;
-import org.telehash.core.Util;
+import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.ECKeyPair;
-import org.telehash.crypto.ECPrivateKey;
-import org.telehash.crypto.ECPublicKey;
-import org.telehash.crypto.RSAKeyPair;
-import org.telehash.crypto.RSAPrivateKey;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.LineKeyPair;
+import org.telehash.crypto.LinePrivateKey;
+import org.telehash.crypto.LinePublicKey;
+import org.telehash.crypto.HashNameKeyPair;
+import org.telehash.crypto.HashNamePrivateKey;
+import org.telehash.crypto.HashNamePublicKey;
+import org.telehash.crypto.set2a.CipherSet2aImpl;
+import org.telehash.crypto.set2a.HashNamePrivateKeyImpl;
+import org.telehash.crypto.set2a.HashNamePublicKeyImpl;
+import org.telehash.crypto.set2a.LinePrivateKeyImpl;
+import org.telehash.crypto.set2a.LinePublicKeyImpl;
 
 /**
  * This class contains implementations for the basic cryptographic functions
@@ -62,6 +59,9 @@ public class CryptoImpl implements Crypto {
     
     private static final String RSA_PRIVATE_KEY_PEM_TYPE = "RSA PRIVATE KEY";
     private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
+    
+    // we only use the 2a cipher set for now.
+    private CipherSet mCipherSet = new CipherSet2aImpl(this);
     
     private SecureRandom random = new SecureRandom();
 
@@ -90,6 +90,15 @@ public class CryptoImpl implements Crypto {
                 new ECKeyGenerationParameters(mECDomainParameters, random);        
         mECGenerator.init(mECKeyGenerationParameters);
     }
+    
+    /**
+     * TODO: REMOVE!!!
+     * @deprecated
+     */
+    @Override
+	public CipherSet getCipherSet() {
+		return mCipherSet;
+	}
 
     /**
      * Generate a cryptographically secure pseudo-random array of byte values.
@@ -133,69 +142,34 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * Generate a fresh identity (i.e., RSA public and private key pair) for a
-     * newly provisioned Telehash node.
+     * Generate a fresh identity (i.e., hashname public and private key pair)
+     * for a newly provisioned Telehash node.
      * 
      * @return The new identity.
      * @throws TelehashException 
      */
     @Override
     public Identity generateIdentity() throws TelehashException {
-        // generate a 2048 bit key pair
-        RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
-        generator.init(
-                new RSAKeyGenerationParameters(
-                    new BigInteger("10001", 16),//publicExponent
-                    // TODO: see warning in getRandomBytes()!
-                    new SecureRandom(),
-                    2048, // key length
-                    80    // prime certainty
-                )
-            );
-        AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-        
-        AsymmetricKeyParameter publicKey = keyPair.getPublic();
-        AsymmetricKeyParameter privateKey = keyPair.getPrivate();
-        if (! (privateKey instanceof RSAPrivateCrtKeyParameters)) {
-            throw new TelehashException("generated key is not an RSA private key.");
-        }
-        return new Identity(
-                new RSAKeyPairImpl(
-                        new RSAPublicKeyImpl(publicKey),
-                        new RSAPrivateKeyImpl((RSAPrivateCrtKeyParameters)privateKey)
-                )
-        );
+    	return mCipherSet.generateIdentity();
     }
 
     /**
-     * Generate a fresh elliptic curve key pair
+     * Generate a fresh line key pair
      */
     @Override
-    public ECKeyPair generateECKeyPair() throws TelehashException {
-        AsymmetricCipherKeyPair keyPair = mECGenerator.generateKeyPair();
-        
-        AsymmetricKeyParameter publicKey = keyPair.getPublic();
-        AsymmetricKeyParameter privateKey = keyPair.getPrivate();
-        if (! (publicKey instanceof ECPublicKeyParameters)) {
-            throw new TelehashException("generated key is not an elliptic curve public key.");
-        }
-        if (! (privateKey instanceof ECPrivateKeyParameters)) {
-            throw new TelehashException("generated key is not an elliptic curve private key.");
-        }
-        return new ECKeyPairImpl(
-                (ECPublicKeyParameters)publicKey,
-                (ECPrivateKeyParameters)privateKey
-        );
+    public LineKeyPair generateLineKeyPair() throws TelehashException {
+    	return mCipherSet.generateLineKeyPair();
     }
     
     /**
      * Encrypt data with an RSA private key
      * @throws TelehashException 
      */
+    /*
     @Override
-    public byte[] encryptRSA(RSAPublicKey key, byte[] clearText) throws TelehashException {
+    public byte[] encryptRSA(HashNamePublicKey key, byte[] clearText) throws TelehashException {
         AsymmetricBlockCipher cipher = new RSAEngine();
-        cipher.init(true, ((RSAPublicKeyImpl)key).getKey());
+        cipher.init(true, ((HashNamePublicKeyImpl)key).getKey());
         byte[] cipherText;
         try {
             cipherText = cipher.processBlock(clearText, 0, clearText.length);
@@ -204,15 +178,16 @@ public class CryptoImpl implements Crypto {
         }
         return cipherText;
     }
+    */
     
     /**
      * Encrypt data with an RSA private key using OAEP padding
      * @throws TelehashException 
      */
     @Override
-    public byte[] encryptRSAOAEP(RSAPublicKey key, byte[] clearText) throws TelehashException {
+    public byte[] encryptRSAOAEP(HashNamePublicKey key, byte[] clearText) throws TelehashException {
         AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA1Digest());
-        cipher.init(true, ((RSAPublicKeyImpl)key).getKey());
+        cipher.init(true, ((HashNamePublicKeyImpl)key).getKey());
         byte[] cipherText;
         try {
             cipherText = cipher.processBlock(clearText, 0, clearText.length);
@@ -226,10 +201,11 @@ public class CryptoImpl implements Crypto {
      * Decrypt data with an RSA private key
      * @throws TelehashException 
      */
+    /*
     @Override
-    public byte[] decryptRSA(RSAPrivateKey key, byte[] cipherText) throws TelehashException {
+    public byte[] decryptRSA(HashNamePrivateKey key, byte[] cipherText) throws TelehashException {
         AsymmetricBlockCipher cipher = new RSAEngine();
-        cipher.init(false, ((RSAPrivateKeyImpl)key).getKey());
+        cipher.init(false, ((HashNamePrivateKeyImpl)key).getKey());
         byte[] clearText;
         try {
             clearText = cipher.processBlock(cipherText, 0, cipherText.length);
@@ -238,15 +214,16 @@ public class CryptoImpl implements Crypto {
         }
         return clearText;
     }
+    */
 
     /**
      * Decrypt data with an RSA private key and OAEP padding
      * @throws TelehashException 
      */
     @Override
-    public byte[] decryptRSAOAEP(RSAPrivateKey key, byte[] cipherText) throws TelehashException {
+    public byte[] decryptRSAOAEP(HashNamePrivateKey key, byte[] cipherText) throws TelehashException {
         AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA1Digest());
-        cipher.init(false, ((RSAPrivateKeyImpl)key).getKey());
+        cipher.init(false, ((HashNamePrivateKeyImpl)key).getKey());
         byte[] clearText;
         try {
             clearText = cipher.processBlock(cipherText, 0, cipherText.length);
@@ -263,9 +240,9 @@ public class CryptoImpl implements Crypto {
      * @throws TelehashException 
      */
     @Override
-    public byte[] signRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException {
+    public byte[] signRSA(HashNamePrivateKey key, byte[] buffer) throws TelehashException {
         RSADigestSigner signer = new RSADigestSigner(new SHA256Digest());
-        signer.init(true, ((RSAPrivateKeyImpl)key).getKey());
+        signer.init(true, ((HashNamePrivateKeyImpl)key).getKey());
         signer.update(buffer, 0, buffer.length);
         byte[] signature;
         try {
@@ -290,12 +267,12 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public boolean verifyRSA(
-            RSAPublicKey key,
+            HashNamePublicKey key,
             byte[] buffer,
             byte[] signature
     ) throws TelehashException {
         RSADigestSigner signer = new RSADigestSigner(new SHA256Digest());
-        signer.init(false, ((RSAPublicKeyImpl)key).getKey());
+        signer.init(false, ((HashNamePublicKeyImpl)key).getKey());
         signer.update(buffer, 0, buffer.length);
         try {
             return signer.verifySignature(signature);
@@ -312,7 +289,7 @@ public class CryptoImpl implements Crypto {
      * @throws TelehashException If a problem occurs while reading the file.
      */
     @Override
-    public RSAPublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException {
+    public HashNamePublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException {
         try {
             PemReader pemReader = new PemReader(new StringReader(pem));
             PemObject pemObject = pemReader.readPemObject();
@@ -326,7 +303,7 @@ public class CryptoImpl implements Crypto {
                         pemObject.getType() + "\""
                 );
             }
-            return new RSAPublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
+            return new HashNamePublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
         } catch (IOException e) {
             throw new TelehashException(e);
         }
@@ -340,7 +317,7 @@ public class CryptoImpl implements Crypto {
      * @throws TelehashException If a problem occurs while reading the file.
      */
     @Override
-    public RSAPublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException {
+    public HashNamePublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException {
         try {
             PemReader pemReader = new PemReader(new FileReader(filename));
             PemObject pemObject = pemReader.readPemObject();
@@ -354,7 +331,7 @@ public class CryptoImpl implements Crypto {
                         pemObject.getType() + "\""
                 );
             }
-            return new RSAPublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
+            return new HashNamePublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
         } catch (IOException e) {
             throw new TelehashException(e);
         }
@@ -368,7 +345,7 @@ public class CryptoImpl implements Crypto {
      * @throws TelehashException If a problem occurs while reading the file.
      */
     @Override
-    public RSAPrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException {
+    public HashNamePrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException {
         try {
             PemReader pemReader = new PemReader(new FileReader(filename));
             PemObject pemObject = pemReader.readPemObject();
@@ -382,7 +359,7 @@ public class CryptoImpl implements Crypto {
                         pemObject.getType() + "\""
                 );
             }
-            return new RSAPrivateKeyImpl(pemObject.getContent());
+            return new HashNamePrivateKeyImpl(pemObject.getContent());
         } catch (IOException e) {
             throw new TelehashException(e);
         }
@@ -398,13 +375,13 @@ public class CryptoImpl implements Crypto {
     @Override
     public void writeRSAPublicKeyToFile(
             String filename,
-            RSAPublicKey key
+            HashNamePublicKey key
     ) throws TelehashException {
         try {
             PemWriter pemWriter = new PemWriter(new FileWriter(filename));
             PemObject pemObject = new PemObject(
                     RSA_PUBLIC_KEY_PEM_TYPE,
-                    key.getDEREncoded()
+                    key.getEncoded()
             );
             pemWriter.writeObject(pemObject);
             pemWriter.close();
@@ -423,13 +400,13 @@ public class CryptoImpl implements Crypto {
     @Override
     public void writeRSAPrivateKeyToFile(
             String filename,
-            RSAPrivateKey key
+            HashNamePrivateKey key
     ) throws TelehashException {
         try {
             PemWriter pemWriter = new PemWriter(new FileWriter(filename));
             PemObject pemObject = new PemObject(
                     RSA_PRIVATE_KEY_PEM_TYPE,
-                    key.getDEREncoded()
+                    key.getEncoded()
             );
             pemWriter.writeObject(pemObject);
             pemWriter.close();
@@ -439,38 +416,38 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * Decode a DER-encoded public key into a standard Java PublicKey object.
+     * Decode a public key.
      * 
-     * @param buffer The byte buffer containing the DER-encoded key.
+     * @param buffer The byte buffer containing the encoded key.
      * @return The decoded public key.
-     * @throws TelehashException If the DER buffer cannot be parsed.
+     * @throws TelehashException If the buffer cannot be parsed.
      */
     @Override
-    public RSAPublicKey decodeRSAPublicKey(byte[] buffer) throws TelehashException {
-        return new RSAPublicKeyImpl(buffer);
+    public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException {
+    	return mCipherSet.decodeHashNamePublicKey(buffer);
     }
     
     /**
-     * Decode a DER-encoded private key into a standard Java PublicKey object.
+     * Decode a private key.
      * 
-     * @param buffer The byte buffer containing the DER-encoded key.
+     * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
-     * @throws TelehashException If the DER buffer cannot be parsed.
+     * @throws TelehashException If the buffer cannot be parsed.
      */
     @Override
-    public RSAPrivateKey decodeRSAPrivateKey(byte[] buffer) throws TelehashException {
-        return new RSAPrivateKeyImpl(buffer);
+    public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException {
+    	return mCipherSet.decodeHashNamePrivateKey(buffer);
     }
 
     /**
-     * Create a new RSAKeyPair from the provided public and private key.
+     * Create a new HashNameKeyPair from the provided public and private key.
      * @param privateKey
      * @param publicKey
-     * @return The newly created RSAKeyPair object.
+     * @return The newly created HashNameKeyPair object.
      */
     @Override
-    public RSAKeyPair createRSAKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
-        return new RSAKeyPairImpl((RSAPublicKeyImpl)publicKey, (RSAPrivateKeyImpl)privateKey);
+    public HashNameKeyPair createHashNameKeyPair(HashNamePublicKey publicKey, HashNamePrivateKey privateKey) {
+    	return mCipherSet.createHashNameKeyPair(publicKey, privateKey);
     }
     
     /**
@@ -481,8 +458,8 @@ public class CryptoImpl implements Crypto {
      * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
      */
     @Override
-    public ECPublicKey decodeECPublicKey(byte[] buffer) throws TelehashException {
-        return new ECPublicKeyImpl(buffer, mECDomainParameters);
+    public LinePublicKey decodeLinePublicKey(byte[] buffer) throws TelehashException {
+    	return mCipherSet.decodeLinePublicKey(buffer);
     }
 
     /**
@@ -493,8 +470,8 @@ public class CryptoImpl implements Crypto {
      * @throws TelehashException If the byte buffer cannot be parsed.
      */
     @Override
-    public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException {
-        return new ECPrivateKeyImpl(buffer, mECDomainParameters);
+    public LinePrivateKey decodeLinePrivateKey(byte[] buffer) throws TelehashException {
+    	return mCipherSet.decodeLinePrivateKey(buffer);
     }
 
     /**
@@ -504,11 +481,11 @@ public class CryptoImpl implements Crypto {
      * @return The newly created ECKeyPair object.
      */
     @Override
-    public ECKeyPair createECKeyPair(
-            ECPublicKey publicKey,
-            ECPrivateKey privateKey
+    public LineKeyPair createECKeyPair(
+            LinePublicKey publicKey,
+            LinePrivateKey privateKey
     ) throws TelehashException {
-        return new ECKeyPairImpl((ECPublicKeyImpl)publicKey, (ECPrivateKeyImpl)privateKey);
+    	return mCipherSet.createLineKeyPair(publicKey, privateKey);
     }
     
     /**
@@ -520,13 +497,13 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public byte[] calculateECDHSharedSecret(
-            ECPublicKey remotePublicKey,
-            ECPrivateKey localPrivateKey
+            LinePublicKey remotePublicKey,
+            LinePrivateKey localPrivateKey
     ) {
         ECDHBasicAgreement agreement = new ECDHBasicAgreement();
-        agreement.init(((ECPrivateKeyImpl)localPrivateKey).getKey());
+        agreement.init(((LinePrivateKeyImpl)localPrivateKey).getKey());
         BigInteger secretInteger =
-                agreement.calculateAgreement(((ECPublicKeyImpl)remotePublicKey).getKey());
+                agreement.calculateAgreement(((LinePublicKeyImpl)remotePublicKey).getKey());
         byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
         return secretBytes;
     }

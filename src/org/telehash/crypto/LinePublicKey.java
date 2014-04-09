@@ -1,5 +1,5 @@
 package org.telehash.crypto;
 
-public interface ECPublicKey {
+public interface LinePublicKey {
     public byte[] getEncoded();
 }

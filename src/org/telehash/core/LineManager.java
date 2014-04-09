@@ -134,8 +134,8 @@ public class LineManager {
     private void calculateLineKeys(Line line, OpenPacket incomingOpen, OpenPacket outgoingOpen) {
         // calculate ECDH
         byte[] sharedSecret = mTelehash.getCrypto().calculateECDHSharedSecret(
-                incomingOpen.getEllipticCurvePublicKey(),
-                outgoingOpen.getEllipticCurvePrivateKey()
+                incomingOpen.getLinePublicKey(),
+                outgoingOpen.getLinePrivateKey()
         );
         line.setSharedSecret(sharedSecret);
         // The encryption key for a line is defined as the SHA 256 digest of

@@ -22,7 +22,7 @@ import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.InetPath;
 import org.telehash.network.Path;
 
@@ -267,7 +267,7 @@ public class DHT {
         fields.put("paths", paths);
         try {
             newChannel.send(
-                    channel.getRemoteNode().getPublicKey().getDEREncoded(),
+                    channel.getRemoteNode().getPublicKey().getEncoded(),
                     fields,
                     true
             );
@@ -296,7 +296,7 @@ public class DHT {
         if (body == null) {
             return;
         }
-        RSAPublicKey publicKey = mTelehash.getCrypto().decodeRSAPublicKey(body);
+        HashNamePublicKey publicKey = mTelehash.getCrypto().decodeHashNamePublicKey(body);
         
         Node node = new Node(publicKey, path);
         mTelehash.getSwitch().getLineManager().openLine(node, false, null, null);

@@ -156,8 +156,8 @@ public class TelehashTestInstance {
             out.println("index: "+mIndex);
             out.println("hashname: "+mIdentity.getHashName());
             Log.i("pub: "+mIdentity.getPublicKey());
-            out.println("rsa pub: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getDEREncoded())));
-            out.println("rsa pri: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getDEREncoded())));
+            out.println("rsa pub: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getEncoded())));
+            out.println("rsa pri: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getEncoded())));
             out.close();
         } catch (Throwable e) {
             e.printStackTrace();

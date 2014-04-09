@@ -1,26 +1,25 @@
 package org.telehash.core;
 
-import org.telehash.crypto.RSAKeyPair;
-import org.telehash.crypto.RSAPrivateKey;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.HashNameKeyPair;
+import org.telehash.crypto.HashNamePrivateKey;
+import org.telehash.crypto.HashNamePublicKey;
 
 /**
  * An object of this class represents the identity of the local Telehash node.
  */
 public class Identity {
-    private RSAKeyPair mKeyPair;
-    //private transient byte[] mHashName;
+    private HashNameKeyPair mKeyPair;
     private transient HashName mHashName;
 
     /**
      * Create an Identity object based on the provided RSA key pair.
      * @param keyPair
      */
-    public Identity(RSAKeyPair keyPair) {
+    public Identity(HashNameKeyPair keyPair) {
         mKeyPair = keyPair;
         try {
             byte[] hashNameBytes = Telehash.get().getCrypto().sha256Digest(
-                    mKeyPair.getPublicKey().getDEREncoded()
+                    mKeyPair.getPublicKey().getEncoded()
             );
             mHashName = new HashName(hashNameBytes);
         } catch (TelehashException e) {
@@ -33,7 +32,7 @@ public class Identity {
      * Return the RSA private key of this identity.
      * @return The private key.
      */
-    public RSAPrivateKey getPrivateKey() {
+    public HashNamePrivateKey getPrivateKey() {
         return mKeyPair.getPrivateKey();
     }
     
@@ -41,7 +40,7 @@ public class Identity {
      * Return the RSA public key of this identity.
      * @return The public key.
      */
-    public RSAPublicKey getPublicKey() {
+    public HashNamePublicKey getPublicKey() {
         return mKeyPair.getPublicKey();
     }
 

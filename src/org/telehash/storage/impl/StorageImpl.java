@@ -21,8 +21,8 @@ import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.RSAPrivateKey;
-import org.telehash.crypto.RSAPublicKey;
+import org.telehash.crypto.HashNamePrivateKey;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.InetPath;
 import org.telehash.network.Path;
 import org.telehash.storage.Storage;
@@ -53,11 +53,11 @@ public class StorageImpl implements Storage {
         String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;
         
         // read keys
-        RSAPrivateKey privateKey =
+        HashNamePrivateKey privateKey =
                 Telehash.get().getCrypto().readRSAPrivateKeyFromFile(privateKeyFilename);
-        RSAPublicKey publicKey =
+        HashNamePublicKey publicKey =
                 Telehash.get().getCrypto().readRSAPublicKeyFromFile(publicKeyFilename);
-        return new Identity(Telehash.get().getCrypto().createRSAKeyPair(publicKey, privateKey));        
+        return new Identity(Telehash.get().getCrypto().createHashNameKeyPair(publicKey, privateKey));        
     }
 
     /**
@@ -144,7 +144,7 @@ public class StorageImpl implements Storage {
                 throw new TelehashException("no valid network paths found for seed!");
             }
             
-            RSAPublicKey publicKey =
+            HashNamePublicKey publicKey =
                     Telehash.get().getCrypto().parseRSAPublicKeyFromPEM(publicKeyString);
             // TODO: support multiple paths per node.
             Node node = new Node(publicKey, paths.get(0));

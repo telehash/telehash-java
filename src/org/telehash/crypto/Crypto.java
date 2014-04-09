@@ -10,7 +10,13 @@ import org.telehash.core.TelehashException;
  * provide their own.
  */
 public interface Crypto {
-    
+	
+	/**
+	 * TODO: REMOVE!!!
+	 * @deprecated
+	 */
+	public CipherSet getCipherSet();
+	
     /**
      * Generate a cryptographically secure pseudo-random array of byte values.
      * 
@@ -40,39 +46,39 @@ public interface Crypto {
      * Generate a fresh elliptic curve key pair
      * @throws TelehashException 
      */
-    public ECKeyPair generateECKeyPair() throws TelehashException;
+    public LineKeyPair generateLineKeyPair() throws TelehashException;
     
     /**
      * Encrypt data with an RSA public key
      * @throws TelehashException 
      */
-    public byte[] encryptRSA(RSAPublicKey key, byte[] buffer) throws TelehashException;
+    //public byte[] encryptRSA(HashNamePublicKey key, byte[] buffer) throws TelehashException;
 
     /**
      * Encrypt data with an RSA public key
      * @throws TelehashException 
      */
-    public byte[] encryptRSAOAEP(RSAPublicKey key, byte[] clearText) throws TelehashException;
+    public byte[] encryptRSAOAEP(HashNamePublicKey key, byte[] clearText) throws TelehashException;
 
     /**
      * Decrypt data with an RSA private key
      * @throws TelehashException 
      */
-    public byte[] decryptRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
+    //public byte[] decryptRSA(HashNamePrivateKey key, byte[] buffer) throws TelehashException;
 
     /**
      * Decrypt data with an RSA private key
      * @throws TelehashException 
      */
-    public byte[] decryptRSAOAEP(RSAPrivateKey key, byte[] buffer) throws TelehashException;
-
+    public byte[] decryptRSAOAEP(HashNamePrivateKey key, byte[] buffer) throws TelehashException;
+    
     /**
      * Sign a data buffer with an RSA private key using the SHA-256 digest, and
      * PKCSv1.5 padding.
      * 
      * @throws TelehashException
      */
-    public byte[] signRSA(RSAPrivateKey key, byte[] buffer) throws TelehashException;
+    public byte[] signRSA(HashNamePrivateKey key, byte[] buffer) throws TelehashException;
 
     /**
      * Verify the signature of a data buffer with an RSA private key using the
@@ -82,7 +88,7 @@ public interface Crypto {
      * @throws TelehashException
      */
     public boolean verifyRSA(
-            RSAPublicKey key,
+            HashNamePublicKey key,
             byte[] buffer,
             byte[] signature
     ) throws TelehashException;
@@ -94,7 +100,7 @@ public interface Crypto {
      * @return The key.
      * @throws TelehashException If a problem occurs while reading the file.
      */
-    RSAPublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException;
+    HashNamePublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException;
     
     /**
      * Read a PEM-formatted RSA public key from a file.
@@ -103,7 +109,7 @@ public interface Crypto {
      * @return The key.
      * @throws TelehashException If a problem occurs while reading the file.
      */
-    public RSAPublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException;
+    public HashNamePublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException;
 
     /**
      * Read a PEM-formatted RSA private key from a file.
@@ -112,7 +118,7 @@ public interface Crypto {
      * @return The key.
      * @throws TelehashException If a problem occurs while reading the file.
      */
-    public RSAPrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException;
+    public HashNamePrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException;
 
     /**
      * Write a PEM-formatted RSA public key to a file.
@@ -123,7 +129,7 @@ public interface Crypto {
      */
     public void writeRSAPublicKeyToFile(
             String filename,
-            RSAPublicKey key
+            HashNamePublicKey key
     ) throws TelehashException;
 
     /**
@@ -135,7 +141,7 @@ public interface Crypto {
      */
     public void writeRSAPrivateKeyToFile(
             String filename,
-            RSAPrivateKey key
+            HashNamePrivateKey key
     ) throws TelehashException;
 
     /**
@@ -145,7 +151,7 @@ public interface Crypto {
      * @return The decoded public key.
      * @throws TelehashException If the DER buffer cannot be parsed.
      */
-    public RSAPublicKey decodeRSAPublicKey(byte[] buffer) throws TelehashException;
+    public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException;
 
     /**
      * Decode a DER-encoded private key into a standard Java PublicKey object.
@@ -154,7 +160,7 @@ public interface Crypto {
      * @return The decoded private key.
      * @throws TelehashException If the DER buffer cannot be parsed.
      */
-    public RSAPrivateKey decodeRSAPrivateKey(byte[] buffer) throws TelehashException;
+    public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException;
 
     /**
      * Decode an ANSI X9.63-encoded public key into an ECPublicKey object.
@@ -163,7 +169,7 @@ public interface Crypto {
      * @return The decoded public key.
      * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
      */
-    public ECPublicKey decodeECPublicKey(byte[] buffer) throws TelehashException;
+    public LinePublicKey decodeLinePublicKey(byte[] buffer) throws TelehashException;
 
     /**
      * Decode a byte-encoded private key into an ECPrivateKey object.
@@ -172,7 +178,7 @@ public interface Crypto {
      * @return The decoded private key.
      * @throws TelehashException If the byte buffer cannot be parsed.
      */
-    public ECPrivateKey decodeECPrivateKey(byte[] buffer) throws TelehashException;
+    public LinePrivateKey decodeLinePrivateKey(byte[] buffer) throws TelehashException;
 
     /**
      * Create a new ECKeyPair from the provided public and private key.
@@ -180,18 +186,18 @@ public interface Crypto {
      * @param publicKey
      * @return The newly created ECKeyPair object.
      */
-    public ECKeyPair createECKeyPair(
-            ECPublicKey publicKey,
-            ECPrivateKey privateKey
+    public LineKeyPair createECKeyPair(
+            LinePublicKey publicKey,
+            LinePrivateKey privateKey
     ) throws TelehashException;
 
     /**
-     * Create a new RSAKeyPair from the provided public and private key.
+     * Create a new HashNameKeyPair from the provided public and private key.
      * @param privateKey
      * @param publicKey
-     * @return The newly created RSAKeyPair object.
+     * @return The newly created HashNameKeyPair object.
      */
-    public RSAKeyPair createRSAKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey);
+    public HashNameKeyPair createHashNameKeyPair(HashNamePublicKey publicKey, HashNamePrivateKey privateKey);
     
     /**
      * Perform Elliptic Curve Diffie-Hellman key agreement
@@ -201,8 +207,8 @@ public interface Crypto {
      * @return A byte array containing the shared secret.
      */
     public byte[] calculateECDHSharedSecret(
-            ECPublicKey remotePublicKey,
-            ECPrivateKey localPrivateKey
+            LinePublicKey remotePublicKey,
+            LinePrivateKey localPrivateKey
     );
     
     /**
