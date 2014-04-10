@@ -80,24 +80,6 @@ public interface CipherSet {
      */
     public LineKeyPair generateLineKeyPair() throws TelehashException;
     
-    public UnwrappedOpenPacket unwrapOpenPacket(
-    		HashNamePrivateKey hashNamePrivateKey,
-    		byte[] iv,
-    		byte[] encryptedSignature,
-    		byte[] openParameter,
-    		byte[] encryptedInnerPacket,
-    		Path path
-    ) throws TelehashException;
-    
-    public OpenPacket verifyOpenPacket(
-    		UnwrappedOpenPacket unwrappedOpenPacket,
-    		byte[] destination,
-    		byte[] lineIdentifierBytes,
-    		LineIdentifier lineIdentifier,
-    		long openTime,
-    		byte[] innerPacketBody
-    ) throws TelehashException;
-    
     public OpenPacket parseOpenPacket(
             Telehash telehash,
             JSONObject json,
