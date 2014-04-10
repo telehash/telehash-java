@@ -1,17 +1,12 @@
 package org.telehash.crypto;
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.json.JSONObject;
 import org.telehash.core.Identity;
 import org.telehash.core.LineIdentifier;
 import org.telehash.core.OpenPacket;
+import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.UnwrappedOpenPacket;
-import org.telehash.crypto.set2a.LineKeyPairImpl;
-import org.telehash.crypto.set2a.LinePrivateKeyImpl;
-import org.telehash.crypto.set2a.LinePublicKeyImpl;
 import org.telehash.network.Path;
 
 public interface CipherSet {
@@ -102,4 +97,42 @@ public interface CipherSet {
     		long openTime,
     		byte[] innerPacketBody
     ) throws TelehashException;
+    
+    public OpenPacket parseOpenPacket(
+            Telehash telehash,
+            JSONObject json,
+            byte[] body,
+            Path path
+    ) throws TelehashException;
+    
+    /**
+     * Pre-render an open packet.
+     * 
+     * @throws TelehashException
+     */
+    public void preRenderOpenPacket(OpenPacket open) throws TelehashException;
+    
+    /**
+     * Render an open packet into its final form.
+     * 
+     * This version of the method allows the caller to pass in values for
+     * certain otherwise calculated fields, allowing for deterministic open
+     * packet creation suitable for unit tests.
+     * 
+     * @param packet The open packet object.
+     * @param iv
+     *            The initialization vector to use for this open packet.
+     * @param openParameter
+     *            The "open" parameter -- the public line key encrypted
+     *            with the recipient's hashname public key.
+     * @return The rendered open packet as a byte array.
+     * @throws TelehashException
+     */
+    public byte[] renderOpenPacket(
+    		OpenPacket packet,
+    		Identity identity,
+            byte[] iv,
+            byte[] openParameter
+    ) throws TelehashException;
+
 }

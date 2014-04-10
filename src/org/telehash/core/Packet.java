@@ -17,8 +17,8 @@ public abstract class Packet {
     private static final int MINIMUM_JSON_LENGTH = 0;
     private static final int MAXIMUM_JSON_LENGTH = 64*1024;
     private static final String PARSE_METHOD_NAME = "parse";
-    protected static final int LENGTH_PREFIX_SIZE = 2;
-    protected static final String TYPE_KEY = "type";
+    public static final int LENGTH_PREFIX_SIZE = 2;
+    public static final String TYPE_KEY = "type";
     
     private static Map<String,Method> sTypeParseMap =
             new HashMap<String,Method>(); 
@@ -26,7 +26,7 @@ public abstract class Packet {
     protected Node mSourceNode;
     protected Node mDestinationNode;
 
-    protected static final class JsonAndBody {
+    public static final class JsonAndBody {
         public JsonAndBody(JSONObject json, byte[] body) {
             this.json = json;
             this.body = body;
@@ -108,7 +108,7 @@ public abstract class Packet {
         }
     }
 
-    protected static JsonAndBody splitPacket(byte[] buffer) throws TelehashException {
+    public static JsonAndBody splitPacket(byte[] buffer) throws TelehashException {
         if (buffer.length <= MINIMUM_PACKET_LENGTH) {
             // this can happen if we receive "null" packets
             return null;

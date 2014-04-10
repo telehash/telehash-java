@@ -288,4 +288,32 @@ public class Util {
             return padded;
         }
     }
+    
+    /**
+     * Throw an exception if the provided object reference is null.
+     * @param object
+     * @throws TelehashException
+     */
+    public static final void assertNotNull(Object object) throws TelehashException {
+        if (object == null) {
+            throw new TelehashException("null value unexpectedly encountered");
+        }
+    }
+    
+    /**
+     * Throw an exception if the provided byte buffer is null or is not the indicated length.
+     * @param object
+     * @throws TelehashException
+     */
+    public static final void assertBufferSize(
+            byte[] buffer,
+            int length
+    ) throws TelehashException {
+        if (buffer == null) {
+            throw new TelehashException("null value unexpectedly encountered");            
+        }
+        if (buffer.length != length) {
+            throw new TelehashException("invalid buffer size");
+        }
+    }
 }
