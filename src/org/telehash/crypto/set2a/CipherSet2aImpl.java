@@ -40,6 +40,7 @@ import org.telehash.crypto.LinePublicKey;
 import org.telehash.network.Path;
 
 public class CipherSet2aImpl implements CipherSet {
+    private final static short CIPHER_SET_ID = 0x2a;
 
     private Crypto mCrypto;
 
@@ -71,6 +72,13 @@ public class CipherSet2aImpl implements CipherSet {
         mECKeyGenerationParameters =
                 new ECKeyGenerationParameters(mECDomainParameters, mRandom);
         mECGenerator.init(mECKeyGenerationParameters);
+    }
+
+    /**
+     * Return the Cipher Set ID (CSID) for this cipher set.
+     */
+    public short getCipherSetId() {
+        return CIPHER_SET_ID;
     }
 
     /**

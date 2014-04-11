@@ -27,11 +27,13 @@ public abstract class Packet {
     protected Node mDestinationNode;
 
     public static final class JsonAndBody {
-        public JsonAndBody(JSONObject json, byte[] body) {
+        public JsonAndBody(JSONObject json, short singleByteHeader, byte[] body) {
             this.json = json;
+            this.singleByteHeader = singleByteHeader;
             this.body = body;
         }
         public JSONObject json;
+        public short singleByteHeader;
         public byte[] body;
     }
     
@@ -113,28 +115,38 @@ public abstract class Packet {
             // this can happen if we receive "null" packets
             return null;
         }
-        
+
         int jsonLength = ((buffer[0]&0xFF)<<8) | (buffer[1]&0xFF);
         if (jsonLength < MINIMUM_JSON_LENGTH || jsonLength > MAXIMUM_JSON_LENGTH) {
             throw new TelehashException("invalid json length");
         }
 
         JSONObject json;
-        try {
-            json = new JSONObject(new String(buffer, JSON_START_POSITION, jsonLength, "UTF-8"));
-        } catch (JSONException e) {
-            throw new TelehashException(e);
-        } catch (UnsupportedEncodingException e) {
-            throw new TelehashException(e);
+        short singleByteHeader;
+        if (jsonLength == 0) {
+            json = null;
+            singleByteHeader = 0x00;
+        } else if (jsonLength == 1) {
+            json = null;
+            singleByteHeader = buffer[JSON_START_POSITION];
+        } else {
+            singleByteHeader = 0x00;
+            try {
+                json = new JSONObject(new String(buffer, JSON_START_POSITION, jsonLength, "UTF-8"));
+            } catch (JSONException e) {
+                throw new TelehashException(e);
+            } catch (UnsupportedEncodingException e) {
+                throw new TelehashException(e);
+            }
         }
-        
+
         int bodyLength = buffer.length - jsonLength - JSON_START_POSITION;
         byte[] body = new byte[bodyLength];
         System.arraycopy(buffer, JSON_START_POSITION+jsonLength, body, 0, bodyLength);
-        
-        return new JsonAndBody(json, body);
+
+        return new JsonAndBody(json, singleByteHeader, body);
     }
-    
+
     protected static void registerPacketType(
             String typeName,
             Class<? extends Packet> packetClass

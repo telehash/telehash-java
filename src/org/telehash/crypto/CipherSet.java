@@ -10,6 +10,11 @@ import org.telehash.network.Path;
 public interface CipherSet {
 
     /**
+     * Return the Cipher Set ID (CSID) for this cipher set.
+     */
+    public short getCipherSetId();
+
+    /**
      * Generate a fresh identity (i.e., RSA public and private key pair) for a
      * newly provisioned Telehash node.
      * 
