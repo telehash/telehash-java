@@ -4,7 +4,6 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.util.Arrays;
 
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
@@ -22,15 +21,12 @@ import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
-import org.telehash.core.HashName;
 import org.telehash.core.Identity;
-import org.telehash.core.LineIdentifier;
 import org.telehash.core.Node;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
-import org.telehash.core.UnwrappedOpenPacket;
 import org.telehash.core.Util;
 import org.telehash.core.Packet.JsonAndBody;
 import org.telehash.crypto.CipherSet;
@@ -44,24 +40,24 @@ import org.telehash.crypto.LinePublicKey;
 import org.telehash.network.Path;
 
 public class CipherSet2aImpl implements CipherSet {
-	
-	private Crypto mCrypto;
-	
+
+    private Crypto mCrypto;
+
     // elliptic curve settings
     private ECNamedCurveParameterSpec mECNamedCurveParameterSpec;
     private ECKeyPairGenerator mECGenerator = new ECKeyPairGenerator();
     private ECDomainParameters mECDomainParameters;
     private ECKeyGenerationParameters mECKeyGenerationParameters;
-    
+
     private SecureRandom mRandom = new SecureRandom();
-    
+
     static {
         Security.addProvider(new BouncyCastleProvider());
     };
-    
+
     public CipherSet2aImpl(Crypto crypto) {
-    	mCrypto = crypto;
-    	
+        mCrypto = crypto;
+
         // initialize elliptic curve parameters and generator
         mECNamedCurveParameterSpec =
                 ECNamedCurveTable.getParameterSpec("prime256v1");
@@ -73,7 +69,7 @@ public class CipherSet2aImpl implements CipherSet {
                         mECNamedCurveParameterSpec.getN()
                 );
         mECKeyGenerationParameters =
-                new ECKeyGenerationParameters(mECDomainParameters, mRandom);        
+                new ECKeyGenerationParameters(mECDomainParameters, mRandom);
         mECGenerator.init(mECKeyGenerationParameters);
     }
 
@@ -98,7 +94,7 @@ public class CipherSet2aImpl implements CipherSet {
                 )
             );
         AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
-        
+
         AsymmetricKeyParameter publicKey = keyPair.getPublic();
         AsymmetricKeyParameter privateKey = keyPair.getPrivate();
         if (! (privateKey instanceof RSAPrivateCrtKeyParameters)) {
@@ -111,7 +107,7 @@ public class CipherSet2aImpl implements CipherSet {
                 )
         );
     }
-    
+
     /**
      * Create a new HashNameKeyPair from the provided public and private key.
      * @param privateKey
@@ -119,10 +115,13 @@ public class CipherSet2aImpl implements CipherSet {
      * @return The newly created HashNameKeyPair object.
      */
     @Override
-    public HashNameKeyPair createHashNameKeyPair(HashNamePublicKey publicKey, HashNamePrivateKey privateKey) {
+    public HashNameKeyPair createHashNameKeyPair(
+            HashNamePublicKey publicKey,
+            HashNamePrivateKey privateKey
+    ) {
         return new HashNameKeyPairImpl((HashNamePublicKeyImpl)publicKey, (HashNamePrivateKeyImpl)privateKey);
     }
-    
+
     /**
      * Decode a public key.
      * 
@@ -134,7 +133,7 @@ public class CipherSet2aImpl implements CipherSet {
     public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException {
         return new HashNamePublicKeyImpl(buffer);
     }
-    
+
     /**
      * Decode a private key.
      * 
@@ -146,7 +145,7 @@ public class CipherSet2aImpl implements CipherSet {
     public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException {
         return new HashNamePrivateKeyImpl(buffer);
     }
-    
+
     /**
      * Decode an ANSI X9.63-encoded elliptic curve public key.
      * 
@@ -191,7 +190,7 @@ public class CipherSet2aImpl implements CipherSet {
     @Override
     public LineKeyPair generateLineKeyPair() throws TelehashException {
         AsymmetricCipherKeyPair keyPair = mECGenerator.generateKeyPair();
-        
+
         AsymmetricKeyParameter publicKey = keyPair.getPublic();
         AsymmetricKeyParameter privateKey = keyPair.getPrivate();
         if (! (publicKey instanceof ECPublicKeyParameters)) {
@@ -205,7 +204,7 @@ public class CipherSet2aImpl implements CipherSet {
                 (ECPrivateKeyParameters)privateKey
         );
     }
-    
+
     @Override
     public OpenPacket parseOpenPacket(
             Telehash telehash,
@@ -232,91 +231,81 @@ public class CipherSet2aImpl implements CipherSet {
         byte[] linePublicKeyBuffer =
                 mCrypto.decryptRSAOAEP(telehash.getIdentity().getPrivateKey(), openParameter);
         LinePublicKey linePublicKey = decodeLinePublicKey(linePublicKeyBuffer);
-        
+
         // Hash the ECC public key with SHA-256 to generate the AES key
         byte[] innerPacketKey =
-        		mCrypto.sha256Digest(linePublicKeyBuffer);
-        
+                mCrypto.sha256Digest(linePublicKeyBuffer);
+
         // Decrypt the inner packet using the generated key and IV value with
         // the AES-256-CTR algorithm.
         byte[] innerPacketBuffer =
-        		mCrypto.decryptAES256CTR(body, iv, innerPacketKey);
-        
-        
+                mCrypto.decryptAES256CTR(body, iv, innerPacketKey);
+
         // extract required JSON values from the inner packet
         JsonAndBody innerPacket = Packet.splitPacket(innerPacketBuffer);
-        long openTime = innerPacket.json.getLong(OpenPacket.OPEN_TIME_KEY);
-        String destinationString = innerPacket.json.getString(OpenPacket.DESTINATION_KEY);
-        Util.assertNotNull(destinationString);
-        byte[] destination = Util.hexToBytes(destinationString);
-        Util.assertBufferSize(destination, HashName.SIZE);
-        String lineIdentifierString = innerPacket.json.getString(OpenPacket.LINE_IDENTIFIER_KEY);
-        Util.assertNotNull(lineIdentifierString);
-        byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
-        Util.assertBufferSize(lineIdentifierBytes, OpenPacket.LINE_IDENTIFIER_SIZE);
-        LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
-        
+        OpenPacket.Inner innerHead = OpenPacket.Inner.deserialize(innerPacket);
+
         // Verify the "to" value of the inner packet matches your hashname
-        if (! Arrays.equals(destination, telehash.getIdentity().getHashName().getBytes())) {
+        if (! innerHead.mDestination.equals(telehash.getIdentity().getHashName())) {
             throw new TelehashException("received packet not destined for this identity.");
         }
-        
+
         // Extract the hashname public key of the sender from the inner
         // packet BODY (binary encoded format).
         HashNamePublicKey senderHashNamePublicKey =
-        		mCrypto.decodeHashNamePublicKey(innerPacket.body);
-        
+                mCrypto.decodeHashNamePublicKey(innerPacket.body);
+
         // SHA-256 hash the hashname public key to derive the sender's hashname
         Node sourceNode = new Node(senderHashNamePublicKey, path);
-        
+
         // Verify the "at" timestamp is newer than any other "open"
         // requests received from the sender.
         // TODO: "newer than any other open..." <-- should be handled at higher level
-        
+
         // SHA-256 hash the ECC public key with the 16 bytes derived from the
         // inner line hex value to generate a new AES key
         byte[] signatureKey = mCrypto.sha256Digest(
                 Util.concatenateByteArrays(
-                		linePublicKeyBuffer,
-                		lineIdentifierBytes
+                        linePublicKeyBuffer,
+                        innerHead.mLineIdentifier.getBytes()
                 )
         );
-        
+
         // Decrypt the outer packet sig value using AES-256-CTR with the key
         // from #8 and the same IV value as #3.
         byte[] signature = mCrypto.decryptAES256CTR(
-        		encryptedSignature,
-        		iv,
-        		signatureKey
+                encryptedSignature,
+                iv,
+                signatureKey
         );
-        
+
         // Using the hashname public key of the sender, verify the signature
         // (decrypted in #9) of the original (encrypted) form of the inner
         // packet
         if (! mCrypto.verifyRSA(
-        		senderHashNamePublicKey,
-        		body,
-        		signature)) {
+                senderHashNamePublicKey,
+                body,
+                signature)) {
             throw new TelehashException("signature verification failed.");
         }
-        
+
         // If an open packet has not already been sent to this hashname, do so
         // by creating one following the steps above
         // TODO: handle at higher level
-        
+
         // After sending your own open packet in response, you may now generate
         // a line shared secret using the received and sent line public keys and
         // Elliptic Curve Diffie-Hellman (ECDH).
         // TODO: handle at higher level
 
         return new OpenPacket(
-        		sourceNode,
-        		linePublicKey,
-        		openTime,
-        		lineIdentifier
+            sourceNode,
+            linePublicKey,
+            innerHead.mOpenTime,
+            innerHead.mLineIdentifier
         );
     }
-    
+
     /**
      * Pre-render the open packet.
      * 
@@ -324,10 +313,10 @@ public class CipherSet2aImpl implements CipherSet {
      */
     public void preRenderOpenPacket(OpenPacket open) throws TelehashException {
         Crypto crypto = Telehash.get().getCrypto();
-        
+
         // generate a random IV
         open.setPreRenderedIV(crypto.getRandomBytes(OpenPacket.IV_SIZE));
-        
+
         // note the current time.
         // This is a "local" timestamp -- the remote node will not
         // interpret this as the number of milliseconds since 1970,
@@ -335,7 +324,7 @@ public class CipherSet2aImpl implements CipherSet {
         // value indicates a newer open packet.  This timestamp should
         // be the time of line key generation.
         open.setOpenTime(System.currentTimeMillis());
-        
+
         // generate the line key pair
         LineKeyPair lineKeyPair = crypto.generateLineKeyPair();
         open.setLinePublicKey(lineKeyPair.getPublicKey());
@@ -344,11 +333,11 @@ public class CipherSet2aImpl implements CipherSet {
         // generate the "open" parameter by encrypting the public line
         // key with the recipient's hashname public key.
         open.setPreRenderedOpenParameter(crypto.encryptRSAOAEP(
-        		open.getDestinationNode().getPublicKey(),
-        		open.getLinePublicKey().getEncoded()
+                open.getDestinationNode().getPublicKey(),
+                open.getLinePublicKey().getEncoded()
         ));
     }
-    
+
     /**
      * Render the open packet into its final form.
      * 
@@ -367,40 +356,27 @@ public class CipherSet2aImpl implements CipherSet {
      */
     @Override
     public byte[] renderOpenPacket(
-    		OpenPacket open,
-    		Identity identity,
+            OpenPacket open,
+            Identity identity,
             byte[] iv,
             byte[] openParameter
     ) throws TelehashException {
         byte[] encodedLinePublicKey = open.getLinePublicKey().getEncoded();
-        
+
         // SHA-256 hash the public line key to form the encryption
         // key for the inner packet
         byte[] innerPacketAESKey = mCrypto.sha256Digest(encodedLinePublicKey);
-        
-		// Form the inner packet containing a current timestamp "at", line
-		// identifier, recipient hashname, and family (if you have such a
-		// value). Your own hashname public key is the packet BODY in
-		// the encoded binary format.
-        byte[] innerPacket;
-        try {
-            innerPacket = new JSONStringer()
-                .object()
-                .key(OpenPacket.OPEN_TIME_KEY)
-                .value(open.getOpenTime())
-                .key(OpenPacket.DESTINATION_KEY)
-                .value(open.getDestinationNode().getHashName().asHex())
-                .key(OpenPacket.LINE_IDENTIFIER_KEY)
-                .value(open.getLineIdentifier().asHex())
-                .endObject()
-                .toString()
-                .getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new TelehashException(e);
-        } catch (JSONException e) {
-            throw new TelehashException(e);
-        }
 
+        // Form the inner packet containing a current timestamp "at", line
+        // identifier, recipient hashname, and family (if you have such a
+        // value). Your own hashname public key is the packet BODY in
+        // the encoded binary format.
+        OpenPacket.Inner innerHead = new OpenPacket.Inner(
+                open.getDestinationNode().getHashName(),
+                open.getOpenTime(),
+                open.getLineIdentifier()
+        );
+        byte[] innerPacket = innerHead.serialize();
         innerPacket = Util.concatenateByteArrays(
                 new byte[] {
                         (byte)((innerPacket.length >> 8) & 0xFF),
@@ -417,13 +393,16 @@ public class CipherSet2aImpl implements CipherSet {
         // Create a signature from the encrypted inner packet using your own hashname
         // keypair, a SHA 256 digest, and PKCSv1.5 padding
         byte[] signature = mCrypto.signRSA(identity.getPrivateKey(), encryptedInnerPacket);
-        
+
         // Encrypt the signature using a new AES-256-CTR cipher with the same IV
         // and a new SHA-256 key hashed from the line public key + the
         // line value (16 bytes from #5), then base64 encode the result as the
         // value for the sig param.
         byte[] signatureKey = mCrypto.sha256Digest(
-                Util.concatenateByteArrays(encodedLinePublicKey, open.getLineIdentifier().getBytes())
+                Util.concatenateByteArrays(
+                        encodedLinePublicKey,
+                        open.getLineIdentifier().getBytes()
+                )
         ); 
         byte[] encryptedSignature =
                 mCrypto.encryptAES256CTR(signature, iv, signatureKey);
@@ -450,7 +429,7 @@ public class CipherSet2aImpl implements CipherSet {
         } catch (JSONException e) {
             throw new TelehashException(e);
         }
-        
+
         byte[] lengthPrefix = new byte[Packet.LENGTH_PREFIX_SIZE];
         lengthPrefix[0] = (byte)((outerPacket.length >> 8) & 0xFF);
         lengthPrefix[1] = (byte)(outerPacket.length & 0xFF);

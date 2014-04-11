@@ -1,6 +1,10 @@
 package org.telehash.core;
 
+import java.io.UnsupportedEncodingException;
+
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 import org.telehash.crypto.LinePrivateKey;
 import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.HashNamePublicKey;
@@ -30,49 +34,101 @@ import org.telehash.network.Path;
  * </ol>
  */
 public class OpenPacket extends Packet {
-    
+
     public static final String OPEN_TYPE = "open";
-    
+
     public static final String IV_KEY = "iv";
     public static final String SIG_KEY = "sig";
     public static final String OPEN_KEY = "open";
     public static final String OPEN_TIME_KEY = "at";
     public static final String DESTINATION_KEY = "to";
     public static final String LINE_IDENTIFIER_KEY = "line";
-    
+
     public static final int IV_SIZE = 16;
     public static final int LINE_IDENTIFIER_SIZE = 16;
-    
+
     static {
         Packet.registerPacketType(OPEN_TYPE, OpenPacket.class);
     }
-    
+
     private Identity mIdentity;
     private HashNamePublicKey mSenderHashNamePublicKey;
     private LinePublicKey mLinePublicKey;
     private LinePrivateKey mLinePrivateKey;
+
+    // TODO: remove these in favor of an Inner object?
     private long mOpenTime;
     private LineIdentifier mLineIdentifier;
-    
+
     private boolean mPreRendered = false;
     private byte[] mPreRenderedIV;
     private byte[] mPreRenderedOpenParameter;
+
+    public static class Inner {
+        // TODO: "from" field
+        public HashName mDestination;
+        public long mOpenTime;
+        public LineIdentifier mLineIdentifier;
+
+        public Inner(HashName destination, long openTime, LineIdentifier lineIdentifier) {
+            mDestination = destination;
+            mOpenTime = openTime;
+            mLineIdentifier = lineIdentifier;
+        }
+
+        public static Inner deserialize(JsonAndBody innerPacket) throws TelehashException {
+            long openTime = innerPacket.json.getLong(OpenPacket.OPEN_TIME_KEY);
+            String destinationString = innerPacket.json.getString(OpenPacket.DESTINATION_KEY);
+            Util.assertNotNull(destinationString);
+            byte[] destinationBytes = Util.hexToBytes(destinationString);
+            Util.assertBufferSize(destinationBytes, HashName.SIZE);
+            HashName destination = new HashName(destinationBytes);
+            String lineIdentifierString = innerPacket.json.getString(OpenPacket.LINE_IDENTIFIER_KEY);
+            Util.assertNotNull(lineIdentifierString);
+            byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
+            Util.assertBufferSize(lineIdentifierBytes, OpenPacket.LINE_IDENTIFIER_SIZE);
+            LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
+            return new Inner(destination, openTime, lineIdentifier);
+        }
+
+        public byte[] serialize() throws TelehashException {
+            byte[] innerPacketHeaders;
+            try {
+                innerPacketHeaders = new JSONStringer()
+                    .object()
+                    .key(OPEN_TIME_KEY)
+                    .value(mOpenTime)
+                    .key(DESTINATION_KEY)
+                    .value(mDestination.asHex())
+                    .key(LINE_IDENTIFIER_KEY)
+                    .value(mLineIdentifier.asHex())
+                    .endObject()
+                    .toString()
+                    .getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new TelehashException(e);
+            } catch (JSONException e) {
+                throw new TelehashException(e);
+            }
+            return innerPacketHeaders;
+        }
+    }
 
     public OpenPacket(Identity identity, Node destinationNode) {
         mIdentity = identity;
         mDestinationNode = destinationNode;
         mSenderHashNamePublicKey = identity.getPublicKey();
-        
+
         if (destinationNode.getPublicKey() == null) {
             throw new IllegalArgumentException("attempt to open a line to a node with unknown public key");
         }
-        
+
         // generate a random line identifier
         mLineIdentifier = new LineIdentifier(
                 Telehash.get().getCrypto().getRandomBytes(LINE_IDENTIFIER_SIZE)
         );
     }
-    
+
     public OpenPacket(
             Node sourceNode,
             LinePublicKey linePublicKey,
@@ -84,37 +140,37 @@ public class OpenPacket extends Packet {
         mOpenTime = openTime;
         mLineIdentifier = lineIdentifier;
     }
-    
+
     // accessor methods
-    
+
     public void setSenderHashNamePublicKey(HashNamePublicKey senderHashNamePublicKey) {
         mSenderHashNamePublicKey = senderHashNamePublicKey;
     }
     public HashNamePublicKey getSenderHashNamePublicKey() {
         return mSenderHashNamePublicKey;
     }
-    
+
     public void setLinePublicKey(LinePublicKey publicKey) {
         mLinePublicKey = publicKey;
     }
     public LinePublicKey getLinePublicKey() {
         return mLinePublicKey;
     }
-    
+
     public void setLinePrivateKey(LinePrivateKey privateKey) {
         mLinePrivateKey = privateKey;
     }
     public LinePrivateKey getLinePrivateKey() {
         return mLinePrivateKey;
     }
-    
+
     public void setOpenTime(long openTime) {
         mOpenTime = openTime;
     }
     public long getOpenTime() {
         return mOpenTime;
     }
-    
+
     public void setLineIdentifier(LineIdentifier lineIdentifier) {
         mLineIdentifier = lineIdentifier;
     }
@@ -123,24 +179,24 @@ public class OpenPacket extends Packet {
     }
 
     public void setPreRenderedIV(byte[] preRenderedIV) {
-    	mPreRenderedIV = preRenderedIV;
+        mPreRenderedIV = preRenderedIV;
     }
     public byte[] getPreRenderedIV() {
-    	return mPreRenderedIV;
+        return mPreRenderedIV;
     }
-    
+
     public void setPreRenderedOpenParameter(byte[] preRenderedOpenParameter) {
-    	mPreRenderedOpenParameter = preRenderedOpenParameter;
+        mPreRenderedOpenParameter = preRenderedOpenParameter;
     }
     public byte[] getPreRenderedOpenParameter() {
-    	return mPreRenderedOpenParameter;
+        return mPreRenderedOpenParameter;
     }
 
     public void preRender() throws TelehashException {
         Telehash.get().getCrypto().getCipherSet().preRenderOpenPacket(this);
         mPreRendered = true;
     }
-    
+
     /**
      * Render the open packet into its final form.
      * 
@@ -154,7 +210,7 @@ public class OpenPacket extends Packet {
         // perform further packet creation.
         return render(mPreRenderedIV, mPreRenderedOpenParameter);
     }
-    
+
     /**
      * Render the open packet into its final form.
      * 
@@ -174,18 +230,28 @@ public class OpenPacket extends Packet {
             byte[] iv,
             byte[] openParameter
     ) throws TelehashException {
-		return Telehash.get().getCrypto().getCipherSet().renderOpenPacket(this, mIdentity, iv, openParameter);
+        return Telehash.get().getCrypto().getCipherSet().renderOpenPacket(
+                this,
+                mIdentity,
+                iv,
+                openParameter
+        );
     }
-    
+
     public static OpenPacket parse(
             Telehash telehash,
             JSONObject json,
             byte[] body,
             Path path
     ) throws TelehashException {
-    	return Telehash.get().getCrypto().getCipherSet().parseOpenPacket(telehash, json, body, path);
+        return Telehash.get().getCrypto().getCipherSet().parseOpenPacket(
+                telehash,
+                json,
+                body,
+                path
+        );
     }
-    
+
     public String toString() {
         String s = "OPEN["+mLineIdentifier+"@"+mOpenTime+"]";
         if (mSourceNode != null) {

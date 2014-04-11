@@ -2,11 +2,9 @@ package org.telehash.crypto;
 
 import org.json.JSONObject;
 import org.telehash.core.Identity;
-import org.telehash.core.LineIdentifier;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
-import org.telehash.core.UnwrappedOpenPacket;
 import org.telehash.network.Path;
 
 public interface CipherSet {
