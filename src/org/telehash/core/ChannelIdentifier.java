@@ -18,21 +18,22 @@ public class ChannelIdentifier {
         }
         mBuffer = buffer;
     }
-    
+
     public byte[] getBytes() {
         return mBuffer;
     }
-    
+
     public String asHex() {
         return Util.bytesToHex(mBuffer);
     }
-    
+
+    @Override
     public String toString() {
         return asHex();
     }
-    
+
     // Java identity
-    
+
     @Override
     public boolean equals(Object other) {
         if (other != null &&
@@ -43,7 +44,7 @@ public class ChannelIdentifier {
             return false;
         }
     }
-    
+
     @Override
     public int hashCode() {
         return Arrays.hashCode(mBuffer);

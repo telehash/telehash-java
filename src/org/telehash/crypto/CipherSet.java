@@ -1,6 +1,5 @@
 package org.telehash.crypto;
 
-import org.json.JSONObject;
 import org.telehash.core.Identity;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet.SplitPacket;
@@ -18,9 +17,9 @@ public interface CipherSet {
     /**
      * Generate a fresh identity (i.e., RSA public and private key pair) for a
      * newly provisioned Telehash node.
-     * 
+     *
      * @return The new identity.
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     public Identity generateIdentity() throws TelehashException;
 
@@ -30,11 +29,14 @@ public interface CipherSet {
      * @param publicKey
      * @return The newly created HashNameKeyPair object.
      */
-    public HashNameKeyPair createHashNameKeyPair(HashNamePublicKey publicKey, HashNamePrivateKey privateKey);
+    public HashNameKeyPair createHashNameKeyPair(
+            HashNamePublicKey publicKey,
+            HashNamePrivateKey privateKey
+    );
 
     /**
      * Decode a hashname public key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded public key.
      * @throws TelehashException If the buffer cannot be parsed.
@@ -43,7 +45,7 @@ public interface CipherSet {
 
     /**
      * Decode a hashname private key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
      * @throws TelehashException If the buffer cannot be parsed.
@@ -52,7 +54,7 @@ public interface CipherSet {
 
     /**
      * Decode a line public key.
-     * 
+     *
      * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
      * @return The decoded public key.
      * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
@@ -61,7 +63,7 @@ public interface CipherSet {
 
     /**
      * Decode a line private key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
      * @throws TelehashException If the byte buffer cannot be parsed.
@@ -92,18 +94,18 @@ public interface CipherSet {
 
     /**
      * Pre-render an open packet.
-     * 
+     *
      * @throws TelehashException
      */
     public void preRenderOpenPacket(OpenPacket open) throws TelehashException;
 
     /**
      * Render an open packet into its final form.
-     * 
+     *
      * This version of the method allows the caller to pass in values for
      * certain otherwise calculated fields, allowing for deterministic open
      * packet creation suitable for unit tests.
-     * 
+     *
      * @param packet The open packet object.
      * @param lineKeyCiphertext
      *            The line key ciphertext -- the public line key encrypted

@@ -5,10 +5,10 @@ import org.telehash.crypto.HashNamePrivateKey;
 import org.telehash.crypto.HashNamePublicKey;
 
 public class HashNameKeyPairImpl implements HashNameKeyPair {
-    
+
     private HashNamePublicKeyImpl mPublicKey;
     private HashNamePrivateKeyImpl mPrivateKey;
-    
+
     public HashNameKeyPairImpl(HashNamePublicKeyImpl publicKey, HashNamePrivateKeyImpl privateKey) {
         mPublicKey = publicKey;
         mPrivateKey = privateKey;

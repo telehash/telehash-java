@@ -1,10 +1,10 @@
 package org.telehash.dht;
 
-import java.math.BigInteger;
-import java.util.Comparator;
-
 import org.telehash.core.HashName;
 import org.telehash.core.Node;
+
+import java.math.BigInteger;
+import java.util.Comparator;
 
 class NodeDistanceComparator implements Comparator<Node> {
     private HashName mTargetHashName;

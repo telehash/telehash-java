@@ -1,22 +1,22 @@
 package org.telehash.core;
 
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.telehash.network.Path;
 
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 public class ChannelPacket extends Packet {
     private static final String CHANNEL_IDENTIFIER_KEY = "c";
     private static final String END_KEY = "end";
     private static final String ERROR_KEY = "err";
     private static final String CUSTOM_FIELDS_KEY = "_";
-    
+
     private static final int CHANNEL_IDENTIFIER_SIZE = 16;
 
     private ChannelIdentifier mChannelIdentifier;
@@ -26,11 +26,11 @@ public class ChannelPacket extends Packet {
     private Map<String,Object> mFields = new HashMap<String,Object>();
     private JSONObject mCustomFields;
     private byte[] mBody;
-    
+
     public ChannelPacket() {
-        
+
     }
-    
+
     private ChannelPacket(
             ChannelIdentifier channelIdentifer,
             String type,
@@ -48,65 +48,65 @@ public class ChannelPacket extends Packet {
     public void setChannelIdentifier(ChannelIdentifier channelIdentifier) {
         mChannelIdentifier = channelIdentifier;
     }
-    
+
     public ChannelIdentifier getChannelIdentifier() {
         return mChannelIdentifier;
     }
-    
+
     public void setType(String type) {
         mType = type;
     }
-    
+
     public String getType() {
         return mType;
     }
-    
+
     public void setEnd(boolean end) {
         mEnd = end;
     }
-    
+
     public boolean isEnd() {
         return mEnd;
     }
-    
+
     public void setError(String error) {
         mError = error;
     }
-    
+
     public String getError() {
         return mError;
     }
-    
+
     public void setCustomFields(JSONObject customFields) {
         mCustomFields = customFields;
     }
-    
+
     public JSONObject getCustomFields() {
         return mCustomFields;
     }
-    
+
     public void setBody(byte[] body) {
         mBody = body;
     }
-    
+
     public byte[] getBody() {
         return mBody;
     }
-    
+
     public void put(String key, Object value) {
         mFields.put(key, value);
     }
-    
+
     public Object get(String key) {
         return mFields.get(key);
     }
-    
+
     @Override
     public byte[] render() throws TelehashException {
         if (mBody == null) {
             mBody = new byte[0];
         }
-        
+
         byte[] packet;
         try {
             JSONWriter json = new JSONStringer().object();
@@ -154,7 +154,7 @@ public class ChannelPacket extends Packet {
         SplitPacket splitPacket = splitPacket(packetBuffer);
         return parse(telehash, splitPacket.json, splitPacket.body, path);
     }
-    
+
     public static ChannelPacket parse(
             Telehash telehash,
             JSONObject json,
@@ -167,24 +167,24 @@ public class ChannelPacket extends Packet {
         byte[] channelIdentifierBytes = Util.hexToBytes(channelIdentifierString);
         assertBufferSize(channelIdentifierBytes, CHANNEL_IDENTIFIER_SIZE);
         ChannelIdentifier channelIdentifier = new ChannelIdentifier(channelIdentifierBytes);
-        
+
         String type = null;
         if (json.has(TYPE_KEY)) {
             type = json.getString(TYPE_KEY);
         }
-        
+
         boolean end;
         if (json.has(END_KEY) && json.getBoolean(END_KEY)) {
             end = json.getBoolean(END_KEY);
         } else {
             end = false;
         }
-        
+
         String error = null;
         if (json.has(ERROR_KEY)) {
             json.getString(ERROR_KEY);
         }
-        
+
         JSONObject customFields = null;
         if (json.has(CUSTOM_FIELDS_KEY)) {
             customFields = json.getJSONObject(CUSTOM_FIELDS_KEY);
@@ -208,10 +208,10 @@ public class ChannelPacket extends Packet {
                 channelPacket.put(key, value);
             }
         }
-        
+
         return channelPacket;
     }
-    
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

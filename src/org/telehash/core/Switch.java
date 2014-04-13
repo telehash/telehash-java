@@ -1,10 +1,5 @@
 package org.telehash.core;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.telehash.dht.DHT;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
@@ -14,13 +9,18 @@ import org.telehash.network.MessageHandler;
 import org.telehash.network.Path;
 import org.telehash.network.Reactor;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * The Switch class is the heart of Telehash. The switch is responsible for
  * managing identity and node information, maintaining the DHT, and facilitating
  * inter-node communication.
  */
 public class Switch implements DatagramHandler, MessageHandler {
-    
+
     private static final int DEFAULT_PORT = 42424;
 
     private Telehash mTelehash;
@@ -28,17 +28,17 @@ public class Switch implements DatagramHandler, MessageHandler {
     private int mPort;
     private Reactor mReactor;
     private Thread mThread;
-    
+
     private Flag mStartFlag = new Flag();
     private Flag mStopFlag = new Flag();
     private boolean mStopRequested = false;
-    
+
     private Node mLocalNode;
     private Scheduler mScheduler = new Scheduler();
-    
+
     private DHT mDHT;
     private LineManager mLineManager;
-    
+
     private static class OpenChannelMessage extends Message {
         final Node destination;
         final String type;
@@ -61,7 +61,7 @@ public class Switch implements DatagramHandler, MessageHandler {
         mSeeds = seeds;
         mPort = port;
     }
-    
+
     public void start() throws TelehashException {
 
         // determine the local node information
@@ -75,7 +75,7 @@ public class Switch implements DatagramHandler, MessageHandler {
         InetPath inetPath = (InetPath)localPath;
         inetPath = new InetPath(inetPath.getAddress(), mPort);
         mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), inetPath);
-        
+
         // provision the reactor
         mReactor = mTelehash.getNetwork().createReactor(mPort);
         mReactor.setDatagramHandler(this);
@@ -85,7 +85,7 @@ public class Switch implements DatagramHandler, MessageHandler {
         } catch (IOException e) {
             throw new TelehashException(e);
         }
-        
+
         // launch thread
         mThread = new Thread(new Runnable() {
             @Override
@@ -95,41 +95,49 @@ public class Switch implements DatagramHandler, MessageHandler {
             }
         });
         mThread.start();
-        
+
         // block until the start tasks in loop() have finished.
         mStartFlag.waitForSignal();
         mStartFlag.reset();
     }
-    
+
     public void stop() {
         synchronized (this) {
             if (mReactor != null) {
                 mStopRequested = true;
                 mReactor.stop();
-                
+
                 if (! Thread.currentThread().equals(mThread)) {
                     mStopFlag.waitForSignal();
                 }
             }
         }
-        
+
         mStopFlag.reset();
     }
-    
+
     public DHT getDHT() {
         return mDHT;
     }
-    
+
     public LineManager getLineManager() {
         return mLineManager;
     }
-    
-    public void openChannel(Node destination, final String type, final ChannelHandler channelHandler) {
+
+    public void openChannel(
+            Node destination,
+            final String type,
+            final ChannelHandler channelHandler
+    ) {
         Message message = new OpenChannelMessage(destination, type, channelHandler);
         mReactor.sendMessage(message);
     }
-    
-    public void openChannelNow(Node destination, final String type, final ChannelHandler channelHandler) {
+
+    public void openChannelNow(
+            Node destination,
+            final String type,
+            final ChannelHandler channelHandler
+    ) {
         if (mLocalNode.equals(destination)) {
             channelHandler.handleError(null,
                     new TelehashException("attempt to open a channel to myself")
@@ -147,7 +155,7 @@ public class Switch implements DatagramHandler, MessageHandler {
                 channelHandler.handleError(null, throwable);
             }
         };
-        
+
         // open a new line (or re-use an existing line)
         try {
             mLineManager.openLine(destination, false, lineOpenCompletionHandler, null);
@@ -155,17 +163,17 @@ public class Switch implements DatagramHandler, MessageHandler {
             channelHandler.handleError(null, e);
         }
     }
-    
+
     public void sendPacket(Packet packet) throws TelehashException {
         if (packet == null) {
             return;
         }
         Node destination = packet.getDestinationNode();
         Log.i("outgoing packet: "+packet);
-        
+
         Datagram datagram =
                 new Datagram(packet.render(), null, packet.getDestinationNode().getPath());
-        
+
         if (mReactor != null) {
             mReactor.sendDatagram(datagram);
         }
@@ -173,13 +181,13 @@ public class Switch implements DatagramHandler, MessageHandler {
 
     private void loop() {
         Log.i("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
-        
+
         mLineManager = new LineManager(mTelehash);
         mLineManager.init();
 
         mDHT = new DHT(mTelehash, mLocalNode, mSeeds);
         mDHT.init();
-        
+
         // signal start completion
         mStartFlag.signal();
 
@@ -195,10 +203,10 @@ public class Switch implements DatagramHandler, MessageHandler {
 
                 // select and dispatch
                 mReactor.select(nextTaskTime);
-            	
+
                 // run any timed tasks
                 mScheduler.runTasks();
-                
+
                 if (mStopRequested) {
                     Log.i("switch stop requested");
                     break;
@@ -218,11 +226,11 @@ public class Switch implements DatagramHandler, MessageHandler {
 
         mDHT.close();
         Log.i("Telehash switch "+mLocalNode+" ending.");
-        
+
         // signal loop completion
         mStopFlag.signal();
     }
-    
+
     @Override
     public void handleDatagram(Datagram datagram) {
         byte[] buffer = datagram.getBytes();
@@ -235,7 +243,7 @@ public class Switch implements DatagramHandler, MessageHandler {
             packet = Packet.parse(mTelehash, buffer, source);
         } catch (RuntimeException e) {
             e.printStackTrace();
-            return;            
+            return;
         } catch (TelehashException e) {
             e.printStackTrace();
             return;
@@ -244,11 +252,11 @@ public class Switch implements DatagramHandler, MessageHandler {
             // null packet received; ignore
             return;
         }
-        
+
         // process the packet
         handleIncomingPacket(packet);
     }
-    
+
     @Override
     public void handleMessage(Message message) {
         // process any pending messages
@@ -259,7 +267,7 @@ public class Switch implements DatagramHandler, MessageHandler {
             }
         }
     }
-    
+
     private void handleIncomingPacket(Packet packet) {
         Log.i("incoming packet: "+packet);
         try {
@@ -274,22 +282,22 @@ public class Switch implements DatagramHandler, MessageHandler {
             e.printStackTrace();
         }
     }
-    
+
     private Map<String,ChannelHandler> mRegisteredChannelHandlers =
             new HashMap<String,ChannelHandler>();
-    
+
     public void registerChannelHandler(String type, ChannelHandler channelHandler) {
         mRegisteredChannelHandlers.put(type, channelHandler);
     }
-    
+
     public ChannelHandler getChannelHandler(String type) {
         return mRegisteredChannelHandlers.get(type);
     }
-    
+
     public Scheduler getScheduler() {
         return mScheduler;
     }
-    
+
     public Timeout getTimeout(OnTimeoutListener listener, long delay) {
         return new Timeout(mScheduler, listener, delay);
     }

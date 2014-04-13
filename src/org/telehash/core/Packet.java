@@ -1,17 +1,17 @@
 package org.telehash.core;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.telehash.network.Path;
+
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.telehash.network.Path;
-
 public abstract class Packet {
-    
+
     private static final int MINIMUM_PACKET_LENGTH = 2;
     private static final int JSON_START_POSITION = 2;
     private static final int MINIMUM_JSON_LENGTH = 0;
@@ -21,7 +21,7 @@ public abstract class Packet {
     public static final String TYPE_KEY = "type";
 
     private static Map<String,Method> sTypeParseMap =
-            new HashMap<String,Method>(); 
+            new HashMap<String,Method>();
 
     protected Node mSourceNode;
     protected Node mDestinationNode;
@@ -36,7 +36,7 @@ public abstract class Packet {
         public short singleByteHeader;
         public byte[] body;
     }
-    
+
     public void setSourceNode(Node sourceNode) {
         mSourceNode = sourceNode;
     }
@@ -50,10 +50,10 @@ public abstract class Packet {
     public Node getDestinationNode() {
         return mDestinationNode;
     }
-    
+
     /**
      * Render the packet into its final form.
-     * 
+     *
      * @return A byte array of the rendered packet.
      * @throws TelehashException
      */
@@ -63,7 +63,7 @@ public abstract class Packet {
      * Parse the provided byte buffer into a packet object. This method will
      * examine the "type" header, and dispatch to the parse method of the
      * appropriate subclass.
-     * 
+     *
      * @param telehash The Telehash context.
      * @param buffer The buffer to parse.
      * @param sourcePath The path from which this packet was received.
@@ -85,7 +85,8 @@ public abstract class Packet {
         // determine the packet type
         String type;
         if (splitPacket.json == null) {
-            if (splitPacket.singleByteHeader == telehash.getCrypto().getCipherSet().getCipherSetId()) {
+            if (splitPacket.singleByteHeader ==
+                    telehash.getCrypto().getCipherSet().getCipherSetId()) {
                 type = OpenPacket.OPEN_TYPE;
             } else {
                 throw new TelehashException(
@@ -176,19 +177,19 @@ public abstract class Packet {
         }
         sTypeParseMap.put(typeName, method);
     }
-    
+
     protected static final void assertNotNull(Object o) throws TelehashException {
         if (o == null) {
             throw new TelehashException("null value unexpectedly encountered");
         }
     }
-    
+
     protected static final void assertBufferSize(
             byte[] buffer,
             int length
     ) throws TelehashException {
         if (buffer == null) {
-            throw new TelehashException("null value unexpectedly encountered");            
+            throw new TelehashException("null value unexpectedly encountered");
         }
         if (buffer.length != length) {
             throw new TelehashException("invalid buffer size");

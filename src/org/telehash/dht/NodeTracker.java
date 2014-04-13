@@ -1,14 +1,14 @@
 package org.telehash.dht;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 import org.telehash.core.HashName;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.Telehash;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class NodeTracker {
     private static final int BUCKET_COUNT = 256;
@@ -55,7 +55,7 @@ public class NodeTracker {
         // "Each k-bucket is kept sorted by time last seen -- least-recently
         // seen
         // node at the head, most-recently seen at the tail."
-        
+
         public int size() {
             return mTrackedNodes.size();
         }
@@ -99,12 +99,12 @@ public class NodeTracker {
 
     public NodeTracker(Node localNode) {
         mLocalNode = localNode;
-        
+
         for (int i=0; i<BUCKET_COUNT; i++) {
             mBuckets[i] = new Bucket();
         }
     }
-    
+
     public int size() {
         int size = 0;
         for (int i=0; i<BUCKET_COUNT; i++) {
@@ -128,7 +128,7 @@ public class NodeTracker {
 
     /**
      * Fetch a set of nodes closest to the target hashname.
-     * 
+     *
      * @param targetHashName
      *            The target hash name.
      * @param maxNodes
@@ -159,7 +159,9 @@ public class NodeTracker {
             }
 
             // scan farther buckets
-            for (int i = (startingBucket + 1); i < BUCKET_COUNT && sortedNodes.size() < maxNodes; i++) {
+            for (int i = (startingBucket + 1);
+                    i < BUCKET_COUNT && sortedNodes.size() < maxNodes;
+                    i++) {
                 mBuckets[i].accumulateNodes(sortedNodes);
             }
         }
@@ -179,63 +181,77 @@ public class NodeTracker {
      */
     public void refreshBuckets() {
         Log.i("perform self-seek");
-        NodeLookupTask lookup = new NodeLookupTask(Telehash.get(), this, mLocalNode.getHashName(), new NodeLookupTask.Handler() {
-            @Override
-            public void handleError(NodeLookupTask task, Throwable e) {
-                Log.e("error performing self-seek", e);
-            }
-            
-            @Override
-            public void handleCompletion(NodeLookupTask task, Node self) {
-                Log.i("self-seek finished: "+self);
-                if (self == null) {
-                    Log.e("could not seek self!  aborting refresh");
-                    return;
-                }
-                int neighborDistance = 0;
-                Node neighbor = task.getClosestVisitedNode();
-                if (neighbor != null) {
-                    neighborDistance =  mLocalNode.getHashName().distanceMagnitude(neighbor.getHashName());
-                    Log.i("nearest neighbor = "+neighbor+" distance="+neighborDistance);
-                } else {
-                    Log.i("no nearest neighbor");
-                }
+        NodeLookupTask lookup = new NodeLookupTask(
+                Telehash.get(),
+                this,
+                mLocalNode.getHashName(),
+                new NodeLookupTask.Handler() {
+                    @Override
+                    public void handleError(NodeLookupTask task, Throwable e) {
+                        Log.e("error performing self-seek", e);
+                    }
 
-                long now = System.nanoTime();
-                for (int i=neighborDistance; i<BUCKET_COUNT; i++) {
-                    Log.i("considering bucket: "+mBuckets[i]);
-                    if (mBuckets[i].mLastNodeLookupTime == -1 || ((now - mBuckets[i].mLastNodeLookupTime) > BUCKET_REFRESH_TIME_NS)) {
-                        refreshBucket(i);
+                    @Override
+                    public void handleCompletion(NodeLookupTask task, Node self) {
+                        Log.i("self-seek finished: "+self);
+                        if (self == null) {
+                            Log.e("could not seek self!  aborting refresh");
+                            return;
+                        }
+                        int neighborDistance = 0;
+                        Node neighbor = task.getClosestVisitedNode();
+                        if (neighbor != null) {
+                            neighborDistance =mLocalNode.getHashName().distanceMagnitude(
+                                    neighbor.getHashName()
+                            );
+                            Log.i("nearest neighbor = "+neighbor+" distance="+neighborDistance);
+                        } else {
+                            Log.i("no nearest neighbor");
+                        }
+
+                        long now = System.nanoTime();
+                        for (int i=neighborDistance; i<BUCKET_COUNT; i++) {
+                            Log.i("considering bucket: "+mBuckets[i]);
+                            if (mBuckets[i].mLastNodeLookupTime == -1 ||
+                                    ((now - mBuckets[i].mLastNodeLookupTime) >
+                                    BUCKET_REFRESH_TIME_NS)) {
+                                refreshBucket(i);
+                            }
+                        }
                     }
                 }
-            }
-        });
+        );
         lookup.start();
     }
 
     /**
      * Refresh the specified bucket by performing a node lookup for a
      * random hashname within the bucket.
-     *  
+     *
      * @param bucket The index of the bucket to refresh.
      */
     private void refreshBucket(final int bucket) {
         Log.i("bucket[%d] start refresh", bucket);
         HashName hashName = DHT.getRandomHashName(mLocalNode.getHashName(), bucket);
-        NodeLookupTask lookup = new NodeLookupTask(Telehash.get(), this, hashName, new NodeLookupTask.Handler() {
-            @Override
-            public void handleError(NodeLookupTask task, Throwable e) {
-                Log.e("error refreshing bucket %d: ", bucket, e);
-            }
-            
-            @Override
-            public void handleCompletion(NodeLookupTask task, Node result) {
-                Log.i("bucket[%d] refreshed.", bucket);
-            }
-        });
+        NodeLookupTask lookup = new NodeLookupTask(
+                Telehash.get(),
+                this,
+                hashName,
+                new NodeLookupTask.Handler() {
+                    @Override
+                    public void handleError(NodeLookupTask task, Throwable e) {
+                        Log.e("error refreshing bucket %d: ", bucket, e);
+                    }
+
+                    @Override
+                    public void handleCompletion(NodeLookupTask task, Node result) {
+                        Log.i("bucket[%d] refreshed.", bucket);
+                    }
+                }
+        );
         lookup.start();
     }
-    
+
     public void dump() {
         Log.d("tracking "+size()+" nodes:");
         for (int i=0; i<BUCKET_COUNT; i++) {

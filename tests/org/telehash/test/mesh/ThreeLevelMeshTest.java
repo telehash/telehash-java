@@ -1,11 +1,7 @@
 package org.telehash.test.mesh;
 
-import static org.junit.Assert.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -14,18 +10,22 @@ import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
-import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.TelehashException;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 public class ThreeLevelMeshTest {
-    
+
     private static final int NODE_SEED = 0;
     private static final int NUM_NODES = 5;
     private static final int NODE_A = 3;
     private static final int NODE_B = 4;
-    
+
     private List<TelehashTestInstance> mNodes;
 
     @Before
@@ -45,21 +45,26 @@ public class ThreeLevelMeshTest {
     public void testOpenLine() throws Exception {
         TelehashTestInstance src = mNodes.get(NODE_A);
         TelehashTestInstance dst = mNodes.get(NODE_B);
-        
-        src.getSwitch().getLineManager().openLine(dst.getNode(), false, new CompletionHandler<Line>() {
-            @Override
-            public void failed(Throwable exc, Object attachment) {
-                Log.i("line open failed");
-            }
-            @Override
-            public void completed(Line result, Object attachment) {
-                Log.i("line open success");
-            }
-        }, null);
-        
+
+        src.getSwitch().getLineManager().openLine(
+                dst.getNode(),
+                false,
+                new CompletionHandler<Line>() {
+                    @Override
+                    public void failed(Throwable exc, Object attachment) {
+                        Log.i("line open failed");
+                    }
+                    @Override
+                    public void completed(Line result, Object attachment) {
+                        Log.i("line open success");
+                    }
+                },
+                null
+        );
+
         // TODO: signal failure/success/timeout via Object.notify().
         Thread.sleep(1000);
-        
+
         // assure src has a line open to dst.
         assertLineOpen(src, dst);
         assertLineOpen(dst, src);
@@ -73,45 +78,53 @@ public class ThreeLevelMeshTest {
         Log.i("OPEN "+src.getNode()+" -> "+dst.getNode());
 
         // src opens a line to the seed
-        src.getSwitch().getLineManager().openLine(seed.getNode(), false, new CompletionHandler<Line>() {
-            @Override
-            public void failed(Throwable exc, Object attachment) {
-                Log.i("line open failed");
-            }
-            @Override
-            public void completed(Line line, Object attachment) {
-                Log.i("line open success");
-                
-                // src seeks the dst
-                Channel channel = line.openChannel("peer", new ChannelHandler() {
+        src.getSwitch().getLineManager().openLine(
+                seed.getNode(),
+                false,
+                new CompletionHandler<Line>() {
                     @Override
-                    public void handleError(Channel channel, Throwable error) {
-                        Log.i("peer failed");
+                    public void failed(Throwable exc, Object attachment) {
+                        Log.i("line open failed");
                     }
                     @Override
-                    public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
-                    }
-                    @Override
-                    public void handleOpen(Channel channel) {
-                        // nothing to do, since line.openChannel()
-                        // always opens channel immediately.
-                    }
-                });
+                    public void completed(Line line, Object attachment) {
+                        Log.i("line open success");
 
-                Log.i("peer channel open success");
-                
-                Map<String,Object> fields = new HashMap<String,Object>();
-                fields.put("peer", dst.getNode().getHashName().asHex());
-                try {
-                    channel.send(null, fields, false);
-                } catch (TelehashException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+                        // src seeks the dst
+                        Channel channel = line.openChannel("peer", new ChannelHandler() {
+                            @Override
+                            public void handleError(Channel channel, Throwable error) {
+                                Log.i("peer failed");
+                            }
+                            @Override
+                            public void handleIncoming(
+                                    Channel channel,
+                                    ChannelPacket channelPacket
+                            ) {
+                            }
+                            @Override
+                            public void handleOpen(Channel channel) {
+                                // nothing to do, since line.openChannel()
+                                // always opens channel immediately.
+                            }
+                        });
 
-            }
-        }, null);
-        
+                        Log.i("peer channel open success");
+
+                        Map<String,Object> fields = new HashMap<String,Object>();
+                        fields.put("peer", dst.getNode().getHashName().asHex());
+                        try {
+                            channel.send(null, fields, false);
+                        } catch (TelehashException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+
+                    }
+                },
+                null
+        );
+
         // TODO: signal failure/success/timeout via Object.notify().
         Thread.sleep(1000);
 
@@ -119,7 +132,7 @@ public class ThreeLevelMeshTest {
         assertLineOpen(src, dst);
         assertLineOpen(dst, src);
     }
-    
+
     protected void assertLineOpen(TelehashTestInstance a, TelehashTestInstance b) {
         // assure A has a line open to B.
         boolean found = false;
@@ -129,6 +142,6 @@ public class ThreeLevelMeshTest {
                 found = true;
             }
         }
-        assertTrue(found);        
+        assertTrue(found);
     }
 }

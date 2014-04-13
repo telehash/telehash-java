@@ -10,12 +10,12 @@ import java.io.IOException;
  * the library.
  */
 public class Util {
-    
+
     private static int IO_BUFFER_SIZE = 4096;
-    
+
     /**
      * Encode the provided byte array as a string of hex digits.
-     * 
+     *
      * @param buffer The byte array to encode.
      * @return The string of hex digits.
      */
@@ -26,15 +26,15 @@ public class Util {
         }
         return sb.toString();
     }
-    
+
     /**
      * Decode the provided hex string into a byte array.
-     * 
+     *
      * @param hex The hex string to decode.
      * @return The decoded byte array.
      */
     public static byte[] hexToBytes(String hex) {
-        int hexLength = hex.length(); 
+        int hexLength = hex.length();
         if (hexLength % 2 != 0) {
             return null;
         }
@@ -56,25 +56,25 @@ public class Util {
             if (i%2==0) {
                 accumulator = v << 4;
             } else {
-                buffer[j] = (byte)(accumulator | v); 
+                buffer[j] = (byte)(accumulator | v);
                 j++;
             }
         }
         return buffer;
     }
-    
+
     private static final char[] BASE64_ALPHABET =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".toCharArray();
-    
+
     /**
      * Encode the provided byte array as Base64.
-     * 
+     *
      * @param buffer The byte array to encode.
      * @return The Base64 encoding.
      */
     public static String base64Encode(byte[] buffer) {
         StringBuilder sb = new StringBuilder();
-        
+
         int nchars = 0;
         for (int i=0; i<buffer.length; i+=3) {
             if ((buffer.length - i) < 3) {
@@ -97,16 +97,16 @@ public class Util {
         }
         return sb.toString();
     }
-    
+
     /**
      * Decode the provided Base64 into a byte array.
-     * 
+     *
      * @param base64 The Base64 string to decode.
      * @return The decoded byte array.
      */
     public static byte[] base64Decode(String base64) {
         int base64Length = base64.length();
-        
+
         // add padding if absent.
         int remainder = base64Length % 4;
         if (remainder > 0) {
@@ -115,7 +115,7 @@ public class Util {
                 base64Length++;
             }
         }
-        
+
         // count padding chars
         int padding = 0;
         for (int i=(base64Length-1); i>=(base64Length-3); i--) {
@@ -125,7 +125,7 @@ public class Util {
                 padding++;
             }
         }
-        
+
         int bufferOffset = 0;
         byte[] buffer = new byte[base64Length*3/4 - padding];
         int accumulator = 0;
@@ -148,7 +148,7 @@ public class Util {
                 // illegal character
                 return null;
             }
-            
+
             accumulator = (accumulator<<6) | v;
             if (i%4==3) {
                 for (j=0; j<3; j++) {
@@ -162,11 +162,11 @@ public class Util {
         }
         return buffer;
     }
-    
+
     /**
      * Read an entire file at once and return the contents.  This should
      * only be used for very small files.
-     * 
+     *
      * @param filename The filename of the file to read.
      * @return A byte array of the file's contents.
      * @throws IOException If a problem happened while reading the file.
@@ -175,22 +175,22 @@ public class Util {
         File file = new File(filename);
         FileInputStream fis = new FileInputStream(file);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        
+
         byte[] buffer = new byte[IO_BUFFER_SIZE];
         int nbytes;
         while ((nbytes = fis.read(buffer)) != -1) {
             baos.write(buffer, 0, nbytes);
         }
-        
+
         fis.close();
         baos.close();
         return baos.toByteArray();
     }
-    
+
     /**
      * Read an entire UTF-8 text file at once and return the contents
      * as a string.  This should only be used for very small files.
-     * 
+     *
      * @param filename The filename of the file to read.
      * @return The contents of the file as a string.
      * @throws IOException If a problem happened while reading the file.
@@ -198,10 +198,10 @@ public class Util {
     public static String slurpTextFile(String filename) throws IOException {
         return new String(slurpFile(filename), "UTF-8");
     }
-    
+
     /**
      * Concatenate two byte arrays.
-     * 
+     *
      * @param a The first byte array.
      * @param b The second byte array.
      * @return A new byte array containing the concatenation.
@@ -210,12 +210,12 @@ public class Util {
         byte[] z = new byte[a.length + b.length];
         System.arraycopy(a, 0, z, 0, a.length);
         System.arraycopy(b, 0, z, a.length, b.length);
-        return z;        
+        return z;
     }
 
     /**
      * Concatenate three byte arrays.
-     * 
+     *
      * @param a The first byte array.
      * @param b The second byte array.
      * @param c The third byte array.
@@ -250,7 +250,7 @@ public class Util {
     /**
      * Dump a hexadecimal representation of the specified byte buffer to
      * standard output.
-     * 
+     *
      * @param buffer The byte buffer.
      */
     public static void hexdump(byte[] buffer) {
@@ -271,7 +271,7 @@ public class Util {
                 if (j < buffer.length) {
                     int c = buffer[j];
                     if (c >= 0x20 && c < 0x7F) {
-                        System.out.print((char)c);                        
+                        System.out.print((char)c);
                     } else {
                         System.out.print(".");
                     }
@@ -280,12 +280,12 @@ public class Util {
             System.out.println();
         }
     }
-    
+
     /**
      * Coerce a byte array into a specified size. If the provided byte array is
      * smaller, it will be left-padded to the desired size. If larger, it will
      * be left-truncated to the specified size.
-     * 
+     *
      * @param bytes
      *            The byte array to be coerced.
      * @param size
@@ -306,7 +306,7 @@ public class Util {
             return padded;
         }
     }
-    
+
     /**
      * Throw an exception if the provided object reference is null.
      * @param object
@@ -317,7 +317,7 @@ public class Util {
             throw new TelehashException("null value unexpectedly encountered");
         }
     }
-    
+
     /**
      * Throw an exception if the provided byte buffer is null or is not the indicated length.
      * @param object
@@ -328,7 +328,7 @@ public class Util {
             int length
     ) throws TelehashException {
         if (buffer == null) {
-            throw new TelehashException("null value unexpectedly encountered");            
+            throw new TelehashException("null value unexpectedly encountered");
         }
         if (buffer.length != length) {
             throw new TelehashException("invalid buffer size");

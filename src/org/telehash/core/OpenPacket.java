@@ -1,23 +1,23 @@
 package org.telehash.core;
 
-import java.io.UnsupportedEncodingException;
-
 import org.json.JSONException;
 import org.json.JSONStringer;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.crypto.LinePrivateKey;
 import org.telehash.crypto.LinePublicKey;
-import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.Path;
+
+import java.io.UnsupportedEncodingException;
 
 /**
  * A Telehash "open" packet is used to establish a line between two Telehash
  * nodes.
- * 
+ *
  * <p>
  * The open packet consists of the following components, in roughly the order in
  * which they should be unpacked:
  * </p>
- * 
+ *
  * <ol>
  * <li>The public key from a line key pair uniquely generated for this open.
  * This key is encrypted using the destination's hashname public key.</li>
@@ -80,7 +80,8 @@ public class OpenPacket extends Packet {
             byte[] destinationBytes = Util.hexToBytes(destinationString);
             Util.assertBufferSize(destinationBytes, HashName.SIZE);
             HashName destination = new HashName(destinationBytes);
-            String lineIdentifierString = innerPacket.json.getString(OpenPacket.LINE_IDENTIFIER_KEY);
+            String lineIdentifierString =
+                    innerPacket.json.getString(OpenPacket.LINE_IDENTIFIER_KEY);
             Util.assertNotNull(lineIdentifierString);
             byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
             Util.assertBufferSize(lineIdentifierBytes, OpenPacket.LINE_IDENTIFIER_SIZE);
@@ -117,7 +118,9 @@ public class OpenPacket extends Packet {
         mSenderHashNamePublicKey = identity.getPublicKey();
 
         if (destinationNode.getPublicKey() == null) {
-            throw new IllegalArgumentException("attempt to open a line to a node with unknown public key");
+            throw new IllegalArgumentException(
+                    "attempt to open a line to a node with unknown public key"
+            );
         }
 
         // generate a random line identifier
@@ -189,9 +192,10 @@ public class OpenPacket extends Packet {
 
     /**
      * Render the open packet into its final form.
-     * 
+     *
      * @return The rendered open packet as a byte array.
      */
+    @Override
     public byte[] render() throws TelehashException {
         if (mPreRendered == false) {
             preRender();
@@ -203,11 +207,11 @@ public class OpenPacket extends Packet {
 
     /**
      * Render the open packet into its final form.
-     * 
+     *
      * This version of the method allows the caller to pass in values for
      * certain otherwise calculated fields, allowing for deterministic open
      * packet creation suitable for unit tests.
-     * 
+     *
      * @param lineKeyCiphertext
      *            The line key ciphertext -- the public line key encrypted
      *            with the recipient's hashname public key.
@@ -236,6 +240,7 @@ public class OpenPacket extends Packet {
         );
     }
 
+    @Override
     public String toString() {
         String s = "OPEN["+mLineIdentifier+"@"+mOpenTime+"]";
         if (mSourceNode != null) {

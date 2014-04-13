@@ -1,11 +1,12 @@
 /**
- * 
+ *
  */
 package org.telehash.test;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -14,18 +15,20 @@ import org.telehash.core.HashName;
 import org.telehash.core.Identity;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.LineKeyPair;
-import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.HashNamePrivateKey;
 import org.telehash.crypto.HashNamePublicKey;
+import org.telehash.crypto.LineKeyPair;
+import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.impl.CryptoImpl;
 
+import java.io.File;
+
 public class CryptoTest {
-    
+
     private static final String TEST_MESSAGE = "This is a test.";
     private static final String TEST_MESSAGE_DIGEST =
             "a8a2f6ebe286697c527eb35a58b5539532e9b3ae3b64d4eb0a46fb657b41562c";
-    
+
     private static final String IDENTITY_PUBLIC_KEY =
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvv8h0XuJHXaUaQpBDFTA" +
             "e6Pj2evamzkTgA2QfYcMjcmRK4V+o7Kv54RvD02MQIGJGSEF2nsqKcE4MpseRWGB" +
@@ -62,34 +65,34 @@ public class CryptoTest {
             "IIlb1qLenrvtSfLJTsnmPR3uB0yRIJ/aPn+IlpQq4zjPG7//4Zs0";
 
     private static final byte[] AES_PLAINTEXT = Util.base64Decode(
-            "AIZ7ImF0IjoxMzg1NTgxNTIxMTYxLCJ0byI6IjMzYmIwZDVhOTFkZmIzMzlkZjU1"+ 
-            "MzkyMTRhYThlODYzNTk5NjEzMTE0MTQ4OWU1Y2FmZTllYjg5ZTRjOTEyMDAiLCJs"+ 
-            "aW5lIjoiODVlYjVjY2IwODc4YmFmZDVlMTYyMzg4M2E5MWNmNGYifTCCASIwDQYJ"+ 
-            "KoZIhvcNAQEBBQADggEPADCCAQoCggEBAL8R/ZUlJHfvsDAYsx9TrSVH9jE+l6Uh"+ 
-            "9lVXO97GFoXrSDXJC+MYbaM1mNlVH0qz7dGtA4GbcloVYdU5c4cuKZd9TmJU7/x9"+ 
-            "AS7Sndh60rCVGUjXl/JKeCgtLIlPfAJ2YrQOJorAb5yfrP8V0mbFnQgGwj8cJA4F"+ 
-            "rfXIEF+IoiqNw1ef/etJvDeK33lYjI29uJ2vLpyREQ1Z9WHBKLLBwq5eGtASTsap"+ 
-            "EBJa4lJXq9EsBIDv/+SsVOuiy8R5lwMtrQOt9I+nu1yx0nzllcIr6JhkinyO5OHR"+ 
+            "AIZ7ImF0IjoxMzg1NTgxNTIxMTYxLCJ0byI6IjMzYmIwZDVhOTFkZmIzMzlkZjU1"+
+            "MzkyMTRhYThlODYzNTk5NjEzMTE0MTQ4OWU1Y2FmZTllYjg5ZTRjOTEyMDAiLCJs"+
+            "aW5lIjoiODVlYjVjY2IwODc4YmFmZDVlMTYyMzg4M2E5MWNmNGYifTCCASIwDQYJ"+
+            "KoZIhvcNAQEBBQADggEPADCCAQoCggEBAL8R/ZUlJHfvsDAYsx9TrSVH9jE+l6Uh"+
+            "9lVXO97GFoXrSDXJC+MYbaM1mNlVH0qz7dGtA4GbcloVYdU5c4cuKZd9TmJU7/x9"+
+            "AS7Sndh60rCVGUjXl/JKeCgtLIlPfAJ2YrQOJorAb5yfrP8V0mbFnQgGwj8cJA4F"+
+            "rfXIEF+IoiqNw1ef/etJvDeK33lYjI29uJ2vLpyREQ1Z9WHBKLLBwq5eGtASTsap"+
+            "EBJa4lJXq9EsBIDv/+SsVOuiy8R5lwMtrQOt9I+nu1yx0nzllcIr6JhkinyO5OHR"+
             "tUs5wV5d7GvSG6uul0bZba2rbZ/plurENhgdA4oIA3hKCwqoc9SAowsCAwEAAQ=="
     );
     private static final byte[] AES_IV = Util.hexToBytes("a95b836b9c12c3ce35e166218237596b");
     private static final byte[] AES_KEY =
             Util.hexToBytes("585501ae7f7de80ea07ecf09a1d78b2962d2fd98a6644a0c1b9dd58e57139e0c");
     private static final byte[] EXPECTED_AES_CIPHERTEXT = Util.base64Decode(
-            "T7eXkxL/rvT4twHFL3X+Jhi+9Q1clDWepIpp87afv7o55ydRx29F1O9ngMDGciXa"+ 
-            "95exGhK2moMQgiCdooznL8/wpWL6feFle4OZH1q8qvvaeuAUYav8+ETDmw/gMUD6"+ 
-            "iOghLpsSgUEhLgbejIaN68RWVW/MQraCPUMHweV8QvCebfeofXGQnyY8hknZ54u+"+ 
-            "iqLZCS0uy9hW8Z2dPOijJ7eyxEJGBM7k4gk6SfOdjLFRWTVpmAL76S/h80m6x3ZK"+ 
-            "D1z4EqmHh672pZXJ5Je9eviEHihRJFsK0ch8xwM9iQrV8BRYltl00a9l1TbNlW/q"+ 
-            "W9IyoclN9r5J0kqHLWe6qbuWCVu1yCnfFY9aq4P7MCjEHpzYTQMmkgt0rNiq2Ce9"+ 
-            "3VOugk3QOMwI7DmlH5j0QeKm9LNriz0dfHlSx4ahAwdHYSlQA5k/JlUQ+ctMDL8+"+ 
-            "PK1ixqTz+b/4DGfhCMoePIRC38BHtflgqm6It0aeLhn9cp7W5GaKEhV/93W0fJfq"+ 
-            "4bf9Yew3UWhbVTiTmR66m0j891b/ohvJKvdLzUHTQesMtf9q5rO8VKJ1S8AwGw==" 
+            "T7eXkxL/rvT4twHFL3X+Jhi+9Q1clDWepIpp87afv7o55ydRx29F1O9ngMDGciXa"+
+            "95exGhK2moMQgiCdooznL8/wpWL6feFle4OZH1q8qvvaeuAUYav8+ETDmw/gMUD6"+
+            "iOghLpsSgUEhLgbejIaN68RWVW/MQraCPUMHweV8QvCebfeofXGQnyY8hknZ54u+"+
+            "iqLZCS0uy9hW8Z2dPOijJ7eyxEJGBM7k4gk6SfOdjLFRWTVpmAL76S/h80m6x3ZK"+
+            "D1z4EqmHh672pZXJ5Je9eviEHihRJFsK0ch8xwM9iQrV8BRYltl00a9l1TbNlW/q"+
+            "W9IyoclN9r5J0kqHLWe6qbuWCVu1yCnfFY9aq4P7MCjEHpzYTQMmkgt0rNiq2Ce9"+
+            "3VOugk3QOMwI7DmlH5j0QeKm9LNriz0dfHlSx4ahAwdHYSlQA5k/JlUQ+ctMDL8+"+
+            "PK1ixqTz+b/4DGfhCMoePIRC38BHtflgqm6It0aeLhn9cp7W5GaKEhV/93W0fJfq"+
+            "4bf9Yew3UWhbVTiTmR66m0j891b/ohvJKvdLzUHTQesMtf9q5rO8VKJ1S8AwGw=="
     );
-    
+
     private Crypto mCrypto;
     private Identity mIdentity;
-    
+
     @Before
     public void setUp() throws Exception {
         mCrypto = new CryptoImpl();
@@ -114,7 +117,7 @@ public class CryptoTest {
         byte[] digest = mCrypto.sha256Digest(TEST_MESSAGE.getBytes("UTF-8"));
         assertArrayEquals(digest, Util.hexToBytes(TEST_MESSAGE_DIGEST));
     }
-    
+
     @Test
     public void testGenerateIdentity() throws Exception {
         Identity identity = mCrypto.generateIdentity();
@@ -131,7 +134,7 @@ public class CryptoTest {
         HashNamePublicKey publicKey = mIdentity.getPublicKey();
         byte[] publicKeyBytes = publicKey.getEncoded();
         String publicKeyHex = Util.bytesToHex(publicKeyBytes);
-        
+
         // DER-decode the public key
         byte[] publicKeyBytes2 = Util.hexToBytes(publicKeyHex);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKeyBytes2));
@@ -152,31 +155,31 @@ public class CryptoTest {
         HashNamePrivateKey privateKey2 = mCrypto.decodeHashNamePrivateKey(privateKeyBytes2);
         assertEquals(privateKeyHex, Util.bytesToHex(privateKey2.getEncoded()));
     }
-    
+
     @Test
     public void testRSAPublicKeyReadWrite() throws Exception {
         File publicKeyFile = File.createTempFile("test-public", ".pub");
         String publicKeyFilename = publicKeyFile.getAbsolutePath();
         File privateKeyFile = File.createTempFile("test-private", ".key");
         String privateKeyFilename = privateKeyFile.getAbsolutePath();
-        
+
         // write to files
         mCrypto.writeRSAPublicKeyToFile(publicKeyFilename, mIdentity.getPublicKey());
         mCrypto.writeRSAPrivateKeyToFile(privateKeyFilename, mIdentity.getPrivateKey());
-        
+
         // read from files
         HashNamePublicKey readPublicKey = mCrypto.readRSAPublicKeyFromFile(publicKeyFilename);
         HashNamePrivateKey readPrivateKey = mCrypto.readRSAPrivateKeyFromFile(privateKeyFilename);
-        
+
         // assert equality
         assertArrayEquals(mIdentity.getPublicKey().getEncoded(), readPublicKey.getEncoded());
         assertArrayEquals(mIdentity.getPrivateKey().getEncoded(), readPrivateKey.getEncoded());
-        
+
         // clean up
         publicKeyFile.delete();
         privateKeyFile.delete();
     }
-    
+
     /*
     @Test
     public void testRSAEncryptDecrypt() throws Exception {
@@ -246,7 +249,7 @@ public class CryptoTest {
             "bHWVMdNsjEIEWEvVNFBvXkL7G9kyUBIybk/Z6SmPBlk+lc0GSlPj/jQ+YuIwFXQs" +
             "uCP1vnoxbYgmLQEuNX+wnTK4BiXHAUGQCfQNdEnDx3O6jWegNl33Ws395BcO/Auo" +
             "pA8GPZ1GwwaTDsC4838vWA==";
-    
+
     @Test
     public void testRSASigning() throws Exception {
         byte[] signature = mCrypto.signRSA(
@@ -297,22 +300,22 @@ public class CryptoTest {
             "d66vFcnmRXGncwTdoHInpdJAnYVfrcT6Nv2RUPWk55t4p8/4FevvO+s="
     );
     private static final byte[] MESSAGE_TO_SIGN = Util.base64Decode(
-            "T7eXkxL/rvT4twHFL3X+Jhi+9Q1clDWepIpp87afv7o55ydRx29F1O9ngMDGciXa"+ 
-            "95exGhK2moMQgiCdooznL8/wpWL6feFle4OZH1q8qvvaeuAUYav8+ETDmw/gMUD6"+ 
-            "iOghLpsSgUEhLgbejIaN68RWVW/MQraCPUMHweV8QvCebfeofXGQnyY8hknZ54u+"+ 
-            "iqLZCS0uy9hW8Z2dPOijJ7eyxEJGBM7k4gk6SfOdjLFRWTVpmAL76S/h80m6x3ZK"+ 
-            "D1z4EqmHh672pZXJ5Je9eviEHihRJFsK0ch8xwM9iQrV8BRYltl00a9l1TbNlW/q"+ 
-            "W9IyoclN9r5J0kqHLWe6qbuWCVu1yCnfFY9aq4P7MCjEHpzYTQMmkgt0rNiq2Ce9"+ 
-            "3VOugk3QOMwI7DmlH5j0QeKm9LNriz0dfHlSx4ahAwdHYSlQA5k/JlUQ+ctMDL8+"+ 
-            "PK1ixqTz+b/4DGfhCMoePIRC38BHtflgqm6It0aeLhn9cp7W5GaKEhV/93W0fJfq"+ 
+            "T7eXkxL/rvT4twHFL3X+Jhi+9Q1clDWepIpp87afv7o55ydRx29F1O9ngMDGciXa"+
+            "95exGhK2moMQgiCdooznL8/wpWL6feFle4OZH1q8qvvaeuAUYav8+ETDmw/gMUD6"+
+            "iOghLpsSgUEhLgbejIaN68RWVW/MQraCPUMHweV8QvCebfeofXGQnyY8hknZ54u+"+
+            "iqLZCS0uy9hW8Z2dPOijJ7eyxEJGBM7k4gk6SfOdjLFRWTVpmAL76S/h80m6x3ZK"+
+            "D1z4EqmHh672pZXJ5Je9eviEHihRJFsK0ch8xwM9iQrV8BRYltl00a9l1TbNlW/q"+
+            "W9IyoclN9r5J0kqHLWe6qbuWCVu1yCnfFY9aq4P7MCjEHpzYTQMmkgt0rNiq2Ce9"+
+            "3VOugk3QOMwI7DmlH5j0QeKm9LNriz0dfHlSx4ahAwdHYSlQA5k/JlUQ+ctMDL8+"+
+            "PK1ixqTz+b/4DGfhCMoePIRC38BHtflgqm6It0aeLhn9cp7W5GaKEhV/93W0fJfq"+
             "4bf9Yew3UWhbVTiTmR66m0j891b/ohvJKvdLzUHTQesMtf9q5rO8VKJ1S8AwGw=="
     );
     private static final byte[] EXPECTED_SIGNATURE_2 = Util.base64Decode(
-            "jR7saWz/vK90vv/sJcDuqPtZxFfFMjeFnGfHWz/LsnKPzyICiOrR9dJsHYCUWCyE"+ 
-            "4YIMNEdAK0lYvAb5ttpUjY1f3FgkV9YewNKpYssgnj36m1Bn/gWhkLo6obNpMQlM"+ 
-            "q2ZzOdZJ3+Q0vQeANgkEMrOnZHyfv0s3fHob0VU0X/SIiqC0OSPuSwbiTh2d8Yr+"+ 
-            "AjS4et/fN+7UhFHYzIGNZrIUmRpJ4ULS7JijBErPMJSLawBaKe9fQPR0MCofMzQQ"+ 
-            "E3uXX3ygYYrH/IETpi9IZUL1bl+gLH/XVQ+hAbKZq784wggwxc8Wy9COFHrtzrt4"+ 
+            "jR7saWz/vK90vv/sJcDuqPtZxFfFMjeFnGfHWz/LsnKPzyICiOrR9dJsHYCUWCyE"+
+            "4YIMNEdAK0lYvAb5ttpUjY1f3FgkV9YewNKpYssgnj36m1Bn/gWhkLo6obNpMQlM"+
+            "q2ZzOdZJ3+Q0vQeANgkEMrOnZHyfv0s3fHob0VU0X/SIiqC0OSPuSwbiTh2d8Yr+"+
+            "AjS4et/fN+7UhFHYzIGNZrIUmRpJ4ULS7JijBErPMJSLawBaKe9fQPR0MCofMzQQ"+
+            "E3uXX3ygYYrH/IETpi9IZUL1bl+gLH/XVQ+hAbKZq784wggwxc8Wy9COFHrtzrt4"+
             "V6xJiNrnw9j0IojtpMvXAw=="
     );
 
@@ -322,11 +325,11 @@ public class CryptoTest {
                 mCrypto.decodeHashNamePrivateKey(RSA_PRIVATE_KEY),
                 MESSAGE_TO_SIGN
         );
-                
+
         assertNotNull(signature);
         assertTrue(EXPECTED_SIGNATURE_2.length == signature.length);
         assertArrayEquals(EXPECTED_SIGNATURE_2, signature);
-        
+
         boolean verify = mCrypto.verifyRSA(
                 mCrypto.decodeHashNamePublicKey(RSA_PUBLIC_KEY),
                 MESSAGE_TO_SIGN,
@@ -334,33 +337,33 @@ public class CryptoTest {
         );
         assertTrue(verify);
     }
-    
+
     @Test
     public void testECPublicKeyEncodeDecode() throws Exception {
         LineKeyPair keyPair = mCrypto.generateLineKeyPair();
-        
+
         // DER-encode the public key
         LinePublicKey publicKey = keyPair.getPublicKey();
         byte[] publicKeyBytes = publicKey.getEncoded();
         String publicKeyHex = Util.bytesToHex(publicKeyBytes);
-        
+
         // DER-decode the public key
         byte[] publicKeyBytes2 = Util.hexToBytes(publicKeyHex);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKeyBytes2));
         LinePublicKey publicKey2 = mCrypto.decodeLinePublicKey(publicKeyBytes2);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKey2.getEncoded()));
     }
-    
+
     /*
     @Test
     public void testECPrivateKeyEncodeDecode() throws Exception {
         ECKeyPair keyPair = mCrypto.generateECKeyPair();
-        
+
         // DER-encode the public key
         ECPrivateKey privateKey = keyPair.getPrivateKey();
         byte[] privateKeyBytes = privateKey.getEncoded();
         String privateKeyHex = Util.bytesToHex(privateKeyBytes);
-        
+
         // DER-decode the public key
         byte[] privateKeyBytes2 = Util.hexToBytes(privateKeyHex);
         assertEquals(privateKeyHex, Util.bytesToHex(privateKeyBytes2));
@@ -368,12 +371,12 @@ public class CryptoTest {
         assertEquals(privateKeyHex, Util.bytesToHex(privateKey2.getEncoded()));
     }
     */
-    
+
     @Test
     public void testECDHKeyAgreement() throws Exception {
         LineKeyPair localKeyPair = mCrypto.generateLineKeyPair();
         LineKeyPair remoteKeyPair = mCrypto.generateLineKeyPair();
-        
+
         // cycle the remote end's received version of the local public
         // key through an encode/decode cycle to validate that
         // those methods aren't losing information necessary for
@@ -398,7 +401,7 @@ public class CryptoTest {
         );
         assertArrayEquals(localSharedSecret, remoteSharedSecret);
     }
-    
+
     @Test
     public void testAESSimple() throws Exception {
         byte[] plaintext = mCrypto.sha256Digest("hello".getBytes("UTF-8"));
@@ -415,7 +418,7 @@ public class CryptoTest {
 
         assertArrayEquals(plaintext, decryptedPlainText);
     }
-    
+
     @Test
     public void testAESEncrypt() throws Exception {
         byte[] cipherText = mCrypto.encryptAES256CTR(AES_PLAINTEXT, AES_IV, AES_KEY);

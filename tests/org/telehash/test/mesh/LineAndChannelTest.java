@@ -1,6 +1,8 @@
 package org.telehash.test.mesh;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -15,17 +17,17 @@ import org.telehash.test.network.NetworkSimulator;
 import org.telehash.test.util.EchoChannelHandler;
 
 public class LineAndChannelTest {
-    
+
     private static final int PORT = 42424;
     private static final String TEST_STRING = "testing 123";
     private static final long NANOSECONDS_IN_MILLISECOND = 1000000L;
-    
+
     private TelehashTestInstance node0, node1;
-    
+
     @Before
     public void setUp() throws Exception {
         NetworkSimulator networkSimulator = new NetworkSimulator();
-        
+
         // we use seedless nodes, and specify full information (path+pubkey)
         // when opening a line/channel, to avoid DHT concerns and restrict
         // this test to just the line/channel logic.
@@ -64,7 +66,8 @@ public class LineAndChannelTest {
             @Override
             public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
                 String echo = new String(channelPacket.getBody());
-                Log.i("channel event: incoming echo response #"+(echoResponsesReceived+1)+": "+echo);
+                Log.i("channel event: incoming echo response #"+
+                        (echoResponsesReceived+1)+": "+echo);
                 if (! echo.equals(TEST_STRING)) {
                     flag.signalError(new TelehashException("echo response does not match"));
                     return;
@@ -75,7 +78,7 @@ public class LineAndChannelTest {
                     return;
                 }
 
-                // send a fresh string to be echoed 
+                // send a fresh string to be echoed
                 try {
                     channel.send(TEST_STRING.getBytes());
                 } catch (TelehashException e) {
@@ -89,13 +92,13 @@ public class LineAndChannelTest {
                 flag.signalError(error);
             }
         });
-        
+
         Throwable error = flag.waitForSignal();
         if (error != null) {
             throw error;
         }
     }
-    
+
     private static final int CHANNEL_TIMEOUT = 2000;
     private static final int ALLOWED_TIMEOUT_VARIANCE = 200;
 
@@ -104,12 +107,12 @@ public class LineAndChannelTest {
         TelehashTestInstance src = node0;
         TelehashTestInstance dst = node1;
         final Flag flag = new Flag();
-        
+
         final class ChannelState {
             long openTime = 0L;
         }
         final ChannelState channelState = new ChannelState();
-        
+
         dst.getSwitch().registerChannelHandler(EchoChannelHandler.TYPE, new EchoChannelHandler());
         src.getSwitch().openChannel(dst.getNode(), EchoChannelHandler.TYPE, new ChannelHandler() {
             @Override
@@ -118,11 +121,11 @@ public class LineAndChannelTest {
                 channel.setTimeout(CHANNEL_TIMEOUT);
                 channelState.openTime = System.nanoTime();
             }
-            
+
             @Override
             public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
             }
-            
+
             @Override
             public void handleError(Channel channel, Throwable error) {
                 flag.signalError(error);
@@ -133,12 +136,12 @@ public class LineAndChannelTest {
         // confirm the channel was actually opened and we recorded
         // an open time.
         assertTrue(channelState.openTime > 0L);
-        
+
         // confirm we received a Telehash timeout exception
         assertNotNull(error);
         assertTrue(error instanceof TelehashException);
         assertTrue(error.getMessage().contains("timeout"));
-        
+
         // if the flag timeout occurred, then our channel timeout did not.
         assertFalse(flag.timeoutOccurred());
 

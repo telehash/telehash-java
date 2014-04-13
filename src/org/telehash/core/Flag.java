@@ -9,7 +9,7 @@ public class Flag {
     private boolean mFlagged = false;
     private boolean mTimeoutOccurred = false;
     private Throwable mError = null;
-    
+
     /**
      * Wait until another thread signals its readiness (or error).
      * @return An error, if the other thread indicated such.
@@ -29,7 +29,7 @@ public class Flag {
     /**
      * Wait until another thread signals its readiness (or error), or until the
      * specified time elapses.
-     * 
+     *
      * @return An error, if the other thread indicated such.
      */
     public Throwable waitForSignal(int timeout) {
@@ -58,20 +58,20 @@ public class Flag {
         synchronized (this) {
             mFlagged = true;
             this.notify();
-        }            
+        }
     }
-    
+
     /**
      * Reset to the original state.
      */
-    public void reset() {            
+    public void reset() {
         synchronized (this) {
             mFlagged = false;
             mError = null;
             mTimeoutOccurred = false;
         }
     }
-    
+
     /**
      * Signal an error to the blocked thread.
      * @param e The error to signal.
@@ -80,11 +80,11 @@ public class Flag {
         mError = e;
         signal();
     }
-    
+
     /**
      * After waitForSignal(int) returns, this method will return true if the
      * wait timed out.
-     * 
+     *
      * @return
      */
     public boolean timeoutOccurred() {

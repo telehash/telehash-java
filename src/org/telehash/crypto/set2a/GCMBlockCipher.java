@@ -1,19 +1,18 @@
 /**
- * 
  * This Java source file was copied directly from the Bouncy Castle
  * 1.50 library (bcprov-jdk15on-150.tar.gz), and the following
  * modifications were made:
- * 
+ *
  * 1. The package name was changed.
  * 2. MAC sizes of 32-bit and 64-bit are now permitted.
- * 
+ *
  * A patch has been submitted to Bouncy Castle to support 32-bit and
  * 64-bit MACs.  If accepted, we can declare a dependency on the new
  * version of Bouncy Castle and remove this file.
- * 
+ *
  * The Bouncy Castle copyright notice and license are reproduced below,
  * in accordance with the distribution terms:
- * 
+ *
  * LICENSE
  * Copyright (c) 2000 - 2013 The Legion of the Bouncy Castle Inc.
  * (http://www.bouncycastle.org)
@@ -65,7 +64,7 @@ public class GCMBlockCipher
 {
     private static final int BLOCK_SIZE = 16;
 
-    // not final due to a compiler bug 
+    // not final due to a compiler bug
     private BlockCipher   cipher;
     private GCMMultiplier multiplier;
     private GCMExponentiator exp;
@@ -113,16 +112,19 @@ public class GCMBlockCipher
         this.multiplier = m;
     }
 
+    @Override
     public BlockCipher getUnderlyingCipher()
     {
         return cipher;
     }
 
+    @Override
     public String getAlgorithmName()
     {
         return cipher.getAlgorithmName() + "/GCM";
     }
 
+    @Override
     public void init(boolean forEncryption, CipherParameters params)
         throws IllegalArgumentException
     {
@@ -145,7 +147,7 @@ public class GCMBlockCipher
                 throw new IllegalArgumentException("Invalid value for MAC size: " + macSizeBits);
             }
 
-            macSize = macSizeBits / 8; 
+            macSize = macSizeBits / 8;
             keyParam = param.getKey();
         }
         else if (params instanceof ParametersWithIV)
@@ -162,7 +164,7 @@ public class GCMBlockCipher
             throw new IllegalArgumentException("invalid parameters passed to GCM");
         }
 
-        int bufLength = forEncryption ? BLOCK_SIZE : (BLOCK_SIZE + macSize); 
+        int bufLength = forEncryption ? BLOCK_SIZE : (BLOCK_SIZE + macSize);
         this.bufBlock = new byte[bufLength];
 
         if (nonce == null || nonce.length < 1)
@@ -220,11 +222,13 @@ public class GCMBlockCipher
         }
     }
 
+    @Override
     public byte[] getMac()
     {
         return Arrays.clone(macBlock);
     }
 
+    @Override
     public int getOutputSize(int len)
     {
         int totalData = len + bufOff;
@@ -237,6 +241,7 @@ public class GCMBlockCipher
         return totalData < macSize ? 0 : totalData - macSize;
     }
 
+    @Override
     public int getUpdateOutputSize(int len)
     {
         int totalData = len + bufOff;
@@ -251,6 +256,7 @@ public class GCMBlockCipher
         return totalData - totalData % BLOCK_SIZE;
     }
 
+    @Override
     public void processAADByte(byte in)
     {
         atBlock[atBlockPos] = in;
@@ -263,6 +269,7 @@ public class GCMBlockCipher
         }
     }
 
+    @Override
     public void processAADBytes(byte[] in, int inOff, int len)
     {
         for (int i = 0; i < len; ++i)
@@ -299,6 +306,7 @@ public class GCMBlockCipher
         }
     }
 
+    @Override
     public int processByte(byte in, byte[] out, int outOff)
         throws DataLengthException
     {
@@ -311,6 +319,7 @@ public class GCMBlockCipher
         return 0;
     }
 
+    @Override
     public int processBytes(byte[] in, int inOff, int len, byte[] out, int outOff)
         throws DataLengthException
     {
@@ -347,6 +356,7 @@ public class GCMBlockCipher
         }
     }
 
+    @Override
     public int doFinal(byte[] out, int outOff)
         throws IllegalStateException, InvalidCipherTextException
     {
@@ -453,6 +463,7 @@ public class GCMBlockCipher
         return resultLen;
     }
 
+    @Override
     public void reset()
     {
         reset(true);

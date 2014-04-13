@@ -1,10 +1,5 @@
 package org.telehash.dht;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.telehash.core.Channel;
@@ -19,11 +14,16 @@ import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.network.Path;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Handle a single seek/see transaction.
  */
 public class NodeSeekRequest {
-    
+
     private static final String SEEK_TYPE = "seek";
     private static final String SEEK_KEY = "seek";
     private static final String SEE_KEY = "see";
@@ -32,25 +32,30 @@ public class NodeSeekRequest {
         void handleError(NodeSeekRequest seek, Throwable e);
         void handleCompletion(NodeSeekRequest seek);
     }
-    
+
     private Telehash mTelehash;
     private Node mQueryNode;
     private HashName mTargetHashName;
     private Handler mHandler;
     private Line mLine;
     private Set<Node> mResultNodes;
-    
-    public NodeSeekRequest(Telehash telehash, Node queryNode, HashName targetHashName, Handler handler) {
+
+    public NodeSeekRequest(
+            Telehash telehash,
+            Node queryNode,
+            HashName targetHashName,
+            Handler handler
+    ) {
         mTelehash = telehash;
         mQueryNode = queryNode;
         mTargetHashName = targetHashName;
         mHandler = handler;
     }
-    
+
     public Set<Node> getResultNodes() {
         return mResultNodes;
     }
-    
+
     public void start() {
         Log.i("open seek channel to node: "+mQueryNode);
         mTelehash.getSwitch().openChannel(mQueryNode, SEEK_TYPE, new ChannelHandler() {
@@ -68,7 +73,7 @@ public class NodeSeekRequest {
             public void handleOpen(Channel channel) {
                 Log.i("seek channel open");
                 Map<String,Object> fields = new HashMap<String,Object>();
-                
+
                 // To protect the user's privacy, only provide enough of the target hashname
                 // to get useful results -- the distance to the query node plus one bytes.
                 HashName localHashName = mTelehash.getIdentity().getHashName();
@@ -83,7 +88,7 @@ public class NodeSeekRequest {
                 } else {
                     target = mTargetHashName.getBytes();
                 }
-                
+
                 fields.put(SEEK_KEY, Util.bytesToHex(target));
                 try {
                     channel.send(null, fields, false);
@@ -94,7 +99,7 @@ public class NodeSeekRequest {
             }
         });
     }
-    
+
     private void parseResult(ChannelPacket channelPacket) {
         Object seeObject = channelPacket.get(SEE_KEY);
         if (! (seeObject instanceof JSONArray)) {
@@ -102,7 +107,7 @@ public class NodeSeekRequest {
             return;
         }
         JSONArray seeNodes = (JSONArray)seeObject;
-        
+
         mResultNodes = new HashSet<Node>();
         for (int i=0; i<seeNodes.length(); i++) {
             String seeNode;
@@ -138,7 +143,7 @@ public class NodeSeekRequest {
         // signal success/finish
         mHandler.handleCompletion(this);
     }
-    
+
     private void fail(Throwable e) {
         mHandler.handleError(this, e);
     }

@@ -1,5 +1,8 @@
 package org.telehash.test;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import org.junit.After;
 import org.junit.Before;
@@ -8,7 +11,7 @@ import org.telehash.core.Util;
 
 
 public class UtilTest {
-    
+
     private static final String TEST_HEX_STRING = "00FF7f8081abab";
     private static final byte[] TEST_BYTES = {
         0x00, (byte)0xFF, 0x7F, (byte)0x80, (byte)0x81, (byte)0xAB, (byte)0xAB
@@ -56,11 +59,11 @@ public class UtilTest {
         {new byte[] {(byte)0x81}, "gQ=="},
         {new byte[] {(byte)0x81, (byte)0x82}, "gYI="},
         {new byte[] {(byte)0x81, (byte)0x82, (byte)0x83}, "gYKD"},
-        {new byte[] {(byte)0x81, (byte)0x82, (byte)0x83, (byte)0x84}, "gYKDhA=="},        
+        {new byte[] {(byte)0x81, (byte)0x82, (byte)0x83, (byte)0x84}, "gYKDhA=="},
         {new byte[] {(byte)0xFF}, "/w=="},
         {new byte[] {(byte)0xFF, (byte)0xFF}, "//8="},
         {new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF}, "////"},
-        {new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF}, "/////w=="},        
+        {new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF}, "/////w=="},
     };
     private static final Object[][] BASE64_DECODE_TESTS = {
         // invalid character
@@ -87,7 +90,7 @@ public class UtilTest {
             String decoding = new String(decodedBytes, "UTF-8");
             assertEquals(message, decoding);
         }
-        
+
         for (Object[] test : BASE64_BINARY_TESTS) {
             byte[] message = (byte[]) test[0];
             String expectedEncoding = (String) test[1];
@@ -98,7 +101,7 @@ public class UtilTest {
             assertNotNull(decoding);
             assertArrayEquals(message, decoding);
         }
-        
+
         for (Object[] test : BASE64_DECODE_TESTS) {
             String base64 = (String)test[0];
             byte[] expectedDecoding;
@@ -107,13 +110,13 @@ public class UtilTest {
             } else {
                 expectedDecoding = (byte[])test[1];
             }
-            
+
             byte[] decoding = Util.base64Decode(base64);
             if (expectedDecoding == null) {
                 assertNull(decoding);
             } else {
                 assertArrayEquals(expectedDecoding, decoding);
             }
-        }        
+        }
     }
 }

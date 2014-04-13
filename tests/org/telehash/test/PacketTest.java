@@ -1,6 +1,9 @@
 package org.telehash.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -13,13 +16,12 @@ import org.telehash.core.Packet;
 import org.telehash.core.Telehash;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.LineKeyPair;
 import org.telehash.crypto.HashNamePublicKey;
+import org.telehash.crypto.LineKeyPair;
 import org.telehash.network.Path;
-import org.telehash.network.Network;
 
 public class PacketTest {
-    
+
     private static final byte[] IDENTITY_PUBLIC_KEY = Util.base64Decode(
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvxH9lSUkd++wMBizH1Ot"+
             "JUf2MT6XpSH2VVc73sYWhetINckL4xhtozWY2VUfSrPt0a0DgZtyWhVh1Tlzhy4p"+
@@ -29,7 +31,7 @@ public class PacketTest {
             "mGSKfI7k4dG1SznBXl3sa9Ibq66XRtltrattn+mW6sQ2GB0DiggDeEoLCqhz1ICj"+
             "CwIDAQAB"
     );
-    
+
     private static final byte[] IDENTITY_PRIVATE_KEY = Util.base64Decode(
             "MIIEpQIBAAKCAQEAvxH9lSUkd++wMBizH1OtJUf2MT6XpSH2VVc73sYWhetINckL"+
             "4xhtozWY2VUfSrPt0a0DgZtyWhVh1Tlzhy4pl31OYlTv/H0BLtKd2HrSsJUZSNeX"+
@@ -57,7 +59,7 @@ public class PacketTest {
             "TSkuDEy1LQU99Iw0xIdTj38VQEpYbPTM3DqdAQDnQ4a0j1NidRrzZGHDGZie90pi"+
             "d66vFcnmRXGncwTdoHInpdJAnYVfrcT6Nv2RUPWk55t4p8/4FevvO+s="
     );
-    
+
     private static final byte[] IDENTITY_PUBLIC_KEY_2 = Util.base64Decode(
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm4LytLuYiIvtv+Dcg27D"+
             "IFDvM+1zIBLVB3wrdwziRxwC0Z1Kqsu6rTi1TscU0UGxJz+xIn11ZQVONyDF7p0z"+
@@ -67,7 +69,7 @@ public class PacketTest {
             "9YDlONfWJ1qDYzhcJystYT+szEJTxei9Z7fZzNOriTGTuRktMyP6CooeHdQx+Rae"+
             "fwIDAQAB"
     );
-    
+
     private static final byte[] IDENTITY_PRIVATE_KEY_2 = Util.base64Decode(
             "MIIEogIBAAKCAQEAm4LytLuYiIvtv+Dcg27DIFDvM+1zIBLVB3wrdwziRxwC0Z1K"+
             "qsu6rTi1TscU0UGxJz+xIn11ZQVONyDF7p0zI4URwEoMRxMUzljWKm+woPbnV7vF"+
@@ -95,7 +97,7 @@ public class PacketTest {
             "T2DNGXL0C6bHiZOspB6HWbBVebczlWoFSR0Ow6kIuSMm2nq6OeaX6URBqCQ2F8gr"+
             "avWco0OFhsp/yUegAK0qxLSuzFELjSYrydSrYyd0rnPlu/U+u00="
     );
-    
+
     private static final byte[] DESTINATION_PUBLIC_KEY = Util.base64Decode(
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgBnwwPNTOA+0dljOzjfc"+
             "fDGVs61U328CXCFzvDCDfFVYMBuoiOI8O9W5Ydfgcyd7N6hjxW8tQU7ZXfq6SoTT"+
@@ -118,9 +120,9 @@ public class PacketTest {
             "IO4N/0wm8guXJtc3jOJhUREsLWsl+wf+dBR87Jn1g7Zxs/kHkt0XyNox9062lhiK" +
             "saB3pQRYd+F8l4A5vzjUAw=="
     );
-    
+
     private static final long TEST_OPEN_TIME = 1385581521161L;
-    
+
     private static LineKeyPair mECKeyPair;
     private static final byte[] TEST_EC_PUBLIC_KEY =
             Util.hexToBytes(
@@ -129,13 +131,13 @@ public class PacketTest {
             );
     private static final byte[] TEST_EC_PRIVATE_KEY =
             Util.hexToBytes("a8259e94d600277fe865ca9efca87b4d341a8496e15b17a79121d89054b48da1");
-    
+
     private static final byte[] EXPECTED_PACKET_SHA256 =
             Util.hexToBytes("74b4504c85a0b0c3fad2574ad668f775112deb96f218cb8cba0a0b5e93b221a6");
-    
+
     private static final String SAMPLE_PATH =
             "{\"type\": \"ipv4\", \"ip\": \"127.0.0.1\", \"port\": 4242}";
-    
+
     private Crypto mCrypto;
     private Identity mIdentity;
     private Identity mIdentity2;
@@ -145,7 +147,7 @@ public class PacketTest {
     @Before
     public void setUp() throws Exception {
         mCrypto = mTelehash.getCrypto();
-        
+
         mIdentity = new Identity(
                 mCrypto.createHashNameKeyPair(
                         mCrypto.decodeHashNamePublicKey(IDENTITY_PUBLIC_KEY),
@@ -161,7 +163,7 @@ public class PacketTest {
                 )
         );
         mTelehash2.setIdentity(mIdentity2);
-        
+
         mECKeyPair = mCrypto.createECKeyPair(
                 mCrypto.decodeLinePublicKey(TEST_EC_PUBLIC_KEY),
                 mCrypto.decodeLinePrivateKey(TEST_EC_PRIVATE_KEY)
@@ -174,7 +176,8 @@ public class PacketTest {
 
     @Test
     public void testOpenPacket() throws Exception {
-        HashNamePublicKey destinationPublicKey = mCrypto.decodeHashNamePublicKey(DESTINATION_PUBLIC_KEY);
+        HashNamePublicKey destinationPublicKey =
+                mCrypto.decodeHashNamePublicKey(DESTINATION_PUBLIC_KEY);
         Node remoteNode = new Node(
                 destinationPublicKey,
                 Path.parsePath(SAMPLE_PATH)

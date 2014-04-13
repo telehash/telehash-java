@@ -1,9 +1,5 @@
 package org.telehash.crypto.set2a;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -14,19 +10,23 @@ import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.HashNamePrivateKey;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+
 public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
 
     RSAPrivateCrtKeyParameters mKey;
-    
+
     public HashNamePrivateKeyImpl(RSAPrivateCrtKeyParameters key) {
         mKey = key;
     }
-    
+
     public HashNamePrivateKeyImpl(byte[] derBuffer) throws TelehashException {
         try {
             ASN1InputStream asn1InputStream =
-                    new ASN1InputStream(new ByteArrayInputStream(derBuffer)); 
-            ASN1Primitive toplevelObject = asn1InputStream.readObject(); 
+                    new ASN1InputStream(new ByteArrayInputStream(derBuffer));
+            ASN1Primitive toplevelObject = asn1InputStream.readObject();
             asn1InputStream.close();
             if (! (toplevelObject instanceof ASN1Sequence)) {
                 throw new TelehashException("ASN.1 toplevel object not sequence");
@@ -35,7 +35,7 @@ public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
             if (getIntegerFromSequence(sequence, 0).compareTo(BigInteger.ZERO) != 0) {
                 throw new TelehashException("only PKCS#1v1.5 (version=0) structures supported.");
             }
-            
+
             mKey = new RSAPrivateCrtKeyParameters(
                     getIntegerFromSequence(sequence, 1),
                     getIntegerFromSequence(sequence, 2),
@@ -50,7 +50,7 @@ public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
             throw new TelehashException(e);
         }
     }
-    
+
     public AsymmetricKeyParameter getKey() {
         return mKey;
     }
@@ -79,7 +79,7 @@ public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
 
     /**
      * Helper method to extract a BigInteger from an ASN1 sequence.
-     * 
+     *
      * @param sequence An ASN1 sequence
      * @param index The index of the sequence from which we fetch the ASN1Integer value.
      * @return The integer value.

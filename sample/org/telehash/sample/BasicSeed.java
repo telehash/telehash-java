@@ -1,22 +1,21 @@
 package org.telehash.sample;
 
-import java.io.FileNotFoundException;
-
 import org.telehash.core.Identity;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
-import org.telehash.core.Util;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
 
+import java.io.FileNotFoundException;
+
 public class BasicSeed {
-    
+
     private static final String IDENTITY_BASE_FILENAME = "telehash-seed";
     private static final int PORT = 5001;
-    
+
     public static final void main(String[] args) {
-        
+
         Storage storage = new StorageImpl();
 
         // load or create an identity
@@ -56,7 +55,7 @@ public class BasicSeed {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+
         // stop the switch
         telehashSwitch.stop();
     }

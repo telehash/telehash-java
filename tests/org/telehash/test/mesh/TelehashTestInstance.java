@@ -1,13 +1,5 @@
 package org.telehash.test.mesh;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.telehash.core.Identity;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
@@ -24,13 +16,21 @@ import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
 import org.telehash.test.network.NetworkSimulator;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class TelehashTestInstance {
-    
+
     private static final String IDENTITY_BASE_FILENAME = "telehash-node";
     private static final String BASE_DIRECTORY =
             System.getProperty("user.dir")+File.separator+"nodes";
     private static final int PORT = 42424;
-    
+
     private int mIndex;
     private File mConfigDirectory;
     private int mPort;
@@ -42,21 +42,21 @@ public class TelehashTestInstance {
     private Storage mStorage = new StorageImpl();
 
     private static void dumpNode(TelehashTestInstance node) {
-    	String path;
-    	try {
-    		path = node.mNetwork.getPreferredLocalPath().toString();
-    	} catch (TelehashException e) {
-    		path = "?";
-    	}
-    	Log.i("  ["+node.mIndex+"] "+node.mIdentity.getHashName()+" "+path);    	
+        String path;
+        try {
+            path = node.mNetwork.getPreferredLocalPath().toString();
+        } catch (TelehashException e) {
+            path = "?";
+        }
+        Log.i("  ["+node.mIndex+"] "+node.mIdentity.getHashName()+" "+path);
     }
 
     private static void dumpNodeList(List<TelehashTestInstance> list) {
         for (TelehashTestInstance i : list) {
-        	dumpNode(i);
+            dumpNode(i);
         }
     }
-    
+
     private static TelehashTestInstance createInstance(
             NetworkSimulator networkSimulator,
             int index,
@@ -70,33 +70,33 @@ public class TelehashTestInstance {
         TelehashTestInstance node = new TelehashTestInstance(index, PORT, seeds);
         node.setNetwork(networkSimulator.createNode("10.0.0."+index, PORT));
         node.start();
-        
+
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+
         return node;
     }
-    
+
     public static List<TelehashTestInstance> createStarTopology(int numNodes) {
         Node seed = null;
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(numNodes);
         NetworkSimulator networkSimulator = new NetworkSimulator();
-        
+
         for (int i=0; i<numNodes; i++) {
             TelehashTestInstance instance = createInstance(networkSimulator, i, seed);
             if (seed == null) {
                 seed = instance.getNode();
-            }            
+            }
             list.add(instance);
         }
-        
+
         Log.i("Telehash star topology created: ");
         dumpNodeList(list);
-        
+
         return list;
     }
 
@@ -124,7 +124,7 @@ public class TelehashTestInstance {
         );
         configDirectory.mkdirs();
         Log.i("creating test instance ["+index+"] dir: "+configDirectory);
-        
+
         mIndex = index;
         mConfigDirectory = configDirectory;
         mPort = port;
@@ -134,19 +134,19 @@ public class TelehashTestInstance {
     public void setCrypto(Crypto crypto) {
         mCrypto = crypto;
     }
-    
+
     public void setNetwork(Network network) {
         mNetwork = network;
     }
-    
+
     public void setStorage(Storage storage) {
         mStorage = storage;
     }
-    
+
     public void start() {
         loadIdentity();
         mTelehash = new Telehash(mIdentity, mCrypto, mStorage, mNetwork);
-        
+
         // store a summary of this node
         try {
             File summaryFile = new File(
@@ -156,17 +156,21 @@ public class TelehashTestInstance {
             out.println("index: "+mIndex);
             out.println("hashname: "+mIdentity.getHashName());
             Log.i("pub: "+mIdentity.getPublicKey());
-            out.println("rsa pub: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getEncoded())));
-            out.println("rsa pri: "+Util.bytesToHex(mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getEncoded())));
+            out.println("rsa pub: "+Util.bytesToHex(
+                    mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getEncoded())
+            ));
+            out.println("rsa pri: "+Util.bytesToHex(
+                    mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getEncoded())
+            ));
             out.close();
         } catch (Throwable e) {
             e.printStackTrace();
         }
-        
+
         // launch the switch
         final Switch telehashSwitch = new Switch(mTelehash, mSeeds, mPort);
         mTelehash.setSwitch(telehashSwitch);
-        
+
         try {
             telehashSwitch.start();
         } catch (TelehashException e) {
@@ -175,11 +179,11 @@ public class TelehashTestInstance {
         }
 
     }
-    
+
     public void stop() {
         mTelehash.getSwitch().stop();
     }
-    
+
     public Node getNode() {
         try {
             InetPath path =
@@ -194,11 +198,11 @@ public class TelehashTestInstance {
             return null;
         }
     }
-    
+
     public Switch getSwitch() {
         return mTelehash.getSwitch();
     }
-    
+
     private void loadIdentity() {
         // load or create an identity
         Storage storage = new StorageImpl();
@@ -222,5 +226,5 @@ public class TelehashTestInstance {
             }
         }
     }
-    
+
 }

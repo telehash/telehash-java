@@ -3,7 +3,7 @@ package org.telehash.core;
 import java.lang.ref.WeakReference;
 
 public class Timeout implements Runnable {
-    
+
     private Scheduler mScheduler;
     private WeakReference<OnTimeoutListener> mListener;
     private long mDelay;
@@ -16,7 +16,7 @@ public class Timeout implements Runnable {
         mTask = null;
         setDelay(delay);
     }
-    
+
     public void setDelay(long delay) {
         if (delay > 0) {
             if (mTask != null) {
@@ -32,11 +32,11 @@ public class Timeout implements Runnable {
         }
         mDelay = delay;
     }
-    
+
     public long getDelay() {
         return mDelay;
     }
-    
+
     /**
      * Reset (and re-start) the timer with the previously established delay.
      */

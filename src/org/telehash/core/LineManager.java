@@ -1,11 +1,11 @@
 package org.telehash.core;
 
+import org.telehash.dht.NodeLookupTask;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import org.telehash.dht.NodeLookupTask;
 
 /**
  * The Switch class is the heart of Telehash. The switch is responsible for
@@ -13,9 +13,9 @@ import org.telehash.dht.NodeLookupTask;
  * inter-node communication.
  */
 public class LineManager {
-    
+
     private Telehash mTelehash;
-    
+
     private static class LineTracker {
         private Map<HashName,Line> mHashNameToLineMap = new HashMap<HashName,Line>();
         private Map<Node,Line> mNodeToLineMap = new HashMap<Node,Line>();
@@ -28,7 +28,7 @@ public class LineManager {
             return mHashNameToLineMap.get(hashName);
         }
         public Line getByIncomingLineIdentifier(LineIdentifier lineIdentifier) {
-            
+
             // TODO: remove this debugging block
             if (mIncomingLineIdentifierToLineMap.get(lineIdentifier) == null) {
                 if (mIncomingLineIdentifierToLineMap.containsKey(lineIdentifier)) {
@@ -41,7 +41,7 @@ public class LineManager {
                     }
                 }
             }
-            
+
             return mIncomingLineIdentifierToLineMap.get(lineIdentifier);
         }
         public void add(Line line) {
@@ -66,7 +66,7 @@ public class LineManager {
             return mNodeToLineMap.values();
         }
         // TODO: purge()
-        
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -92,18 +92,22 @@ public class LineManager {
         }
     }
     private LineTracker mLineTracker = new LineTracker();
-    
+
     ////////////////////////////////////////////////////////////
 
     public LineManager(Telehash telehash) {
         mTelehash = telehash;
     }
-    
+
     public void init() {
-        
+
     }
 
-    public void openChannel(Node destination, final String type, final ChannelHandler channelHandler) throws TelehashException {
+    public void openChannel(
+            Node destination,
+            final String type,
+            final ChannelHandler channelHandler
+    ) throws TelehashException {
         CompletionHandler<Line> lineOpenCompletionHandler = new CompletionHandler<Line>() {
             @Override
             public void completed(Line line, Object attachment) {
@@ -115,11 +119,11 @@ public class LineManager {
                 channelHandler.handleError(null, throwable);
             }
         };
-        
+
         // open a new line (or re-use an existing line)
         openLine(destination, false, lineOpenCompletionHandler, null);
     }
-    
+
     public void sendLinePacket(
             Line line,
             ChannelPacket channelPacket,
@@ -130,7 +134,7 @@ public class LineManager {
         LinePacket linePacket = new LinePacket(line, channelPacket);
         mTelehash.getSwitch().sendPacket(linePacket);
     }
-    
+
     private void calculateLineKeys(Line line, OpenPacket incomingOpen, OpenPacket outgoingOpen) {
         // calculate ECDH
         byte[] sharedSecret = mTelehash.getCrypto().calculateECDHSharedSecret(
@@ -161,7 +165,7 @@ public class LineManager {
                 )
         );
     }
-    
+
     ////////////////////////////////////////////////////////////
     // methods that proxy to the line tracker
     ////////////////////////////////////////////////////////////
@@ -170,7 +174,7 @@ public class LineManager {
     void clearLine(Line line) {
         mLineTracker.remove(line);
     }
-    
+
     public Line getLineByNode(Node node) {
         return mLineTracker.getByNode(node);
     }
@@ -178,19 +182,19 @@ public class LineManager {
     public Line getLineByHashName(HashName hashName) {
         return mLineTracker.getByHashName(hashName);
     }
-    
+
     public Line getLine(LineIdentifier lineIdentifier) {
         return mLineTracker.getByIncomingLineIdentifier(lineIdentifier);
     }
-    
+
     public Set<Line> getLines() {
         return Line.sortByOpenTime(mLineTracker.getLines());
     }
-    
+
     ////////////////////////////////////////////////////////////
     // line establishment and negotiation methods
     ////////////////////////////////////////////////////////////
-    
+
     public void openLine(
             Node destination,
             boolean reopen,
@@ -210,7 +214,7 @@ public class LineManager {
             existingLine.addOpenCompletionHandler(handler, null);
             return;
         }
-        
+
         // create a line, an outgoing open packet, and record these in the line tracker
         final Line line = new Line(mTelehash);
         line.setRemoteNode(destination);
@@ -241,7 +245,7 @@ public class LineManager {
             openLineDirect(line);
         }
     }
-    
+
     public void openLineDirect(Line line) {
         line.setState(Line.State.DIRECT_OPEN_PENDING);
         line.startOpenTimer();
@@ -255,32 +259,35 @@ public class LineManager {
         } catch (TelehashException e) {
             mLineTracker.remove(line);
             line.fail(new TelehashException(e));
-        }        
+        }
     }
 
     private void openLineReverseWithNodeLookup(final Line line) {
         line.setState(Line.State.NODE_LOOKUP);
-        
-        mTelehash.getSwitch().getDHT().nodeLookup(line.getRemoteNode().getHashName(), new NodeLookupTask.Handler() {
-            @Override
-            public void handleError(NodeLookupTask task, Throwable e) {
-                mLineTracker.remove(line);
-                line.fail(e);
-            }
-            @Override
-            public void handleCompletion(NodeLookupTask task, Node result) {
-                // if no nodes could be found, error out
-                if (result == null) {
-                    mLineTracker.remove(line);
-                    line.fail(new TelehashException("node not found"));
-                    return;
+
+        mTelehash.getSwitch().getDHT().nodeLookup(
+                line.getRemoteNode().getHashName(),
+                new NodeLookupTask.Handler() {
+                    @Override
+                    public void handleError(NodeLookupTask task, Throwable e) {
+                        mLineTracker.remove(line);
+                        line.fail(e);
+                    }
+                    @Override
+                    public void handleCompletion(NodeLookupTask task, Node result) {
+                        // if no nodes could be found, error out
+                        if (result == null) {
+                            mLineTracker.remove(line);
+                            line.fail(new TelehashException("node not found"));
+                            return;
+                        }
+                        // replace the line's remote node object with the new one which
+                        // should have network path information and a referring node.
+                        line.setRemoteNode(result);
+                        openLineReverse(line, result.getReferringNode());
+                    }
                 }
-                // replace the line's remote node object with the new one which
-                // should have network path information and a referring node.
-                line.setRemoteNode(result);
-                openLineReverse(line, result.getReferringNode());
-            }
-        });
+        );
     }
 
     private void openLineReverse(
@@ -293,10 +300,10 @@ public class LineManager {
             line.fail(new TelehashException("no line to referring node"));
             return;
         }
-        
+
         line.setState(Line.State.REVERSE_OPEN_PENDING);
         line.startOpenTimer();
-        
+
         referringLine.openChannel("peer", new ChannelHandler() {
             @Override
             public void handleError(Channel channel, Throwable error) {
@@ -323,7 +330,7 @@ public class LineManager {
             }
         });
     }
-    
+
     /** intentionally package-private */
     void handleOpenPacket(OpenPacket incomingOpenPacket) throws TelehashException {
         // is there a pending line for this?
@@ -334,7 +341,7 @@ public class LineManager {
                 line.getOutgoingLineIdentifier().equals(incomingOpenPacket.getLineIdentifier())
         )) {
             // an existing line is present for this open.
-            
+
             if (line.getState() == Line.State.ESTABLISHED) {
                 // this line is already established -- this open packet
                 // is redundant.
@@ -344,7 +351,7 @@ public class LineManager {
             line.setRemoteOpenPacket(incomingOpenPacket);
             line.setOutgoingLineIdentifier(incomingOpenPacket.getLineIdentifier());
             calculateLineKeys(line, incomingOpenPacket, line.getLocalOpenPacket());
-            line.completeOpen();            
+            line.completeOpen();
             Log.i("new line established for local initiator");
         } else {
             // The remote node is initiating a line to us.  (Perhaps because we asked
@@ -356,7 +363,10 @@ public class LineManager {
                 Log.i("new line established for remote initiator (reverse)");
             } else {
                 // create a new open package and line.
-                replyOpenPacket = new OpenPacket(mTelehash.getIdentity(), incomingOpenPacket.getSourceNode());                
+                replyOpenPacket = new OpenPacket(
+                        mTelehash.getIdentity(),
+                        incomingOpenPacket.getSourceNode()
+                );
                 line = new Line(mTelehash);
                 line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
                 line.setLocalOpenPacket(replyOpenPacket);
@@ -364,22 +374,22 @@ public class LineManager {
                 mLineTracker.add(line);
                 Log.i("new line established for remote initiator");
             }
-            
+
             // perform the "pre-render" stage so values such as the EC key pair
             // have been generated.
             replyOpenPacket.preRender();
-            
+
             // update the Line with information from the remote node's open packet.
             // note: this reply open packet is *outgoing* but its embedded line identifier
             // is to be used for *incoming* line packets.
             line.setRemoteOpenPacket(incomingOpenPacket);
             line.setOutgoingLineIdentifier(incomingOpenPacket.getLineIdentifier());
-            
+
             // perform ECDH
             calculateLineKeys(line, incomingOpenPacket, replyOpenPacket);
 
             // TODO: discard open packets after line establishment?
-            
+
             // TODO: alert interested parties of the new line?
 
             // alert the DHT of the new line
@@ -398,5 +408,5 @@ public class LineManager {
                 line.fail(e);
             }
         }
-    }        
+    }
 }

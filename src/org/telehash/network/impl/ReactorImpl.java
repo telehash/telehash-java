@@ -1,5 +1,14 @@
 package org.telehash.network.impl;
 
+import org.telehash.core.Log;
+import org.telehash.network.Datagram;
+import org.telehash.network.DatagramHandler;
+import org.telehash.network.InetPath;
+import org.telehash.network.Message;
+import org.telehash.network.MessageHandler;
+import org.telehash.network.Path;
+import org.telehash.network.Reactor;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -11,15 +20,6 @@ import java.nio.channels.Selector;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.telehash.core.Log;
-import org.telehash.network.Datagram;
-import org.telehash.network.DatagramHandler;
-import org.telehash.network.InetPath;
-import org.telehash.network.Message;
-import org.telehash.network.MessageHandler;
-import org.telehash.network.Path;
-import org.telehash.network.Reactor;
-
 public class ReactorImpl implements Reactor {
 
     private int mPort;
@@ -30,10 +30,10 @@ public class ReactorImpl implements Reactor {
     private MessageHandler mMessageHandler;
     private Queue<Datagram> mWriteQueue = new LinkedList<Datagram>();
     private Queue<Message> mMessageQueue = new LinkedList<Message>();
-    
+
     /**
      * Construct a new ReactorImpl.
-     * 
+     *
      * This constructor is intentionally package-private.
      */
     ReactorImpl(int port) {
@@ -49,7 +49,7 @@ public class ReactorImpl implements Reactor {
     public void setMessageHandler(MessageHandler messageHandler) {
         mMessageHandler = messageHandler;
     }
-    
+
     @Override
     public void start() throws IOException {
         // provision datagram channel and selector
@@ -68,7 +68,7 @@ public class ReactorImpl implements Reactor {
                 e1.printStackTrace();
             }
             throw e;
-        }        
+        }
     }
 
     @Override
@@ -77,7 +77,7 @@ public class ReactorImpl implements Reactor {
             mSelector.wakeup();
         }
     }
-    
+
     @Override
     public void close() throws IOException {
         mSelector.close();
@@ -103,8 +103,8 @@ public class ReactorImpl implements Reactor {
         }
 
         // select
-        mSelector.select(timeout);        	
-        
+        mSelector.select(timeout);
+
         // dispatch
         if (mSelector.selectedKeys().contains(mSelectionKey)) {
             if (mSelectionKey.isReadable()) {
@@ -115,13 +115,13 @@ public class ReactorImpl implements Reactor {
             }
         }
         synchronized (mMessageQueue) {
-	        Message message = mMessageQueue.poll();
-	        if (message != null && mMessageHandler != null) {
-	        	mMessageHandler.handleMessage(message);
-	        }
+            Message message = mMessageQueue.poll();
+            if (message != null && mMessageHandler != null) {
+                mMessageHandler.handleMessage(message);
+            }
         }
     }
-    
+
     private void handleIncoming() {
         // TODO: don't allocate a new buffer every time.
         ByteBuffer buffer = ByteBuffer.allocate(2048);
@@ -165,7 +165,7 @@ public class ReactorImpl implements Reactor {
         }
         InetAddress destinationAddress = ((InetPath)destination).getAddress();
         int destinationPort = ((InetPath)destination).getPort();
-        
+
         // TODO: don't allocate a new buffer every time.
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         buffer.clear();
@@ -179,10 +179,10 @@ public class ReactorImpl implements Reactor {
         }
         Log.i("datagram sent.");
     }
-    
+
     /**
      * Send a datagram.  This is potentially called from an outside thread.
-     * 
+     *
      * @param datagram
      */
     @Override
@@ -192,13 +192,13 @@ public class ReactorImpl implements Reactor {
         mWriteQueue.offer(datagram);
         mSelector.wakeup();
     }
-    
+
     @Override
     public void sendMessage(Message message) {
-    	synchronized (mMessageQueue) {
-    		mMessageQueue.offer(message);
+        synchronized (mMessageQueue) {
+            mMessageQueue.offer(message);
             mSelector.wakeup();
-    	}
+        }
     }
-    
+
 }

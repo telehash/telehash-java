@@ -10,8 +10,8 @@ import org.telehash.core.TelehashException;
  */
 public interface Network {
     /**
-     * Parse a string representing a network address. 
-     * 
+     * Parse a string representing a network address.
+     *
      * @param addressString
      *            The path string to parse.
      * @return The network path object.
@@ -25,12 +25,12 @@ public interface Network {
      * TODO: This will certainly change... we need to support multiple network interfaces!
      */
     public Path getPreferredLocalPath() throws TelehashException;
-    
+
     /**
      * Provision a new reactor i/o engine listening on the specified port.
-     * 
+     *
      * @param port The IP port on which to listen.
-     * @return The reactor. 
+     * @return The reactor.
      */
     public Reactor createReactor(int port);
 }

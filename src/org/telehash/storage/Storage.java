@@ -1,10 +1,10 @@
 package org.telehash.storage;
 
-import java.util.Set;
-
 import org.telehash.core.Identity;
 import org.telehash.core.Node;
 import org.telehash.core.TelehashException;
+
+import java.util.Set;
 
 /**
  * This interface contains methods that may be used to read and write Telehash
@@ -16,7 +16,7 @@ public interface Storage {
     /**
      * Read the local Telehash identity (RSA key pair) from files named using
      * the specified base filename.
-     * 
+     *
      * @param identityBaseFilename
      *            The base filename, e.g. "identity".
      * @return The read and parsed Telehash identity.
@@ -28,7 +28,7 @@ public interface Storage {
     /**
      * Read the local Telehash identity (RSA key pair) from files named using
      * the default base filename.
-     * 
+     *
      * @return The read and parsed Telehash identity.
      * @throws TelehashException
      *             If a problem happened while reading and parsing the identity.
@@ -38,7 +38,7 @@ public interface Storage {
     /**
      * Write the local Telehash identity (RSA key pair) into files named using
      * the specified base filename.
-     * 
+     *
      * @param identity
      *            The identity to write.
      * @param identityBaseFilename
@@ -52,7 +52,7 @@ public interface Storage {
     /**
      * Write the local Telehash identity (RSA key pair) into files named using
      * the default base filename.
-     * 
+     *
      * @param identity
      *            The identity to write.
      * @throws TelehashException
@@ -63,7 +63,7 @@ public interface Storage {
     /**
      * Read the local seed cache to obtain a set of nodes that may be used to
      * bootstrap the switch onto the Telehash network.
-     * 
+     *
      * @param seedsFilename
      *            The filename of the JSON-encoded list of seed nodes.
      * @return A set of seed nodes.

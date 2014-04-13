@@ -1,7 +1,5 @@
 package org.telehash.crypto.set2a;
 
-import java.io.IOException;
-
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -11,14 +9,16 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.HashNamePublicKey;
 
+import java.io.IOException;
+
 public class HashNamePublicKeyImpl implements HashNamePublicKey {
-    
+
     AsymmetricKeyParameter mKey;
-    
+
     public HashNamePublicKeyImpl(AsymmetricKeyParameter key) {
         mKey = key;
     }
-    
+
     public HashNamePublicKeyImpl(byte[] derBuffer) throws TelehashException {
         try {
             mKey = PublicKeyFactory.createKey(derBuffer);
@@ -30,7 +30,7 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
     public AsymmetricKeyParameter getKey() {
         return mKey;
     }
-    
+
     @Override
     public byte[] getEncoded() throws TelehashException {
         RSAKeyParameters param = (RSAKeyParameters)mKey;

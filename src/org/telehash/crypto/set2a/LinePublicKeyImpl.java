@@ -1,8 +1,5 @@
 package org.telehash.crypto.set2a;
 
-import java.math.BigInteger;
-import java.util.Arrays;
-
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
@@ -10,14 +7,17 @@ import org.bouncycastle.util.BigIntegers;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.LinePublicKey;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+
 public class LinePublicKeyImpl implements LinePublicKey {
-    
+
     private ECPublicKeyParameters mKey;
-    
+
     public LinePublicKeyImpl(ECPublicKeyParameters publicKey) {
         mKey = publicKey;
     }
- 
+
     public LinePublicKeyImpl(
             byte[] buffer,
             ECDomainParameters domainParameters
@@ -37,11 +37,11 @@ public class LinePublicKeyImpl implements LinePublicKey {
         System.arraycopy(buffer, 32, yBytes, 1, 32);
         BigInteger x = new BigInteger(xBytes);
         BigInteger y = new BigInteger(yBytes);
-        
+
         ECPoint q = domainParameters.getCurve().createPoint(x, y, false);
         mKey = new ECPublicKeyParameters(q, domainParameters);
     }
-    
+
     @Override
     public byte[] getEncoded() {
         // return the public key in ANSI X9.63 format,
@@ -56,11 +56,11 @@ public class LinePublicKeyImpl implements LinePublicKey {
 
         return buffer;
     }
-    
+
     public ECPublicKeyParameters getKey() {
         return mKey;
     }
-    
+
     @Override
     public boolean equals(Object other) {
         if (! (other instanceof LinePublicKey)) {

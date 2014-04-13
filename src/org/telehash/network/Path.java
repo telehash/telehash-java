@@ -1,14 +1,14 @@
 package org.telehash.network;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telehash.core.TelehashException;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Path {
     public static final String IPV4_TYPE = "ipv4";
@@ -17,7 +17,7 @@ public abstract class Path {
 
     public abstract String getType();
     public abstract JSONObject toJSONObject();
-    
+
     static public Path parsePath(String json) throws TelehashException {
         JSONObject jsonObject;
         try {
@@ -27,7 +27,7 @@ public abstract class Path {
         }
         return parsePath(jsonObject);
     }
-    
+
     static public Path parsePath(JSONObject path) throws TelehashException {
         if (path == null) {
             return null;
@@ -42,7 +42,7 @@ public abstract class Path {
             return null;
         }
     }
-    
+
     static public List<Path> parsePathArray(JSONArray array) throws TelehashException {
         List<Path> paths = new ArrayList<Path>();
         if (array == null) {
@@ -60,7 +60,7 @@ public abstract class Path {
         }
         return paths;
     }
-    
+
     /**
      * Convert a Java SocketAddress to a Path object.
      * @param socketAddress

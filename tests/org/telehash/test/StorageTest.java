@@ -1,19 +1,19 @@
 package org.telehash.test;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.util.Set;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.telehash.core.Node;
-import org.telehash.core.Util;
 import org.telehash.network.InetPath;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Set;
 
 public class StorageTest {
 
@@ -71,7 +71,7 @@ public class StorageTest {
         FileOutputStream fos = new FileOutputStream(temp);
         fos.write(SEEDS_JSON.getBytes("UTF-8"));
         fos.close();
-        
+
         Set<Node> seeds = mStorage.readSeeds(temp.getAbsolutePath());
         assertNotNull(seeds);
         assertEquals(seeds.size(), NUM_SEEDS);

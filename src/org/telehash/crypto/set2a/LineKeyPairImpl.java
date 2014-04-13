@@ -10,7 +10,7 @@ import org.telehash.crypto.LinePublicKey;
 public class LineKeyPairImpl implements LineKeyPair {
     LinePublicKeyImpl mPublicKey;
     LinePrivateKeyImpl mPrivateKey;
-    
+
     public LineKeyPairImpl(
             ECPublicKeyParameters publicKey,
             ECPrivateKeyParameters privateKey
@@ -27,9 +27,11 @@ public class LineKeyPairImpl implements LineKeyPair {
         mPrivateKey = (LinePrivateKeyImpl)privateKey;
     }
 
+    @Override
     public LinePrivateKey getPrivateKey() {
         return mPrivateKey;
     }
+    @Override
     public LinePublicKey getPublicKey() {
         return mPublicKey;
     }

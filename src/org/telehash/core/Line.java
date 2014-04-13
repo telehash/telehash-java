@@ -10,11 +10,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class Line implements OnTimeoutListener {
-    
+
     private static final int SHA256_DIGEST_SIZE = 32;
     private static final int LINE_OPEN_TIMEOUT = 5000;
     private static final int LINE_RECEIVE_TIMEOUT = 60000;
-    
+
     public enum State {
         INITIAL,
         NODE_LOOKUP,
@@ -25,7 +25,7 @@ public class Line implements OnTimeoutListener {
         ERROR
     };
     private State mState = State.INITIAL;
-    
+
     private static class Completion<T> {
         public CompletionHandler<T> mHandler;
         public Object mAttachment;
@@ -44,29 +44,29 @@ public class Line implements OnTimeoutListener {
     private byte[] mSharedSecret;
     private byte[] mEncryptionKey;
     private byte[] mDecryptionKey;
-    
+
     private Timeout mTimeout;
 
     private Telehash mTelehash;
     private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
     private boolean mFinished = false;
-    
+
     public Line(Telehash telehash) {
         mTelehash = telehash;
         mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
-    
+
     public void setState(State state) {
         mState = state;
     }
     public State getState() {
         return mState;
     }
-    
+
     public void setIncomingLineIdentifier(LineIdentifier lineIdentifier) {
         mIncomingLineIdentifier = lineIdentifier;
     }
-    
+
     public LineIdentifier getIncomingLineIdentifier() {
         return mIncomingLineIdentifier;
     }
@@ -74,7 +74,7 @@ public class Line implements OnTimeoutListener {
     public void setOutgoingLineIdentifier(LineIdentifier lineIdentifier) {
         mOutgoingLineIdentifier = lineIdentifier;
     }
-    
+
     public LineIdentifier getOutgoingLineIdentifier() {
         return mOutgoingLineIdentifier;
     }
@@ -82,34 +82,34 @@ public class Line implements OnTimeoutListener {
     public void setRemoteNode(Node remoteNode) {
         mRemoteNode = remoteNode;
     }
-    
+
     public Node getRemoteNode() {
         return mRemoteNode;
     }
-    
+
     public void setLocalOpenPacket(OpenPacket localOpenPacket) {
         mLocalOpenPacket = localOpenPacket;
     }
-    
+
     public OpenPacket getLocalOpenPacket() {
         return mLocalOpenPacket;
     }
-    
+
     public void setRemoteOpenPacket(OpenPacket remoteOpenPacket) {
         mRemoteOpenPacket = remoteOpenPacket;
     }
-    
+
     public OpenPacket getRemoteOpenPacket() {
         return mRemoteOpenPacket;
     }
-    
+
     public void setSharedSecret(byte[] sharedSecret) {
         if (sharedSecret == null || sharedSecret.length == 0) {
             throw new IllegalArgumentException("invalid shared secret");
         }
         mSharedSecret = sharedSecret;
     }
-    
+
     public byte[] getSharedSecret() {
         return mSharedSecret;
     }
@@ -120,7 +120,7 @@ public class Line implements OnTimeoutListener {
         }
         mEncryptionKey = encryptionKey;
     }
-    
+
     public byte[] getEncryptionKey() {
         return mEncryptionKey;
     }
@@ -131,11 +131,11 @@ public class Line implements OnTimeoutListener {
         }
         mDecryptionKey = decryptionKey;
     }
-    
+
     public byte[] getDecryptionKey() {
         return mDecryptionKey;
     }
-    
+
     public void addOpenCompletionHandler(
             CompletionHandler<Line> openCompletionHandler,
             Object openCompletionAttachment
@@ -144,10 +144,12 @@ public class Line implements OnTimeoutListener {
             // line is already established, so complete immediately.
             openCompletionHandler.completed(this, openCompletionAttachment);
         } else {
-            mOpenCompletionHandlers.add(new Completion<Line>(openCompletionHandler, openCompletionAttachment));
+            mOpenCompletionHandlers.add(
+                    new Completion<Line>(openCompletionHandler, openCompletionAttachment)
+            );
         }
     }
-    
+
     /* intentionally package-private */
     void fail(Throwable e) {
         if (mFinished) {
@@ -156,10 +158,10 @@ public class Line implements OnTimeoutListener {
         }
         mState = State.ERROR;
         mFinished = true;
-        
+
         // cancel timeout
         mTimeout.cancel();
-        
+
         // signal error
         for (Completion<Line> completion : mOpenCompletionHandlers) {
             if (completion.mHandler != null) {
@@ -167,7 +169,7 @@ public class Line implements OnTimeoutListener {
             }
         }
     }
-    
+
     public void completeOpen() {
         if (mFinished) {
             Log.e("line "+this+" complete after finish!");
@@ -178,7 +180,7 @@ public class Line implements OnTimeoutListener {
 
         // reset the timeout (it will now be a line receive timeout.)
         mTimeout.setDelay(LINE_RECEIVE_TIMEOUT);
-        
+
         // signal open completion
         for (Completion<Line> completion : mOpenCompletionHandlers) {
             if (completion.mHandler != null) {
@@ -186,11 +188,11 @@ public class Line implements OnTimeoutListener {
             }
         }
     }
-    
+
     public void startOpenTimer() {
         mTimeout.setDelay(LINE_OPEN_TIMEOUT);
     }
-    
+
     public long getOpenTime() {
         if (mLocalOpenPacket != null) {
             return mLocalOpenPacket.getOpenTime();
@@ -198,17 +200,17 @@ public class Line implements OnTimeoutListener {
             return 0L;
         }
     }
-    
+
     public Channel openChannel(String type, ChannelHandler channelHandler) {
         // create a channel object and establish a callback
         Channel channel = new Channel(mTelehash, this, type);
 
         // record channel handler
         channel.setChannelHandler(channelHandler);
-        
+
         // track channel
         mChannels.put(channel.getChannelIdentifier(), channel);
-        
+
         // consider the channel to be "open" even though we don't know
         // if the remote side will be happy with this channel type.
         if (channelHandler != null) {
@@ -217,7 +219,7 @@ public class Line implements OnTimeoutListener {
 
         return channel;
     }
-    
+
     public void handleIncoming(LinePacket linePacket) {
         ChannelPacket channelPacket = linePacket.getChannelPacket();
         Log.i("decoded channel packet: "+channelPacket);
@@ -230,7 +232,7 @@ public class Line implements OnTimeoutListener {
                 Log.i("dropping packet for unknown channel without type");
                 return;
             }
-            
+
             // is anyone interested in channels of this type?
             ChannelHandler channelHandler = mTelehash.getSwitch().getChannelHandler(type);
             if (channelHandler == null) {
@@ -238,12 +240,12 @@ public class Line implements OnTimeoutListener {
                         "\" cid="+channelPacket.getChannelIdentifier());
                 return;
             }
-            
+
             // create channel
             channel = new Channel(mTelehash, this, channelPacket.getChannelIdentifier(), type);
             channel.setChannelHandler(channelHandler);
             mChannels.put(channel.getChannelIdentifier(), channel);
-            
+
             // invoke callback
             channelHandler.handleIncoming(channel, channelPacket);
             return;
@@ -255,9 +257,10 @@ public class Line implements OnTimeoutListener {
         // dispatch to channel
         channel.receive(channelPacket);
     }
-    
+
     public static Set<Line> sortByOpenTime(Collection<Line> lines) {
         TreeSet<Line> set = new TreeSet<Line>(new Comparator<Line>() {
+            @Override
             public int compare(Line a, Line b) {
                 return (int)(a.getOpenTime() - b.getOpenTime());
             }
@@ -265,7 +268,8 @@ public class Line implements OnTimeoutListener {
         set.addAll(lines);
         return set;
     }
-    
+
+    @Override
     public String toString() {
         return "Line["+mIncomingLineIdentifier+"->"+mOutgoingLineIdentifier+"@"+getOpenTime()+"]";
     }
@@ -287,7 +291,7 @@ public class Line implements OnTimeoutListener {
             exception = new TelehashException("unknown line timeout");
             break;
         }
-        
+
         mState = State.TIMEOUT;
 
         // dereference from switch

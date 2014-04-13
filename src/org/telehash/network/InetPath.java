@@ -1,17 +1,17 @@
 package org.telehash.network;
 
+import org.json.JSONObject;
+import org.telehash.core.TelehashException;
+
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.json.JSONObject;
-import org.telehash.core.TelehashException;
-
 public class InetPath extends Path {
     private static final String IP_ADDRESS_KEY = "ip";
     private static final String PORT_KEY = "port";
-    
+
     private InetAddress mAddress;
     private int mPort;
 
@@ -19,18 +19,18 @@ public class InetPath extends Path {
         mAddress = address;
         mPort = port;
     }
-    
+
     public InetAddress getAddress() {
         return mAddress;
     }
     public int getPort() {
         return mPort;
     }
-    
+
     public String getAddressString() {
         return mAddress.getHostAddress();
     }
-    
+
     @Override
     public String getType() {
         if (mAddress instanceof Inet4Address) {
@@ -41,7 +41,7 @@ public class InetPath extends Path {
             return "ip-unknown";
         }
     }
-    
+
     @Override
     public JSONObject toJSONObject() {
         JSONObject json = new JSONObject();
@@ -50,11 +50,12 @@ public class InetPath extends Path {
         json.put(PORT_KEY, mPort);
         return json;
     }
-    
+
+    @Override
     public String toString() {
         return getType()+":" + mAddress.getHostAddress() + "/" + mPort;
     }
-    
+
     static public InetPath parsePath(JSONObject path) throws TelehashException {
         if (path == null) {
             return null;
@@ -90,7 +91,7 @@ public class InetPath extends Path {
                     "address \""+ipString+"\" is not suitable for type \""+type+"\"."
             );
         }
-        
+
         return new InetPath(address, port);
     }
 
@@ -120,5 +121,5 @@ public class InetPath extends Path {
         if (mPort != other.mPort)
             return false;
         return true;
-    }    
+    }
 }

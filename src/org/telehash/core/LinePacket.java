@@ -1,22 +1,22 @@
 package org.telehash.core;
 
-import java.io.UnsupportedEncodingException;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.telehash.crypto.Crypto;
 import org.telehash.network.Path;
 
+import java.io.UnsupportedEncodingException;
+
 /**
  * A Telehash "line" packet is used to exchange data between two Telehash nodes
  * that have established a shared secret via open packets.
- * 
+ *
  * <p>
  * A line packet consists of the following components, in roughly the order in
  * which they should be unpacked:
  * </p>
- * 
+ *
  * <ol>
  * <li>The line identifier</li>
  * <li>A random initialization vector (IV) used for the AES encryption of the inner packet.</li>
@@ -26,19 +26,19 @@ import org.telehash.network.Path;
  * </ol>
  */
 public class LinePacket extends Packet {
-    
+
     private static final String LINE_TYPE = "line";
-    
+
     private static final String LINE_IDENTIFIER_KEY = "line";
     private static final String IV_KEY = "iv";
-    
+
     private static final int IV_SIZE = 16;
     private static final int LINE_IDENTIFIER_SIZE = 16;
-    
+
     static {
         Packet.registerPacketType(LINE_TYPE, LinePacket.class);
     }
-    
+
     private Line mLine;
     private ChannelPacket mChannelPacket;
 
@@ -46,34 +46,35 @@ public class LinePacket extends Packet {
         mLine = line;
         mDestinationNode = line.getRemoteNode();
     }
-    
+
     public LinePacket(Line line, ChannelPacket channelPacket) {
         mLine = line;
         mChannelPacket = channelPacket;
         mDestinationNode = line.getRemoteNode();
     }
-    
+
     // accessor methods
-    
+
     public void setLine(Line line) {
         mLine = line;
     }
     public Line getLine() {
         return mLine;
     }
-    
+
     public void setChannelPacket(ChannelPacket channelPacket) {
         mChannelPacket = channelPacket;
     }
     public ChannelPacket getChannelPacket() {
         return mChannelPacket;
     }
-    
+
     /**
      * Render the open packet into its final form.
-     * 
+     *
      * @return The rendered open packet as a byte array.
      */
+    @Override
     public byte[] render() throws TelehashException {
         Crypto crypto = Telehash.get().getCrypto();
 
@@ -82,13 +83,13 @@ public class LinePacket extends Packet {
             mChannelPacket = new ChannelPacket();
         }
         byte[] body = mChannelPacket.render();
-        
+
         // generate a random IV
         byte[] iv = crypto.getRandomBytes(IV_SIZE);
-        
+
         // encrypt body
         byte[] encryptedBody = crypto.encryptAES256CTR(body, iv, mLine.getEncryptionKey());
-        
+
         // Form the inner packet containing a current timestamp at, line
         // identifier, recipient hashname, and family (if you have such a
         // value). Your own RSA public key is the packet BODY in the binary DER
@@ -122,7 +123,7 @@ public class LinePacket extends Packet {
 
         return packet;
     }
-    
+
     public static LinePacket parse(
             Telehash telehash,
             SplitPacket splitPacket,
@@ -142,7 +143,7 @@ public class LinePacket extends Packet {
         byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
         assertBufferSize(lineIdentifierBytes, LINE_IDENTIFIER_SIZE);
         LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
-        
+
         // lookup the line
         Line line = telehash.getSwitch().getLineManager().getLine(lineIdentifier);
         if (line == null) {
@@ -151,13 +152,14 @@ public class LinePacket extends Packet {
 
         // decrypt the body
         byte[] decryptedBody = crypto.decryptAES256CTR(body, iv, line.getDecryptionKey());
-        
+
         // parse the embedded channel packet
         ChannelPacket channelPacket = ChannelPacket.parse(telehash, decryptedBody, path);
-        
+
         return new LinePacket(line, channelPacket);
     }
-    
+
+    @Override
     public String toString() {
         String s = "LINE["+mLine+"]";
         if (mSourceNode != null) {

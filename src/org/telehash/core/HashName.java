@@ -18,13 +18,13 @@ public class HashName {
         }
         mBuffer = buffer;
     }
-    
+
     public BigInteger distance(HashName other) {
         BigInteger a = new BigInteger(1, mBuffer);
         BigInteger b = new BigInteger(1, other.mBuffer);
         return (a.xor(b));
     }
-    
+
     /**
      * Return the hashspace distance magnitude between this hashname and the
      * specified hashname. This is defined as the binary logarithm of the xor of
@@ -32,9 +32,9 @@ public class HashName {
      * distance magnitude metric is suitable for use as an index into an array
      * of buckets. (Unless the returned value is -1 indicating the hashnames are
      * the same, in which case nothing should be stored in a bucket.)
-     * 
+     *
      * The returned value will always be between -1 and 255, inclusive.
-     * 
+     *
      * @param A
      *            The first hashname.
      * @param other
@@ -44,7 +44,7 @@ public class HashName {
     public int distanceMagnitude(HashName other) {
         // opportunities for optimization abound.
         // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogObvious
-        
+
         if (this == null || other == null) {
             throw new IllegalArgumentException("invalid hashname");
         }
@@ -63,21 +63,22 @@ public class HashName {
         }
         return -1;
     }
-    
+
     public byte[] getBytes() {
         return mBuffer;
     }
-    
+
     public String asHex() {
         return Util.bytesToHex(mBuffer);
     }
-    
+
+    @Override
     public String toString() {
         return asHex();
     }
-    
+
     // Java identity
-    
+
     @Override
     public boolean equals(Object other) {
         if (other != null &&
@@ -88,7 +89,7 @@ public class HashName {
             return false;
         }
     }
-    
+
     @Override
     public int hashCode() {
         return Arrays.hashCode(mBuffer);

@@ -1,13 +1,5 @@
 package org.telehash.crypto.impl;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringReader;
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.security.Security;
-
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
@@ -39,30 +31,38 @@ import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
-import org.telehash.crypto.LineKeyPair;
-import org.telehash.crypto.LinePrivateKey;
-import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.HashNameKeyPair;
 import org.telehash.crypto.HashNamePrivateKey;
 import org.telehash.crypto.HashNamePublicKey;
+import org.telehash.crypto.LineKeyPair;
+import org.telehash.crypto.LinePrivateKey;
+import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.set2a.CipherSet2aImpl;
 import org.telehash.crypto.set2a.HashNamePrivateKeyImpl;
 import org.telehash.crypto.set2a.HashNamePublicKeyImpl;
 import org.telehash.crypto.set2a.LinePrivateKeyImpl;
 import org.telehash.crypto.set2a.LinePublicKeyImpl;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.StringReader;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.security.Security;
+
 /**
  * This class contains implementations for the basic cryptographic functions
  * needed by Telehash.
  */
 public class CryptoImpl implements Crypto {
-    
+
     private static final String RSA_PRIVATE_KEY_PEM_TYPE = "RSA PRIVATE KEY";
     private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
-    
+
     // we only use the 2a cipher set for now.
     private CipherSet mCipherSet = new CipherSet2aImpl(this);
-    
+
     private SecureRandom random = new SecureRandom();
 
     // elliptic curve settings
@@ -73,8 +73,8 @@ public class CryptoImpl implements Crypto {
 
     static {
         Security.addProvider(new BouncyCastleProvider());
-    };    
-    
+    };
+
     public CryptoImpl() {
         // initialize elliptic curve parameters and generator
         mECNamedCurveParameterSpec =
@@ -87,40 +87,41 @@ public class CryptoImpl implements Crypto {
                         mECNamedCurveParameterSpec.getN()
                 );
         mECKeyGenerationParameters =
-                new ECKeyGenerationParameters(mECDomainParameters, random);        
+                new ECKeyGenerationParameters(mECDomainParameters, random);
         mECGenerator.init(mECKeyGenerationParameters);
     }
-    
+
     /**
      * TODO: REMOVE!!!
      * @deprecated
      */
+    @Deprecated
     @Override
-	public CipherSet getCipherSet() {
-		return mCipherSet;
-	}
+    public CipherSet getCipherSet() {
+        return mCipherSet;
+    }
 
     /**
      * Generate a cryptographically secure pseudo-random array of byte values.
-     * 
+     *
      * @param size The number of random bytes to produce.
      * @return The array of random byte values.
      */
     @Override
     public byte[] getRandomBytes(int size) {
-        
+
         // TODO
         // We create a SecureRandom object once, so it's seeded only once.
         // The following page actual recommends forcing the PRNG to re-seed
         // periodically, but doesn't indicate what interval might be best:
         // https://www.cigital.com/justice-league-blog/2009/08/14/proper-use-of-javas-securerandom/
         // What should the best practice be?
-        
+
         // TODO
         // The Android SecureRandom PRNG is faulty. :(
         // Recommended fix for the Android case:
         // http://android-developers.blogspot.com/2013/08/some-securerandom-thoughts.html
-        
+
         byte[] bytes = new byte[size];
         random.nextBytes(bytes);
         return bytes;
@@ -128,7 +129,7 @@ public class CryptoImpl implements Crypto {
 
     /**
      * Return a SHA-256 digest of the provided byte buffer.
-     * 
+     *
      * @param buffer The buffer to digest.
      * @return A 32-byte array representing the digest.
      */
@@ -144,13 +145,13 @@ public class CryptoImpl implements Crypto {
     /**
      * Generate a fresh identity (i.e., hashname public and private key pair)
      * for a newly provisioned Telehash node.
-     * 
+     *
      * @return The new identity.
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     @Override
     public Identity generateIdentity() throws TelehashException {
-    	return mCipherSet.generateIdentity();
+        return mCipherSet.generateIdentity();
     }
 
     /**
@@ -158,12 +159,12 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public LineKeyPair generateLineKeyPair() throws TelehashException {
-    	return mCipherSet.generateLineKeyPair();
+        return mCipherSet.generateLineKeyPair();
     }
-    
+
     /**
      * Encrypt data with an RSA private key
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     /*
     @Override
@@ -179,10 +180,10 @@ public class CryptoImpl implements Crypto {
         return cipherText;
     }
     */
-    
+
     /**
      * Encrypt data with an RSA private key using OAEP padding
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     @Override
     public byte[] encryptRSAOAEP(HashNamePublicKey key, byte[] clearText) throws TelehashException {
@@ -199,7 +200,7 @@ public class CryptoImpl implements Crypto {
 
     /**
      * Decrypt data with an RSA private key
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     /*
     @Override
@@ -218,10 +219,13 @@ public class CryptoImpl implements Crypto {
 
     /**
      * Decrypt data with an RSA private key and OAEP padding
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     @Override
-    public byte[] decryptRSAOAEP(HashNamePrivateKey key, byte[] cipherText) throws TelehashException {
+    public byte[] decryptRSAOAEP(
+            HashNamePrivateKey key,
+            byte[] cipherText
+    ) throws TelehashException {
         AsymmetricBlockCipher cipher = new OAEPEncoding(new RSAEngine(), new SHA1Digest());
         cipher.init(false, ((HashNamePrivateKeyImpl)key).getKey());
         byte[] clearText;
@@ -236,8 +240,8 @@ public class CryptoImpl implements Crypto {
     /**
      * Sign a data buffer with an RSA private key using the SHA-256 digest, and
      * PKCSv1.5 padding.
-     * 
-     * @throws TelehashException 
+     *
+     * @throws TelehashException
      */
     @Override
     public byte[] signRSA(HashNamePrivateKey key, byte[] buffer) throws TelehashException {
@@ -280,10 +284,10 @@ public class CryptoImpl implements Crypto {
             throw new TelehashException(e);
         }
     }
-    
+
     /**
      * Parse a PEM-formatted RSA public key
-     * 
+     *
      * @param pem The PEM string.
      * @return The key.
      * @throws TelehashException If a problem occurs while reading the file.
@@ -311,7 +315,7 @@ public class CryptoImpl implements Crypto {
 
     /**
      * Read a PEM-formatted RSA public key from a file.
-     * 
+     *
      * @param filename The filename of the file containing the PEM-formatted key.
      * @return The key.
      * @throws TelehashException If a problem occurs while reading the file.
@@ -336,10 +340,10 @@ public class CryptoImpl implements Crypto {
             throw new TelehashException(e);
         }
     }
-        
+
     /**
      * Read a PEM-formatted RSA private key from a file.
-     * 
+     *
      * @param filename The filename of the file containing the PEM-formatted key.
      * @return The key.
      * @throws TelehashException If a problem occurs while reading the file.
@@ -364,10 +368,10 @@ public class CryptoImpl implements Crypto {
             throw new TelehashException(e);
         }
     }
-    
+
     /**
      * Write a PEM-formatted RSA public key to a file.
-     * 
+     *
      * @param filename The filename of the file to write.
      * @param key The key to write.
      * @throws IOException If a problem occurs while reading the file.
@@ -389,10 +393,10 @@ public class CryptoImpl implements Crypto {
             throw new TelehashException(e);
         }
     }
-    
+
     /**
      * Write a PEM-formatted RSA private key to a file.
-     * 
+     *
      * @param filename The filename of the file to write.
      * @param key The key to write.
      * @throws IOException If a problem occurs while reading the file.
@@ -417,26 +421,26 @@ public class CryptoImpl implements Crypto {
 
     /**
      * Decode a public key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded public key.
      * @throws TelehashException If the buffer cannot be parsed.
      */
     @Override
     public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException {
-    	return mCipherSet.decodeHashNamePublicKey(buffer);
+        return mCipherSet.decodeHashNamePublicKey(buffer);
     }
-    
+
     /**
      * Decode a private key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
      * @throws TelehashException If the buffer cannot be parsed.
      */
     @Override
     public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException {
-    	return mCipherSet.decodeHashNamePrivateKey(buffer);
+        return mCipherSet.decodeHashNamePrivateKey(buffer);
     }
 
     /**
@@ -446,32 +450,35 @@ public class CryptoImpl implements Crypto {
      * @return The newly created HashNameKeyPair object.
      */
     @Override
-    public HashNameKeyPair createHashNameKeyPair(HashNamePublicKey publicKey, HashNamePrivateKey privateKey) {
-    	return mCipherSet.createHashNameKeyPair(publicKey, privateKey);
+    public HashNameKeyPair createHashNameKeyPair(
+            HashNamePublicKey publicKey,
+            HashNamePrivateKey privateKey
+    ) {
+        return mCipherSet.createHashNameKeyPair(publicKey, privateKey);
     }
-    
+
     /**
      * Decode an ANSI X9.63-encoded public key into an ECPublicKey object.
-     * 
+     *
      * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
      * @return The decoded public key.
      * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
      */
     @Override
     public LinePublicKey decodeLinePublicKey(byte[] buffer) throws TelehashException {
-    	return mCipherSet.decodeLinePublicKey(buffer);
+        return mCipherSet.decodeLinePublicKey(buffer);
     }
 
     /**
      * Decode a byte-encoded private key into an ECPrivateKey object.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
      * @throws TelehashException If the byte buffer cannot be parsed.
      */
     @Override
     public LinePrivateKey decodeLinePrivateKey(byte[] buffer) throws TelehashException {
-    	return mCipherSet.decodeLinePrivateKey(buffer);
+        return mCipherSet.decodeLinePrivateKey(buffer);
     }
 
     /**
@@ -485,12 +492,12 @@ public class CryptoImpl implements Crypto {
             LinePublicKey publicKey,
             LinePrivateKey privateKey
     ) throws TelehashException {
-    	return mCipherSet.createLineKeyPair(publicKey, privateKey);
+        return mCipherSet.createLineKeyPair(publicKey, privateKey);
     }
-    
+
     /**
      * Perform Elliptic Curve Diffie-Hellman key agreement
-     * 
+     *
      * @param remotePublicKey The EC public key of the remote node.
      * @param localPrivateKey The EC private key of the local node.
      * @return A byte array containing the shared secret.
@@ -507,15 +514,15 @@ public class CryptoImpl implements Crypto {
         byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
         return secretBytes;
     }
-    
+
     /**
      * Encrypt the provided plaintext using AES-256-CTR with the provided
      * initialization vector (IV) and key.
-     * 
+     *
      * No padding is used. (The Telehash protocol spec calls for
      * "PKCS1 v1.5 padding", but the node.js implementation doesn't use padding.
      * Perhaps "PKCS1 v1.5 padding" is no padding?)
-     * 
+     *
      * @param plainText
      *            The plaintext to encrypt.
      * @param iv
@@ -528,7 +535,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public byte[] encryptAES256CTR(
-            byte[] plainText, 
+            byte[] plainText,
             byte[] iv,
             byte[] key
     ) throws TelehashException {
@@ -546,7 +553,7 @@ public class CryptoImpl implements Crypto {
         } catch (CryptoException e) {
             throw new TelehashException(e);
         }
-        
+
         // trim output if needed
         if (nbytes < cipherText.length) {
             byte[] trimmedCipherText = new byte[nbytes];
@@ -560,7 +567,7 @@ public class CryptoImpl implements Crypto {
     /**
      * Decrypt the provided ciphertext using AES-256-CTR with the provided
      * initialization vector (IV) and key.
-     * 
+     *
      * No padding is used. (The Telehash protocol spec calls for
      * "PKCS1 v1.5 padding", but the node.js implementation doesn't use padding.
      * Perhaps "PKCS1 v1.5 padding" is no padding?)
@@ -573,7 +580,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public byte[] decryptAES256CTR(
-            byte[] cipherText, 
+            byte[] cipherText,
             byte[] iv,
             byte[] key
     ) throws TelehashException {
@@ -591,7 +598,7 @@ public class CryptoImpl implements Crypto {
         } catch (CryptoException e) {
             throw new TelehashException(e);
         }
-        
+
         // trim output if needed
         if (nbytes < plainText.length) {
             byte[] trimmedPlainText = new byte[nbytes];

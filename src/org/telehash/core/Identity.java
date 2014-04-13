@@ -27,7 +27,7 @@ public class Identity {
             mHashName = null;
         }
     }
-    
+
     /**
      * Return the RSA private key of this identity.
      * @return The private key.
@@ -35,7 +35,7 @@ public class Identity {
     public HashNamePrivateKey getPrivateKey() {
         return mKeyPair.getPrivateKey();
     }
-    
+
     /**
      * Return the RSA public key of this identity.
      * @return The public key.
@@ -47,21 +47,21 @@ public class Identity {
     /**
      * Return the hashname of this identity, which is a SHA-256 digest of the
      * public key.
-     * 
+     *
      * @return The hashname.
      */
     public HashName getHashName() {
         return mHashName;
     }
-    
+
     /**
      * Return a node representation of this identity.
      */
     public Node getNode() {
-    	try {
-			return new Node(mKeyPair.getPublicKey(), null);
-		} catch (TelehashException e) {
-			return null;
-		}
+        try {
+            return new Node(mKeyPair.getPublicKey(), null);
+        } catch (TelehashException e) {
+            return null;
+        }
     }
 }

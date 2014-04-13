@@ -1,9 +1,5 @@
 package org.telehash.crypto.set2a;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.security.Security;
-
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -25,10 +21,10 @@ import org.telehash.core.Identity;
 import org.telehash.core.Node;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
+import org.telehash.core.Packet.SplitPacket;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
-import org.telehash.core.Packet.SplitPacket;
 import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.HashNameKeyPair;
@@ -38,6 +34,10 @@ import org.telehash.crypto.LineKeyPair;
 import org.telehash.crypto.LinePrivateKey;
 import org.telehash.crypto.LinePublicKey;
 import org.telehash.network.Path;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.security.Security;
 
 public class CipherSet2aImpl implements CipherSet {
     private final static short CIPHER_SET_ID = 0x2a;
@@ -83,6 +83,7 @@ public class CipherSet2aImpl implements CipherSet {
     /**
      * Return the Cipher Set ID (CSID) for this cipher set.
      */
+    @Override
     public short getCipherSetId() {
         return CIPHER_SET_ID;
     }
@@ -90,9 +91,9 @@ public class CipherSet2aImpl implements CipherSet {
     /**
      * Generate a fresh identity (i.e., RSA public and private key pair) for a
      * newly provisioned Telehash node.
-     * 
+     *
      * @return The new identity.
-     * @throws TelehashException 
+     * @throws TelehashException
      */
     @Override
     public Identity generateIdentity() throws TelehashException {
@@ -133,12 +134,15 @@ public class CipherSet2aImpl implements CipherSet {
             HashNamePublicKey publicKey,
             HashNamePrivateKey privateKey
     ) {
-        return new HashNameKeyPairImpl((HashNamePublicKeyImpl)publicKey, (HashNamePrivateKeyImpl)privateKey);
+        return new HashNameKeyPairImpl(
+                (HashNamePublicKeyImpl)publicKey,
+                (HashNamePrivateKeyImpl)privateKey
+        );
     }
 
     /**
      * Decode a public key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded public key.
      * @throws TelehashException If the buffer cannot be parsed.
@@ -150,7 +154,7 @@ public class CipherSet2aImpl implements CipherSet {
 
     /**
      * Decode a private key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
      * @throws TelehashException If the buffer cannot be parsed.
@@ -162,7 +166,7 @@ public class CipherSet2aImpl implements CipherSet {
 
     /**
      * Decode an ANSI X9.63-encoded elliptic curve public key.
-     * 
+     *
      * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
      * @return The decoded public key.
      * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
@@ -174,7 +178,7 @@ public class CipherSet2aImpl implements CipherSet {
 
     /**
      * Decode a byte-encoded elliptic curve private key.
-     * 
+     *
      * @param buffer The byte buffer containing the encoded key.
      * @return The decoded private key.
      * @throws TelehashException If the byte buffer cannot be parsed.
@@ -195,7 +199,7 @@ public class CipherSet2aImpl implements CipherSet {
             LinePublicKey publicKey,
             LinePrivateKey privateKey
     ) throws TelehashException {
-        return new LineKeyPairImpl((LinePublicKeyImpl)publicKey, (LinePrivateKeyImpl)privateKey);
+        return new LineKeyPairImpl(publicKey, privateKey);
     }
 
     /**
@@ -349,8 +353,12 @@ public class CipherSet2aImpl implements CipherSet {
 
         // Decrypt the inner packet using the generated key and IV value with
         // the AES-256-CTR algorithm.
-        byte[] innerPacketBuffer =
-                decryptAES256GCM(innerPacketCiphertext, FIXED_IV, innerPacketKey, OPEN_INNER_MAC_BITS);
+        byte[] innerPacketBuffer = decryptAES256GCM(
+                innerPacketCiphertext,
+                FIXED_IV,
+                innerPacketKey,
+                OPEN_INNER_MAC_BITS
+        );
 
         // extract required JSON values from the inner packet
         SplitPacket innerPacket = Packet.splitPacket(innerPacketBuffer);
@@ -420,7 +428,7 @@ public class CipherSet2aImpl implements CipherSet {
 
     /**
      * Pre-render the open packet.
-     * 
+     *
      * @throws TelehashException
      */
     @Override
@@ -454,11 +462,11 @@ public class CipherSet2aImpl implements CipherSet {
 
     /**
      * Render the open packet into its final form.
-     * 
+     *
      * This version of the method allows the caller to pass in values for
      * certain otherwise calculated fields, allowing for deterministic open
      * packet creation suitable for unit tests.
-     * 
+     *
      * @param open The open packet object.
      * @param lineKeyCiphertext
      *            The line key ciphertext -- the public line key encrypted
@@ -515,7 +523,7 @@ public class CipherSet2aImpl implements CipherSet {
                         encodedLinePublicKey,
                         open.getLineIdentifier().getBytes()
                 )
-        ); 
+        );
         byte[] signatureCiphertext =
                 encryptAES256GCM(signature, FIXED_IV, signatureKey, OPEN_SIGNATURE_MAC_BITS);
         if (signatureCiphertext.length != SIGNATURE_CIPHERTEXT_BYTES) {

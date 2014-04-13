@@ -6,7 +6,7 @@ import org.telehash.network.Path;
 /**
  * This class represents a Telehash node, including its public key and network
  * path.
- * 
+ *
  * TODO: A node can have multiple network paths.
  */
 public class Node {
@@ -15,7 +15,7 @@ public class Node {
     private Path mPath;
     private HashName mHashName = null;
     private Node mReferringNode;
-    
+
     public Node(HashNamePublicKey publicKey, Path path) throws TelehashException {
         mPublicKey = publicKey;
         mPath = path;
@@ -33,29 +33,29 @@ public class Node {
     public void setPublicKey(HashNamePublicKey publicKey) {
         mPublicKey = publicKey;
     }
-    
+
     public HashNamePublicKey getPublicKey() {
         return mPublicKey;
     }
-    
+
     public Path getPath() {
         return mPath;
     }
-    
+
     public HashName getHashName() {
         return mHashName;
     }
-    
+
     public void setReferringNode(Node referringNode) {
         mReferringNode = referringNode;
     }
-    
+
     public Node getReferringNode() {
         return mReferringNode;
     }
-    
+
     // Java identity
-    
+
     @Override
     public boolean equals(Object other) {
         if (    other != null &&
@@ -66,12 +66,12 @@ public class Node {
             return false;
         }
     }
-    
+
     @Override
     public int hashCode() {
         return mHashName.hashCode();
     }
-    
+
     @Override
     public String toString() {
         String hashName = mHashName.toString().substring(0, 8);

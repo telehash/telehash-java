@@ -1,24 +1,18 @@
 package org.telehash.test;
 
-import static org.junit.Assert.*;
-
-import java.net.InetAddress;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.telehash.core.HashName;
-import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.impl.CryptoImpl;
 import org.telehash.dht.DHT;
-import org.telehash.network.InetPath;
-import org.telehash.network.Path;
-import org.telehash.network.Network;
 
 public class DHTTest {
-    
+
     @Before
     public void setUp() throws Exception {
     }
@@ -26,7 +20,7 @@ public class DHTTest {
     @After
     public void tearDown() throws Exception {
     }
-        
+
     private class DistanceTest {
         private HashName mOrigin;
         private HashName mRemote;
@@ -107,17 +101,17 @@ public class DHTTest {
                     12
             ),
     };
-    
+
     @Test
     public void testDistance() throws Exception {
         for (DistanceTest test : mDistanceTests) {
             test.test();
         }
     }
-    
+
     private static final int NUM_ORIGINS = 16;
     private static final int NUM_RANDOMS = 16;
-    
+
     @Test
     public void testRandomHashName() throws Exception {
         Crypto crypto = new CryptoImpl();

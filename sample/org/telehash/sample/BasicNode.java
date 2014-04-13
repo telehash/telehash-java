@@ -1,31 +1,25 @@
 package org.telehash.sample;
 
-import java.io.FileNotFoundException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.telehash.core.Identity;
 import org.telehash.core.Node;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
-import org.telehash.core.Util;
-import org.telehash.crypto.HashNamePublicKey;
-import org.telehash.network.InetPath;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
 
+import java.io.FileNotFoundException;
+import java.util.Set;
+
 public class BasicNode {
-    
+
     private static final String IDENTITY_BASE_FILENAME = "telehash-node";
     private static final int PORT = 42424;
 
     public static final void main(String[] args) {
-        
+
         Storage storage = new StorageImpl();
-        
+
         // load or create an identity
         Identity identity;
         try {
@@ -45,9 +39,9 @@ public class BasicNode {
                 return;
             }
         }
-        
+
         System.out.println("my hash name: "+identity.getHashName());
-        
+
         Set<Node> seeds = null;
         try {
             seeds = storage.readSeeds("seeds.json");
@@ -55,7 +49,7 @@ public class BasicNode {
             // TODO Auto-generated catch block
             e2.printStackTrace();
         }
-        
+
         // launch the switch
         final Telehash telehash = new Telehash(identity);
         final Switch telehashSwitch = new Switch(telehash, seeds, PORT);
@@ -66,9 +60,10 @@ public class BasicNode {
             e.printStackTrace();
             return;
         }
-        
+
         try {
-            System.out.println("preferred local path: "+telehash.getNetwork().getPreferredLocalPath());
+            System.out.println("preferred local path: "+
+                    telehash.getNetwork().getPreferredLocalPath());
         } catch (TelehashException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
@@ -76,7 +71,7 @@ public class BasicNode {
 
         // send packet
         System.out.println("node sending packet to seed.");
-        
+
         // sleep 4 hours...
         try {
             Thread.sleep(4 * 60 * 60 * 1000);
@@ -84,7 +79,7 @@ public class BasicNode {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+
         // stop the switch
         telehashSwitch.stop();
     }
