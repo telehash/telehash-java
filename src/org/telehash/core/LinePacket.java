@@ -125,12 +125,13 @@ public class LinePacket extends Packet {
     
     public static LinePacket parse(
             Telehash telehash,
-            JSONObject json,
-            byte[] body,
+            SplitPacket splitPacket,
             Path path
     ) throws TelehashException {
         Crypto crypto = telehash.getCrypto();
-        
+        JSONObject json = splitPacket.json;
+        byte[] body = splitPacket.body;
+
         // extract required JSON values
         String ivString = json.getString(IV_KEY);
         assertNotNull(ivString);

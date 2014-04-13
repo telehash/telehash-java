@@ -60,7 +60,7 @@ public class LineAndChannelTest {
                     e.printStackTrace();
                 }
             }
-            
+
             @Override
             public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
                 String echo = new String(channelPacket.getBody());
@@ -74,7 +74,7 @@ public class LineAndChannelTest {
                     flag.signal();
                     return;
                 }
-                
+
                 // send a fresh string to be echoed 
                 try {
                     channel.send(TEST_STRING.getBytes());
@@ -82,7 +82,7 @@ public class LineAndChannelTest {
                     e.printStackTrace();
                 }
             }
-            
+
             @Override
             public void handleError(Channel channel, Throwable error) {
                 Log.i("channel event: error", error);

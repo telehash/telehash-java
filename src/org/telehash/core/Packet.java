@@ -19,15 +19,15 @@ public abstract class Packet {
     private static final String PARSE_METHOD_NAME = "parse";
     public static final int LENGTH_PREFIX_SIZE = 2;
     public static final String TYPE_KEY = "type";
-    
+
     private static Map<String,Method> sTypeParseMap =
             new HashMap<String,Method>(); 
-    
+
     protected Node mSourceNode;
     protected Node mDestinationNode;
 
-    public static final class JsonAndBody {
-        public JsonAndBody(JSONObject json, short singleByteHeader, byte[] body) {
+    public static final class SplitPacket {
+        public SplitPacket(JSONObject json, short singleByteHeader, byte[] body) {
             this.json = json;
             this.singleByteHeader = singleByteHeader;
             this.body = body;
@@ -58,7 +58,7 @@ public abstract class Packet {
      * @throws TelehashException
      */
     public abstract byte[] render() throws TelehashException;
-    
+
     /**
      * Parse the provided byte buffer into a packet object. This method will
      * examine the "type" header, and dispatch to the parse method of the
@@ -76,25 +76,37 @@ public abstract class Packet {
             Path sourcePath
     ) throws TelehashException {
         // split the packet into the JSON header and the body.
-        JsonAndBody jsonAndBody = splitPacket(buffer);
-        if (jsonAndBody == null) {
+        SplitPacket splitPacket = splitPacket(buffer);
+        if (splitPacket == null) {
             // null packet received
             return null;
         }
 
-        // examine the "type" header
-        String type = jsonAndBody.json.getString(TYPE_KEY);
-        if (type == null || type.isEmpty()) {
-            throw new TelehashException("invalid type string");
+        // determine the packet type
+        String type;
+        if (splitPacket.json == null) {
+            if (splitPacket.singleByteHeader == telehash.getCrypto().getCipherSet().getCipherSetId()) {
+                type = OpenPacket.OPEN_TYPE;
+            } else {
+                throw new TelehashException(
+                        "unsupported open cipher set: "+splitPacket.singleByteHeader
+                );
+            }
+        } else {
+            // examine the "type" header
+            type = splitPacket.json.getString(TYPE_KEY);
+            if (type == null || type.isEmpty()) {
+                throw new TelehashException("invalid type string");
+            }
+            if (! sTypeParseMap.containsKey(type)) {
+                throw new TelehashException("unknown packet type: \""+type+"\"");
+            }
         }
-        if (! sTypeParseMap.containsKey(type)) {
-            throw new TelehashException("unknown packet type: \""+type+"\"");
-        }
-        
+
         // dispatch to the parse routine of the appropriate subclass.
         try {
             return (Packet) sTypeParseMap.get(type).invoke(
-                    null, telehash, jsonAndBody.json, jsonAndBody.body, sourcePath
+                    null, telehash, splitPacket, sourcePath
             );
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("cannot invoke parse method.", e);
@@ -110,7 +122,7 @@ public abstract class Packet {
         }
     }
 
-    public static JsonAndBody splitPacket(byte[] buffer) throws TelehashException {
+    public static SplitPacket splitPacket(byte[] buffer) throws TelehashException {
         if (buffer.length <= MINIMUM_PACKET_LENGTH) {
             // this can happen if we receive "null" packets
             return null;
@@ -144,7 +156,7 @@ public abstract class Packet {
         byte[] body = new byte[bodyLength];
         System.arraycopy(buffer, JSON_START_POSITION+jsonLength, body, 0, bodyLength);
 
-        return new JsonAndBody(json, singleByteHeader, body);
+        return new SplitPacket(json, singleByteHeader, body);
     }
 
     protected static void registerPacketType(
@@ -156,8 +168,7 @@ public abstract class Packet {
             method = packetClass.getMethod(
                     PARSE_METHOD_NAME,
                     Telehash.class,
-                    JSONObject.class,
-                    byte[].class,
+                    SplitPacket.class,
                     Path.class
             );
         } catch (NoSuchMethodException e) {

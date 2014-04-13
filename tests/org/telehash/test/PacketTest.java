@@ -109,11 +109,7 @@ public class PacketTest {
     private static final byte[] TEST_LINE_ID = Util.hexToBytes(
             "85eb5ccb0878bafd5e1623883a91cf4f"
     );
-    
-    private static final byte[] TEST_IV = Util.hexToBytes(
-            "a95b836b9c12c3ce35e166218237596b"
-    );
-    
+
     private static final byte[] TEST_OPEN_PARAMETER = Util.base64Decode(
             "d9O8ZGD68l99rLwfZcAIVvptAFpaENcA0EytoRkM0jDCR9VBuv312YicIM1F2Th7" +
             "hCZ7J0QxfrXc+cA+ao+vNJO47pN+CFveLX0AqPsI6q7eAjEqqsdtcOwqP48YH1hK" +
@@ -128,14 +124,14 @@ public class PacketTest {
     private static LineKeyPair mECKeyPair;
     private static final byte[] TEST_EC_PUBLIC_KEY =
             Util.hexToBytes(
-                    "047878818c43ce15c7cfe8831257d520f6834d4b55e8c3a545ba4e6e563fc40a672e0" +
+                    "7878818c43ce15c7cfe8831257d520f6834d4b55e8c3a545ba4e6e563fc40a672e0" +
                     "f6e1a1a33a229cc7241f539d3f10f4576607590954098b5ff41c1b23780ac"
             );
     private static final byte[] TEST_EC_PRIVATE_KEY =
             Util.hexToBytes("a8259e94d600277fe865ca9efca87b4d341a8496e15b17a79121d89054b48da1");
     
     private static final byte[] EXPECTED_PACKET_SHA256 =
-            Util.hexToBytes("545c2124151b86ff91038dcbbf0a4808419ba4f2f8236ae19c1cd531dea18854");
+            Util.hexToBytes("74b4504c85a0b0c3fad2574ad668f775112deb96f218cb8cba0a0b5e93b221a6");
     
     private static final String SAMPLE_PATH =
             "{\"type\": \"ipv4\", \"ip\": \"127.0.0.1\", \"port\": 4242}";
@@ -183,25 +179,24 @@ public class PacketTest {
                 destinationPublicKey,
                 Path.parsePath(SAMPLE_PATH)
         );
-        
+
         OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
-        
+
         openPacket.setLinePublicKey(mECKeyPair.getPublicKey());
         openPacket.setLinePrivateKey(mECKeyPair.getPrivateKey());
         openPacket.setOpenTime(TEST_OPEN_TIME);
         openPacket.setLineIdentifier(new LineIdentifier(TEST_LINE_ID));
-        
+
         byte[] openPacketBuffer = openPacket.render(
-                TEST_IV,
                 TEST_OPEN_PARAMETER
         );
         assertNotNull(openPacketBuffer);
         assertArrayEquals(
                 EXPECTED_PACKET_SHA256,
                 mTelehash.getCrypto().sha256Digest(openPacketBuffer)
-        );        
+        );
     }
-    
+
     @Test
     public void testOpenPacketParse() throws Exception {
         Path localPath = Path.parsePath(SAMPLE_PATH);

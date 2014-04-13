@@ -212,7 +212,7 @@ public class Util {
         System.arraycopy(b, 0, z, a.length, b.length);
         return z;        
     }
-    
+
     /**
      * Concatenate three byte arrays.
      * 
@@ -228,7 +228,25 @@ public class Util {
         System.arraycopy(c, 0, z, a.length+b.length, c.length);
         return z;
     }
-    
+
+    /**
+     * Concatenate four byte arrays.
+     *
+     * @param a The first byte array.
+     * @param b The second byte array.
+     * @param c The third byte array.
+     * @param d The fourth byte array.
+     * @return A new byte array containing the concatenation.
+     */
+    public static byte[] concatenateByteArrays(byte[] a, byte[] b, byte[] c, byte[] d) {
+        byte[] z = new byte[a.length + b.length + c.length + d.length];
+        System.arraycopy(a, 0, z, 0, a.length);
+        System.arraycopy(b, 0, z, a.length, b.length);
+        System.arraycopy(c, 0, z, a.length+b.length, c.length);
+        System.arraycopy(d, 0, z, a.length+b.length+c.length, d.length);
+        return z;
+    }
+
     /**
      * Dump a hexadecimal representation of the specified byte buffer to
      * standard output.

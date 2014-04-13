@@ -22,8 +22,10 @@ public class LinePublicKeyImpl implements LinePublicKey {
             byte[] buffer,
             ECDomainParameters domainParameters
     ) throws TelehashException {
-        if (buffer.length != 65 || buffer[0] != 0x04) {
-            throw new TelehashException("bad ANSI X9.63 EC key encoding");
+        // expect the public key in ANSI X9.63 format,
+        // with the "04" identifier prefix byte removed
+        if (buffer.length != 64) {
+            throw new TelehashException("bad ANSI X9.63 (sans prefix) EC key encoding");
         }
         byte[] xBytes = new byte[32+1];
         byte[] yBytes = new byte[32+1];
@@ -31,8 +33,8 @@ public class LinePublicKeyImpl implements LinePublicKey {
         xBytes[0] = 0;
         yBytes[0] = 0;
         // copy
-        System.arraycopy(buffer, 1, xBytes, 1, 32);
-        System.arraycopy(buffer, 1+32, yBytes, 1, 32);
+        System.arraycopy(buffer, 0, xBytes, 1, 32);
+        System.arraycopy(buffer, 32, yBytes, 1, 32);
         BigInteger x = new BigInteger(xBytes);
         BigInteger y = new BigInteger(yBytes);
         
@@ -42,16 +44,15 @@ public class LinePublicKeyImpl implements LinePublicKey {
     
     @Override
     public byte[] getEncoded() {
-        // return the public key in ANSI X9.63 format
-        //mKey.setPointFormat("UNCOMPRESSED");
+        // return the public key in ANSI X9.63 format,
+        // with the "04" identifier prefix byte removed
         ECPoint qPoint = mKey.getQ();
 
         byte[] xBytes = BigIntegers.asUnsignedByteArray(32, qPoint.getX().toBigInteger());
         byte[] yBytes = BigIntegers.asUnsignedByteArray(32, qPoint.getY().toBigInteger());
-        byte[] buffer = new byte[65];
-        buffer[0] = 0x04;
-        System.arraycopy(xBytes, 0, buffer, 1, xBytes.length);
-        System.arraycopy(yBytes, 0, buffer, 1 + xBytes.length, yBytes.length);
+        byte[] buffer = new byte[64];
+        System.arraycopy(xBytes, 0, buffer, 0, xBytes.length);
+        System.arraycopy(yBytes, 0, buffer, xBytes.length, yBytes.length);
 
         return buffer;
     }

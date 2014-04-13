@@ -3,6 +3,7 @@ package org.telehash.crypto;
 import org.json.JSONObject;
 import org.telehash.core.Identity;
 import org.telehash.core.OpenPacket;
+import org.telehash.core.Packet.SplitPacket;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.network.Path;
@@ -39,7 +40,7 @@ public interface CipherSet {
      * @throws TelehashException If the buffer cannot be parsed.
      */
     public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException;
-    
+
     /**
      * Decode a hashname private key.
      * 
@@ -77,26 +78,25 @@ public interface CipherSet {
             LinePublicKey publicKey,
             LinePrivateKey privateKey
     ) throws TelehashException;
-    
+
     /**
      * Generate a fresh elliptic curve key pair
      */
     public LineKeyPair generateLineKeyPair() throws TelehashException;
-    
+
     public OpenPacket parseOpenPacket(
             Telehash telehash,
-            JSONObject json,
-            byte[] body,
+            SplitPacket splitPacket,
             Path path
     ) throws TelehashException;
-    
+
     /**
      * Pre-render an open packet.
      * 
      * @throws TelehashException
      */
     public void preRenderOpenPacket(OpenPacket open) throws TelehashException;
-    
+
     /**
      * Render an open packet into its final form.
      * 
@@ -105,19 +105,16 @@ public interface CipherSet {
      * packet creation suitable for unit tests.
      * 
      * @param packet The open packet object.
-     * @param iv
-     *            The initialization vector to use for this open packet.
-     * @param openParameter
-     *            The "open" parameter -- the public line key encrypted
+     * @param lineKeyCiphertext
+     *            The line key ciphertext -- the public line key encrypted
      *            with the recipient's hashname public key.
      * @return The rendered open packet as a byte array.
      * @throws TelehashException
      */
     public byte[] renderOpenPacket(
-    		OpenPacket packet,
-    		Identity identity,
-            byte[] iv,
-            byte[] openParameter
+            OpenPacket packet,
+            Identity identity,
+            byte[] lineKeyCiphertext
     ) throws TelehashException;
 
 }

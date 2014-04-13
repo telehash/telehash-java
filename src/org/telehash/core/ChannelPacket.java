@@ -151,8 +151,8 @@ public class ChannelPacket extends Packet {
             byte[] packetBuffer,
             Path path
     ) throws TelehashException {
-        JsonAndBody jsonAndBody = splitPacket(packetBuffer);
-        return parse(telehash, jsonAndBody.json, jsonAndBody.body, path);
+        SplitPacket splitPacket = splitPacket(packetBuffer);
+        return parse(telehash, splitPacket.json, splitPacket.body, path);
     }
     
     public static ChannelPacket parse(

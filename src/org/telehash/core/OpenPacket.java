@@ -3,7 +3,6 @@ package org.telehash.core;
 import java.io.UnsupportedEncodingException;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.telehash.crypto.LinePrivateKey;
 import org.telehash.crypto.LinePublicKey;
@@ -37,7 +36,6 @@ public class OpenPacket extends Packet {
 
     public static final String OPEN_TYPE = "open";
 
-    public static final String IV_KEY = "iv";
     public static final String SIG_KEY = "sig";
     public static final String OPEN_KEY = "open";
     public static final String OPEN_TIME_KEY = "at";
@@ -61,8 +59,7 @@ public class OpenPacket extends Packet {
     private LineIdentifier mLineIdentifier;
 
     private boolean mPreRendered = false;
-    private byte[] mPreRenderedIV;
-    private byte[] mPreRenderedOpenParameter;
+    private byte[] mPreRenderedLineKeyCiphertext;
 
     public static class Inner {
         // TODO: "from" field
@@ -76,7 +73,7 @@ public class OpenPacket extends Packet {
             mLineIdentifier = lineIdentifier;
         }
 
-        public static Inner deserialize(JsonAndBody innerPacket) throws TelehashException {
+        public static Inner deserialize(SplitPacket innerPacket) throws TelehashException {
             long openTime = innerPacket.json.getLong(OpenPacket.OPEN_TIME_KEY);
             String destinationString = innerPacket.json.getString(OpenPacket.DESTINATION_KEY);
             Util.assertNotNull(destinationString);
@@ -178,18 +175,11 @@ public class OpenPacket extends Packet {
         return mLineIdentifier;
     }
 
-    public void setPreRenderedIV(byte[] preRenderedIV) {
-        mPreRenderedIV = preRenderedIV;
+    public void setPreRenderedLineKeyCiphertext(byte[] preRenderedLineKeyCiphertext) {
+        mPreRenderedLineKeyCiphertext = preRenderedLineKeyCiphertext;
     }
-    public byte[] getPreRenderedIV() {
-        return mPreRenderedIV;
-    }
-
-    public void setPreRenderedOpenParameter(byte[] preRenderedOpenParameter) {
-        mPreRenderedOpenParameter = preRenderedOpenParameter;
-    }
-    public byte[] getPreRenderedOpenParameter() {
-        return mPreRenderedOpenParameter;
+    public byte[] getPreRenderedLineKeyCiphertext() {
+        return mPreRenderedLineKeyCiphertext;
     }
 
     public void preRender() throws TelehashException {
@@ -208,7 +198,7 @@ public class OpenPacket extends Packet {
         }
 
         // perform further packet creation.
-        return render(mPreRenderedIV, mPreRenderedOpenParameter);
+        return render(mPreRenderedLineKeyCiphertext);
     }
 
     /**
@@ -218,36 +208,30 @@ public class OpenPacket extends Packet {
      * certain otherwise calculated fields, allowing for deterministic open
      * packet creation suitable for unit tests.
      * 
-     * @param iv
-     *            The initialization vector to use for this open packet.
-     * @param openParameter
-     *            The "open" parameter -- the public line key encrypted
+     * @param lineKeyCiphertext
+     *            The line key ciphertext -- the public line key encrypted
      *            with the recipient's hashname public key.
      * @return The rendered open packet as a byte array.
      * @throws TelehashException
      */
     public byte[] render(
-            byte[] iv,
-            byte[] openParameter
+            byte[] lineKeyCiphertext
     ) throws TelehashException {
         return Telehash.get().getCrypto().getCipherSet().renderOpenPacket(
                 this,
                 mIdentity,
-                iv,
-                openParameter
+                lineKeyCiphertext
         );
     }
 
     public static OpenPacket parse(
             Telehash telehash,
-            JSONObject json,
-            byte[] body,
+            SplitPacket splitPacket,
             Path path
     ) throws TelehashException {
         return Telehash.get().getCrypto().getCipherSet().parseOpenPacket(
                 telehash,
-                json,
-                body,
+                splitPacket,
                 path
         );
     }
