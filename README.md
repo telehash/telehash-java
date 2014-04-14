@@ -110,6 +110,7 @@ TODO
             * ~~CS2a: RSA-2048, ECC P-256, AES-256 (The "Telehash 2013"
               cipher set.)~~
             * CS3a: NaCl
+        * Update unit tests for checking crypto cipher set functions.
     * Non-JSON headers
         * length=0; no header.
         * length=1; single byte header.

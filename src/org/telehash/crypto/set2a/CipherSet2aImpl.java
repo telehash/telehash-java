@@ -2,6 +2,7 @@ package org.telehash.crypto.set2a;
 
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.CryptoException;
+import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
@@ -17,6 +18,7 @@ import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.bouncycastle.util.BigIntegers;
 import org.telehash.core.Identity;
 import org.telehash.core.Line;
 import org.telehash.core.Node;
@@ -613,5 +615,25 @@ public class CipherSet2aImpl implements CipherSet {
         );
 
         return channelPlaintext;
+    }
+
+    /**
+     * Perform Elliptic Curve Diffie-Hellman key agreement
+     *
+     * @param remotePublicKey The EC public key of the remote node.
+     * @param localPrivateKey The EC private key of the local node.
+     * @return A byte array containing the shared secret.
+     */
+    @Override
+    public byte[] calculateECDHSharedSecret(
+            LinePublicKey remotePublicKey,
+            LinePrivateKey localPrivateKey
+    ) {
+        ECDHBasicAgreement agreement = new ECDHBasicAgreement();
+        agreement.init(((LinePrivateKeyImpl)localPrivateKey).getKey());
+        BigInteger secretInteger =
+                agreement.calculateAgreement(((LinePublicKeyImpl)remotePublicKey).getKey());
+        byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
+        return secretBytes;
     }
 }

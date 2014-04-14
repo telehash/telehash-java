@@ -44,28 +44,10 @@ public interface Crypto {
     public Identity generateIdentity() throws TelehashException;
 
     /**
-     * Generate a fresh elliptic curve key pair
-     * @throws TelehashException
-     */
-    public LineKeyPair generateLineKeyPair() throws TelehashException;
-
-    /**
-     * Encrypt data with an RSA public key
-     * @throws TelehashException
-     */
-    //public byte[] encryptRSA(HashNamePublicKey key, byte[] buffer) throws TelehashException;
-
-    /**
      * Encrypt data with an RSA public key
      * @throws TelehashException
      */
     public byte[] encryptRSAOAEP(HashNamePublicKey key, byte[] clearText) throws TelehashException;
-
-    /**
-     * Decrypt data with an RSA private key
-     * @throws TelehashException
-     */
-    //public byte[] decryptRSA(HashNamePrivateKey key, byte[] buffer) throws TelehashException;
 
     /**
      * Decrypt data with an RSA private key
@@ -202,49 +184,4 @@ public interface Crypto {
             HashNamePublicKey publicKey,
             HashNamePrivateKey privateKey
     );
-
-    /**
-     * Perform Elliptic Curve Diffie-Hellman key agreement
-     *
-     * @param remotePublicKey The EC public key of the remote node.
-     * @param localPrivateKey The EC private key of the local node.
-     * @return A byte array containing the shared secret.
-     */
-    public byte[] calculateECDHSharedSecret(
-            LinePublicKey remotePublicKey,
-            LinePrivateKey localPrivateKey
-    );
-
-    /**
-     * Encrypt the provided plaintext using AES-256-CTR with the provided
-     * initialization vector (IV) and key.
-     *
-     * @param plainText The plaintext to encrypt.
-     * @param iv The initialization vector.
-     * @param key The encryption key.
-     * @return The resulting ciphertext.
-     * @throws TelehashException If a problem occurred.
-     */
-    public byte[] encryptAES256CTR(
-            byte[] plainText,
-            byte[] iv,
-            byte[] key
-    ) throws TelehashException;
-
-    /**
-     * Decrypt the provided ciphertext using AES-256-CTR with the provided
-     * initialization vector (IV) and key.
-     *
-     * @param plainText The ciphertext to decrypt.
-     * @param iv The initialization vector.
-     * @param key The encryption key.
-     * @return The resulting plaintext.
-     * @throws TelehashException If a problem occurred.
-     */
-    public byte[] decryptAES256CTR(
-            byte[] cipherText,
-            byte[] iv,
-            byte[] key
-    ) throws TelehashException;
-
 }

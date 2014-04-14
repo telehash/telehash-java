@@ -1,29 +1,21 @@
 package org.telehash.crypto.impl;
 
 import org.bouncycastle.crypto.AsymmetricBlockCipher;
-import org.bouncycastle.crypto.BufferedBlockCipher;
-import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.encodings.OAEPEncoding;
-import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
-import org.bouncycastle.crypto.modes.SICBlockCipher;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.signers.RSADigestSigner;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
@@ -40,14 +32,11 @@ import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.set2a.CipherSet2aImpl;
 import org.telehash.crypto.set2a.HashNamePrivateKeyImpl;
 import org.telehash.crypto.set2a.HashNamePublicKeyImpl;
-import org.telehash.crypto.set2a.LinePrivateKeyImpl;
-import org.telehash.crypto.set2a.LinePublicKeyImpl;
 
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
-import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.Security;
 
@@ -155,33 +144,6 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * Generate a fresh line key pair
-     */
-    @Override
-    public LineKeyPair generateLineKeyPair() throws TelehashException {
-        return mCipherSet.generateLineKeyPair();
-    }
-
-    /**
-     * Encrypt data with an RSA private key
-     * @throws TelehashException
-     */
-    /*
-    @Override
-    public byte[] encryptRSA(HashNamePublicKey key, byte[] clearText) throws TelehashException {
-        AsymmetricBlockCipher cipher = new RSAEngine();
-        cipher.init(true, ((HashNamePublicKeyImpl)key).getKey());
-        byte[] cipherText;
-        try {
-            cipherText = cipher.processBlock(clearText, 0, clearText.length);
-        } catch (InvalidCipherTextException e) {
-            throw new TelehashException(e);
-        }
-        return cipherText;
-    }
-    */
-
-    /**
      * Encrypt data with an RSA private key using OAEP padding
      * @throws TelehashException
      */
@@ -197,25 +159,6 @@ public class CryptoImpl implements Crypto {
         }
         return cipherText;
     }
-
-    /**
-     * Decrypt data with an RSA private key
-     * @throws TelehashException
-     */
-    /*
-    @Override
-    public byte[] decryptRSA(HashNamePrivateKey key, byte[] cipherText) throws TelehashException {
-        AsymmetricBlockCipher cipher = new RSAEngine();
-        cipher.init(false, ((HashNamePrivateKeyImpl)key).getKey());
-        byte[] clearText;
-        try {
-            clearText = cipher.processBlock(cipherText, 0, cipherText.length);
-        } catch (InvalidCipherTextException e) {
-            throw new TelehashException(e);
-        }
-        return clearText;
-    }
-    */
 
     /**
      * Decrypt data with an RSA private key and OAEP padding
@@ -494,119 +437,4 @@ public class CryptoImpl implements Crypto {
     ) throws TelehashException {
         return mCipherSet.createLineKeyPair(publicKey, privateKey);
     }
-
-    /**
-     * Perform Elliptic Curve Diffie-Hellman key agreement
-     *
-     * @param remotePublicKey The EC public key of the remote node.
-     * @param localPrivateKey The EC private key of the local node.
-     * @return A byte array containing the shared secret.
-     */
-    @Override
-    public byte[] calculateECDHSharedSecret(
-            LinePublicKey remotePublicKey,
-            LinePrivateKey localPrivateKey
-    ) {
-        ECDHBasicAgreement agreement = new ECDHBasicAgreement();
-        agreement.init(((LinePrivateKeyImpl)localPrivateKey).getKey());
-        BigInteger secretInteger =
-                agreement.calculateAgreement(((LinePublicKeyImpl)remotePublicKey).getKey());
-        byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
-        return secretBytes;
-    }
-
-    /**
-     * Encrypt the provided plaintext using AES-256-CTR with the provided
-     * initialization vector (IV) and key.
-     *
-     * No padding is used. (The Telehash protocol spec calls for
-     * "PKCS1 v1.5 padding", but the node.js implementation doesn't use padding.
-     * Perhaps "PKCS1 v1.5 padding" is no padding?)
-     *
-     * @param plainText
-     *            The plaintext to encrypt.
-     * @param iv
-     *            The initialization vector.
-     * @param key
-     *            The encryption key.
-     * @return The resulting ciphertext.
-     * @throws TelehashException
-     *             If a problem occurred.
-     */
-    @Override
-    public byte[] encryptAES256CTR(
-            byte[] plainText,
-            byte[] iv,
-            byte[] key
-    ) throws TelehashException {
-        // initialize cipher
-        AESEngine aes = new AESEngine();
-        CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(key), iv);
-        BufferedBlockCipher cipher = new BufferedBlockCipher(new SICBlockCipher(aes));
-        cipher.init(true, ivAndKey);
-
-        // encrypt
-        byte[] cipherText = new byte[cipher.getOutputSize(plainText.length)];
-        int nbytes = cipher.processBytes(plainText, 0, plainText.length, cipherText, 0);
-        try {
-            nbytes += cipher.doFinal(cipherText, nbytes);
-        } catch (CryptoException e) {
-            throw new TelehashException(e);
-        }
-
-        // trim output if needed
-        if (nbytes < cipherText.length) {
-            byte[] trimmedCipherText = new byte[nbytes];
-            System.arraycopy(cipherText, 0, trimmedCipherText, 0, nbytes);
-            cipherText = trimmedCipherText;
-        }
-
-        return cipherText;
-    }
-
-    /**
-     * Decrypt the provided ciphertext using AES-256-CTR with the provided
-     * initialization vector (IV) and key.
-     *
-     * No padding is used. (The Telehash protocol spec calls for
-     * "PKCS1 v1.5 padding", but the node.js implementation doesn't use padding.
-     * Perhaps "PKCS1 v1.5 padding" is no padding?)
-
-     * @param plainText The ciphertext to decrypt.
-     * @param iv The initialization vector.
-     * @param key The encryption key.
-     * @return The resulting plaintext.
-     * @throws TelehashException If a problem occurred.
-     */
-    @Override
-    public byte[] decryptAES256CTR(
-            byte[] cipherText,
-            byte[] iv,
-            byte[] key
-    ) throws TelehashException {
-        // init cipher
-        AESEngine aes = new AESEngine();
-        CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(key), iv);
-        BufferedBlockCipher cipher = new BufferedBlockCipher(new SICBlockCipher(aes));
-        cipher.init(false, ivAndKey);
-
-        // decrypt
-        byte[] plainText = new byte[cipher.getOutputSize(cipherText.length)];
-        int nbytes = cipher.processBytes(cipherText, 0, cipherText.length, plainText, 0);
-        try {
-            nbytes += cipher.doFinal(plainText, nbytes);
-        } catch (CryptoException e) {
-            throw new TelehashException(e);
-        }
-
-        // trim output if needed
-        if (nbytes < plainText.length) {
-            byte[] trimmedPlainText = new byte[nbytes];
-            System.arraycopy(plainText, 0, trimmedPlainText, 0, nbytes);
-            plainText = trimmedPlainText;
-        }
-
-        return plainText;
-    }
-
 }

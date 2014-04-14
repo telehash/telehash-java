@@ -137,7 +137,7 @@ public class LineManager {
 
     private void calculateLineKeys(Line line, OpenPacket incomingOpen, OpenPacket outgoingOpen) {
         // calculate ECDH
-        byte[] sharedSecret = mTelehash.getCrypto().calculateECDHSharedSecret(
+        byte[] sharedSecret = mTelehash.getCrypto().getCipherSet().calculateECDHSharedSecret(
                 incomingOpen.getLinePublicKey(),
                 outgoingOpen.getLinePrivateKey()
         );

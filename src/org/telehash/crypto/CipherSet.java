@@ -142,4 +142,16 @@ public interface CipherSet {
      * @throws TelehashException
      */
     public byte[] parseLineInnerPacket(Line line, byte[] innerPacket) throws TelehashException;
+
+    /**
+     * Perform Elliptic Curve Diffie-Hellman key agreement
+     *
+     * @param remotePublicKey The EC public key of the remote node.
+     * @param localPrivateKey The EC private key of the local node.
+     * @return A byte array containing the shared secret.
+     */
+    public byte[] calculateECDHSharedSecret(
+            LinePublicKey remotePublicKey,
+            LinePrivateKey localPrivateKey
+    );
 }
