@@ -100,30 +100,29 @@ TODO
 
 * Recent protocol changes
     * Cipher sets
-        * General support for cipher sets.
-        * Cipher set 2a (the currently implemented ciphers).
-        * Cipher set 1a and 3a.
+        * ~~General support for cipher sets.~~
         * Hashname generation based on cipher set parts.
         * Peer/connect support for cipher sets and relay.
         * Support for cipher sets in seeds.json parsing.  (i.e.
           keys and parts arrays.)
         * Cipher set specifics
             * CS1a: ECC SECP160r1 and AES-128
-            * CS2a: RSA-2048, ECC P-256, AES-256 (The "Telehash 2013"
-              cipher set.)
+            * ~~CS2a: RSA-2048, ECC P-256, AES-256 (The "Telehash 2013"
+              cipher set.)~~
             * CS3a: NaCl
     * Non-JSON headers
         * length=0; no header.
         * length=1; single byte header.
     * Line
-        * Open packet uses header of length 1; single byte header is
-          cipher set id.
+        * ~~Binary open packet format.~~
+        * ~~Binary line packet format.~~
+        * Use the open packet's single byte header to associate a
+          line with a cipher set.
         * Cipher set parts encoded in the open packet's "from" field.
         * When an open packet is received from a hashname for which a
           line is already established:
             * Same line id; recalculate keys.
             * Different line id; invalidate existing channels.
-        * Binary line packet header.
     * Channels
         * Channel id generation
             * Even/odd determination.
@@ -193,6 +192,9 @@ TODO
       connections, congested links, etc.
 * Support IPv6
 * Specialized exception classes.
+* The early exploratory code has many needless buffer copies for
+  simplicity.  We need a new approach to minimize copies for greater
+  performance.
 * Android
     * Decide on a minimum supported version of Android.
     * Evaluate Android's built-in Bouncy Castle.  (The built-in version

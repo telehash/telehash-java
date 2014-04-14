@@ -18,6 +18,7 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.telehash.core.Identity;
+import org.telehash.core.Line;
 import org.telehash.core.Node;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
@@ -44,9 +45,11 @@ public class CipherSet2aImpl implements CipherSet {
     private static final byte[] FIXED_IV = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
     private static final int OPEN_INNER_MAC_BITS = 128;
     private static final int OPEN_SIGNATURE_MAC_BITS = 32;
+    private static final int LINE_CHANNEL_MAC_BITS = 128;
     private static final int LINE_KEY_CIPHERTEXT_BYTES = 256;
     private static final int SIGNATURE_CIPHERTEXT_BYTES = 256 + 4; // includes MAC
     private static final int OPEN_HEADER_BYTES = 3;
+    private static final int LINE_IV_SIZE = 16;
 
     private Crypto mCrypto;
 
@@ -540,5 +543,75 @@ public class CipherSet2aImpl implements CipherSet {
         );
 
         return buffer;
+    }
+
+    /**
+     * Render the "inner" (i.e. cipherset-dependent) portion of a line packet.
+     *
+     * @param line The line associated with this line packet.
+     * @param channelPlaintext The channel plaintext to encrypt and include.
+     * @return The binary form of the inner packet.
+     * @throws TelehashException
+     */
+    @Override
+    public byte[] renderLineInnerPacket(
+            Line line,
+            byte[] channelPlaintext
+    ) throws TelehashException {
+        Crypto crypto = Telehash.get().getCrypto();
+
+        // generate a random IV
+        byte[] iv = crypto.getRandomBytes(LINE_IV_SIZE);
+        if (iv.length != LINE_IV_SIZE) {
+            throw new TelehashException("line iv must be exactly 16 bytes");
+        }
+
+        // encrypt the channel packet
+        byte[] channelCiphertext = encryptAES256GCM(
+                channelPlaintext,
+                iv,
+                line.getEncryptionKey(),
+                LINE_CHANNEL_MAC_BITS
+        );
+
+        // assemble the inner (i.e. cipherset-generated) portion
+        byte[] inner = Util.concatenateByteArrays(iv, channelCiphertext);
+
+        return inner;
+    }
+
+    /**
+     * Parse the "inner" (i.e. cipherset-dependent) portion of a line packet.
+     *
+     * @param line The line associated with this line packet.
+     * @param innerPacket The binary form of the inner packet.
+     * @return The channel packet plaintext.
+     * @throws TelehashException
+     */
+    @Override
+    public byte[] parseLineInnerPacket(Line line, byte[] innerPacket) throws TelehashException {
+        Crypto crypto = Telehash.get().getCrypto();
+
+        // extract iv
+        if (innerPacket.length < LINE_IV_SIZE) {
+            throw new TelehashException("invalid line packet");
+        }
+        byte[] iv = new byte[LINE_IV_SIZE];
+        System.arraycopy(innerPacket, 0, iv, 0, LINE_IV_SIZE);
+
+        // extract channel ciphertext
+        int channelCiphertextSize = innerPacket.length - LINE_IV_SIZE;
+        byte[] channelCiphertext = new byte[channelCiphertextSize];
+        System.arraycopy(innerPacket, LINE_IV_SIZE, channelCiphertext, 0, channelCiphertextSize);
+
+        // decrypt the channel ciphertext
+        byte[] channelPlaintext = decryptAES256GCM(
+                channelCiphertext,
+                iv,
+                line.getDecryptionKey(),
+                LINE_CHANNEL_MAC_BITS
+        );
+
+        return channelPlaintext;
     }
 }

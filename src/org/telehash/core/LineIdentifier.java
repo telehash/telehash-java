@@ -7,12 +7,12 @@ import java.util.Arrays;
  * Java object identity and use a line identifier as a key in HashMap.
  */
 public class LineIdentifier {
-    public static final int LINE_IDENTIFIER_SIZE = 16;
+    public static final int SIZE = 16;
 
     private byte[] mBuffer;
 
     public LineIdentifier(byte[] buffer) {
-        if (buffer == null || buffer.length != LINE_IDENTIFIER_SIZE) {
+        if (buffer == null || buffer.length != SIZE) {
             throw new IllegalArgumentException("invalid line id");
         }
         mBuffer = buffer;

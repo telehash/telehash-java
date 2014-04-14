@@ -1,12 +1,7 @@
 package org.telehash.core;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONStringer;
 import org.telehash.crypto.Crypto;
 import org.telehash.network.Path;
-
-import java.io.UnsupportedEncodingException;
 
 /**
  * A Telehash "line" packet is used to exchange data between two Telehash nodes
@@ -27,13 +22,10 @@ import java.io.UnsupportedEncodingException;
  */
 public class LinePacket extends Packet {
 
-    private static final String LINE_TYPE = "line";
-
     private static final String LINE_IDENTIFIER_KEY = "line";
     private static final String IV_KEY = "iv";
-
     private static final int IV_SIZE = 16;
-    private static final int LINE_IDENTIFIER_SIZE = 16;
+    public static final String LINE_TYPE = "line";
 
     static {
         Packet.registerPacketType(LINE_TYPE, LinePacket.class);
@@ -82,45 +74,19 @@ public class LinePacket extends Packet {
         if (mChannelPacket == null) {
             mChannelPacket = new ChannelPacket();
         }
-        byte[] body = mChannelPacket.render();
+        byte[] channelPlaintext = mChannelPacket.render();
 
-        // generate a random IV
-        byte[] iv = crypto.getRandomBytes(IV_SIZE);
-
-        // encrypt body
-        byte[] encryptedBody = crypto.encryptAES256CTR(body, iv, mLine.getEncryptionKey());
-
-        // Form the inner packet containing a current timestamp at, line
-        // identifier, recipient hashname, and family (if you have such a
-        // value). Your own RSA public key is the packet BODY in the binary DER
-        // format.
-        byte[] packet;
-        try {
-            packet = new JSONStringer()
-                .object()
-                .key(TYPE_KEY)
-                .value(LINE_TYPE)
-                .key(LINE_IDENTIFIER_KEY)
-                .value(mLine.getOutgoingLineIdentifier().asHex())
-                .key(IV_KEY)
-                .value(Util.bytesToHex(iv))
-                .endObject()
-                .toString()
-                .getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new TelehashException(e);
-        } catch (JSONException e) {
-            throw new TelehashException(e);
+        // regard the line id
+        byte[] lineBytes = mLine.getOutgoingLineIdentifier().getBytes();
+        if (lineBytes.length != LineIdentifier.SIZE) {
+            throw new TelehashException("line id must be exactly 16 bytes");
         }
-        packet = Util.concatenateByteArrays(
-                new byte[] {
-                        (byte)((packet.length >> 8) & 0xFF),
-                        (byte)(packet.length & 0xFF)
-                },
-                packet,
-                encryptedBody
-        );
 
+        // cipherset processing of inner packet
+        byte[] inner = crypto.getCipherSet().renderLineInnerPacket(mLine, channelPlaintext);
+
+        byte[] headerLengthPrefix = new byte[] {0,0};
+        byte[] packet = Util.concatenateByteArrays(headerLengthPrefix, lineBytes, inner);
         return packet;
     }
 
@@ -130,31 +96,36 @@ public class LinePacket extends Packet {
             Path path
     ) throws TelehashException {
         Crypto crypto = telehash.getCrypto();
-        JSONObject json = splitPacket.json;
-        byte[] body = splitPacket.body;
 
-        // extract required JSON values
-        String ivString = json.getString(IV_KEY);
-        assertNotNull(ivString);
-        byte[] iv = Util.hexToBytes(ivString);
-        assertBufferSize(iv, IV_SIZE);
-        String lineIdentifierString = json.getString(LINE_IDENTIFIER_KEY);
-        assertNotNull(lineIdentifierString);
-        byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
-        assertBufferSize(lineIdentifierBytes, LINE_IDENTIFIER_SIZE);
-        LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
-
-        // lookup the line
-        Line line = telehash.getSwitch().getLineManager().getLine(lineIdentifier);
-        if (line == null) {
-            throw new TelehashException("unknown line id: "+Util.bytesToHex(lineIdentifierBytes));
+        if (splitPacket.headerLength != 0 ||
+                splitPacket.json != null ||
+                splitPacket.body == null ||
+                splitPacket.body.length < LineIdentifier.SIZE
+        ) {
+            throw new TelehashException("invalid line packet format");
         }
 
-        // decrypt the body
-        byte[] decryptedBody = crypto.decryptAES256CTR(body, iv, line.getDecryptionKey());
+        // extract the line id
+        byte[] lineIdBytes = new byte[LineIdentifier.SIZE];
+        System.arraycopy(splitPacket.body, 0, lineIdBytes, 0, LineIdentifier.SIZE);
+        LineIdentifier lineIdentifier = new LineIdentifier(lineIdBytes);
+
+        // confirm that the line id is valid
+        Line line = telehash.getSwitch().getLineManager().getLine(lineIdentifier);
+        if (line == null) {
+            throw new TelehashException("unknown line id: "+lineIdentifier);
+        }
+
+        // extract the inner packet
+        int innerPacketSize = splitPacket.body.length - LineIdentifier.SIZE;
+        byte[] innerPacket = new byte[innerPacketSize];
+        System.arraycopy(splitPacket.body, LineIdentifier.SIZE, innerPacket, 0, innerPacketSize);
+
+        // cipherset processing of inner packet
+        byte[] channelPlaintext = crypto.getCipherSet().parseLineInnerPacket(line, innerPacket);
 
         // parse the embedded channel packet
-        ChannelPacket channelPacket = ChannelPacket.parse(telehash, decryptedBody, path);
+        ChannelPacket channelPacket = ChannelPacket.parse(telehash, channelPlaintext, path);
 
         return new LinePacket(line, channelPacket);
     }
@@ -170,6 +141,4 @@ public class LinePacket extends Packet {
         }
         return s;
     }
-
-
 }

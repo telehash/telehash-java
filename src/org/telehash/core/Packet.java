@@ -13,9 +13,11 @@ import java.util.Map;
 public abstract class Packet {
 
     private static final int MINIMUM_PACKET_LENGTH = 2;
-    private static final int JSON_START_POSITION = 2;
-    private static final int MINIMUM_JSON_LENGTH = 0;
-    private static final int MAXIMUM_JSON_LENGTH = 64*1024;
+    private static final int HEADER_START_POSITION = 2;
+    private static final int MINIMUM_HEADER_LENGTH = 0;
+    private static final int MAXIMUM_HEADER_LENGTH = 64*1024;
+    private static final int OPEN_HEADER_LENGTH = 1;
+    private static final int LINE_HEADER_LENGTH = 0;
     private static final String PARSE_METHOD_NAME = "parse";
     public static final int LENGTH_PREFIX_SIZE = 2;
     public static final String TYPE_KEY = "type";
@@ -27,13 +29,15 @@ public abstract class Packet {
     protected Node mDestinationNode;
 
     public static final class SplitPacket {
-        public SplitPacket(JSONObject json, short singleByteHeader, byte[] body) {
-            this.json = json;
+        public SplitPacket(int headerLength, short singleByteHeader, JSONObject json, byte[] body) {
+            this.headerLength = headerLength;
             this.singleByteHeader = singleByteHeader;
+            this.json = json;
             this.body = body;
         }
-        public JSONObject json;
+        public int headerLength;
         public short singleByteHeader;
+        public JSONObject json;
         public byte[] body;
     }
 
@@ -85,13 +89,21 @@ public abstract class Packet {
         // determine the packet type
         String type;
         if (splitPacket.json == null) {
-            if (splitPacket.singleByteHeader ==
-                    telehash.getCrypto().getCipherSet().getCipherSetId()) {
-                type = OpenPacket.OPEN_TYPE;
+            // TODO: remove all uses of OPEN_TYPE and LINE_TYPE, as these don't actually
+            // use a type field any more.
+            if (splitPacket.headerLength == OPEN_HEADER_LENGTH) {
+                if (splitPacket.singleByteHeader ==
+                        telehash.getCrypto().getCipherSet().getCipherSetId()) {
+                    type = OpenPacket.OPEN_TYPE;
+                } else {
+                    throw new TelehashException(
+                            "unsupported open cipher set: "+splitPacket.singleByteHeader
+                    );
+                }
+            } else if (splitPacket.headerLength == LINE_HEADER_LENGTH) {
+                type = LinePacket.LINE_TYPE;
             } else {
-                throw new TelehashException(
-                        "unsupported open cipher set: "+splitPacket.singleByteHeader
-                );
+                throw new TelehashException("unknown packet configuration");
             }
         } else {
             // examine the "type" header
@@ -129,23 +141,25 @@ public abstract class Packet {
             return null;
         }
 
-        int jsonLength = ((buffer[0]&0xFF)<<8) | (buffer[1]&0xFF);
-        if (jsonLength < MINIMUM_JSON_LENGTH || jsonLength > MAXIMUM_JSON_LENGTH) {
+        int headerLength = ((buffer[0]&0xFF)<<8) | (buffer[1]&0xFF);
+        if (headerLength < MINIMUM_HEADER_LENGTH || headerLength > MAXIMUM_HEADER_LENGTH) {
             throw new TelehashException("invalid json length");
         }
 
         JSONObject json;
         short singleByteHeader;
-        if (jsonLength == 0) {
+        if (headerLength == 0) {
             json = null;
             singleByteHeader = 0x00;
-        } else if (jsonLength == 1) {
+        } else if (headerLength == 1) {
             json = null;
-            singleByteHeader = buffer[JSON_START_POSITION];
+            singleByteHeader = buffer[HEADER_START_POSITION];
         } else {
             singleByteHeader = 0x00;
             try {
-                json = new JSONObject(new String(buffer, JSON_START_POSITION, jsonLength, "UTF-8"));
+                json = new JSONObject(
+                        new String(buffer, HEADER_START_POSITION, headerLength, "UTF-8")
+                );
             } catch (JSONException e) {
                 throw new TelehashException(e);
             } catch (UnsupportedEncodingException e) {
@@ -153,11 +167,11 @@ public abstract class Packet {
             }
         }
 
-        int bodyLength = buffer.length - jsonLength - JSON_START_POSITION;
+        int bodyLength = buffer.length - headerLength - HEADER_START_POSITION;
         byte[] body = new byte[bodyLength];
-        System.arraycopy(buffer, JSON_START_POSITION+jsonLength, body, 0, bodyLength);
+        System.arraycopy(buffer, HEADER_START_POSITION+headerLength, body, 0, bodyLength);
 
-        return new SplitPacket(json, singleByteHeader, body);
+        return new SplitPacket(headerLength, singleByteHeader, json, body);
     }
 
     protected static void registerPacketType(

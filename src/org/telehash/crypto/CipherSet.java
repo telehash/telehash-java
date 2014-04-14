@@ -1,6 +1,7 @@
 package org.telehash.crypto;
 
 import org.telehash.core.Identity;
+import org.telehash.core.Line;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet.SplitPacket;
 import org.telehash.core.Telehash;
@@ -119,4 +120,26 @@ public interface CipherSet {
             byte[] lineKeyCiphertext
     ) throws TelehashException;
 
+    /**
+     * Render the "inner" (i.e. cipherset-dependent) portion of a line packet.
+     *
+     * @param line The line associated with this line packet.
+     * @param channelPlaintext The channel plaintext to encrypt and include.
+     * @return The binary form of the inner packet.
+     * @throws TelehashException
+     */
+    public byte[] renderLineInnerPacket(
+            Line line,
+            byte[] channelPlaintext
+    ) throws TelehashException;
+
+    /**
+     * Parse the "inner" (i.e. cipherset-dependent) portion of a line packet.
+     *
+     * @param line The line associated with this line packet.
+     * @param innerPacket The binary form of the inner packet.
+     * @return The channel packet plaintext.
+     * @throws TelehashException
+     */
+    public byte[] parseLineInnerPacket(Line line, byte[] innerPacket) throws TelehashException;
 }
