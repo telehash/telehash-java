@@ -4,6 +4,8 @@ import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
 
+import java.util.Set;
+
 /**
  * This interface contains the basic cryptographic functions required by
  * Telehash. Concrete implementations suitable for specific platforms may be
@@ -13,19 +15,18 @@ import org.telehash.core.TelehashException;
 public interface Crypto {
 
     /**
-     * TODO: REMOVE!!!
-     * @deprecated
-     */
-    @Deprecated
-    public CipherSet getCipherSet();
-
-    /**
      * Return the cipher set associated with the provided cipher set id.
      * @param cipherSetId
      * @return The cipher set implementation, or null if no cipher set
      * matches the id.
      */
     public CipherSet getCipherSet(CipherSetIdentifier cipherSetId);
+
+    /**
+     * Return the set of all supported cipher sets.
+     * @return The set of cipher sets.
+     */
+    public Set<CipherSet> getAllCipherSets();
 
     /**
      * Generate a cryptographically secure pseudo-random array of byte values.
@@ -92,93 +93,6 @@ public interface Crypto {
             byte[] buffer,
             byte[] signature
     ) throws TelehashException;
-
-    /**
-     * Parse a PEM-formatted RSA public key
-     *
-     * @param pem The PEM string.
-     * @return The key.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    HashNamePublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException;
-
-    /**
-     * Read a PEM-formatted RSA public key from a file.
-     *
-     * @param filename The filename of the file containing the PEM-formatted key.
-     * @return The key.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    public HashNamePublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException;
-
-    /**
-     * Read a PEM-formatted RSA private key from a file.
-     *
-     * @param filename The filename of the file containing the PEM-formatted key.
-     * @return The key.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    public HashNamePrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException;
-
-    /**
-     * Write a PEM-formatted RSA public key to a file.
-     *
-     * @param filename The filename of the file to write.
-     * @param key The key to write.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    public void writeRSAPublicKeyToFile(
-            String filename,
-            HashNamePublicKey key
-    ) throws TelehashException;
-
-    /**
-     * Write a PEM-formatted RSA private key to a file.
-     *
-     * @param filename The filename of the file to write.
-     * @param key The key to write.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    public void writeRSAPrivateKeyToFile(
-            String filename,
-            HashNamePrivateKey key
-    ) throws TelehashException;
-
-    /**
-     * Decode a DER-encoded public key into a standard Java PublicKey object.
-     *
-     * @param buffer The byte buffer containing the DER-encoded key.
-     * @return The decoded public key.
-     * @throws TelehashException If the DER buffer cannot be parsed.
-     */
-    public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException;
-
-    /**
-     * Decode a DER-encoded private key into a standard Java PublicKey object.
-     *
-     * @param buffer The byte buffer containing the DER-encoded key.
-     * @return The decoded private key.
-     * @throws TelehashException If the DER buffer cannot be parsed.
-     */
-    public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException;
-
-    /**
-     * Decode an ANSI X9.63-encoded public key into an ECPublicKey object.
-     *
-     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
-     * @return The decoded public key.
-     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
-     */
-    public LinePublicKey decodeLinePublicKey(byte[] buffer) throws TelehashException;
-
-    /**
-     * Decode a byte-encoded private key into an ECPrivateKey object.
-     *
-     * @param buffer The byte buffer containing the encoded key.
-     * @return The decoded private key.
-     * @throws TelehashException If the byte buffer cannot be parsed.
-     */
-    public LinePrivateKey decodeLinePrivateKey(byte[] buffer) throws TelehashException;
 
     /**
      * Create a new ECKeyPair from the provided public and private key.

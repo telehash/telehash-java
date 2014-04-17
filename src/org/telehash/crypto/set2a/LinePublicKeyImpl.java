@@ -4,6 +4,7 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.LinePublicKey;
 
@@ -40,6 +41,11 @@ public class LinePublicKeyImpl implements LinePublicKey {
 
         ECPoint q = domainParameters.getCurve().createPoint(x, y, false);
         mKey = new ECPublicKeyParameters(q, domainParameters);
+    }
+
+    @Override
+    public CipherSetIdentifier getCipherSetIdentifier() {
+        return CipherSet2aImpl.CIPHER_SET_ID;
     }
 
     @Override

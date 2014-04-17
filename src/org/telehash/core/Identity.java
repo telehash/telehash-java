@@ -32,6 +32,15 @@ public class Identity {
     }
 
     /**
+     * Return a map of all hashname key pairs (keyed by cipher set id).
+     *
+     * @return A map of all hashname key pairs.
+     */
+    public Map<CipherSetIdentifier,HashNameKeyPair> getHashNameKeyPairs() {
+        return mKeyPairs;
+    }
+
+    /**
      * Return a map of hashname public keys (keyed by cipher set id).
      *
      * @return A map of hashname public keys.
@@ -73,27 +82,6 @@ public class Identity {
         }
         return keyPair.getPrivateKey();
     }
-
-    // TODO: remove these
-    @Deprecated
-    public HashNamePublicKey getPublicKey() {
-        return getHashNamePublicKey(Telehash.get().getCrypto().getCipherSet().getCipherSetId());
-    }
-    @Deprecated
-    public HashNamePrivateKey getPrivateKey() {
-        return getHashNamePrivateKey(Telehash.get().getCrypto().getCipherSet().getCipherSetId());
-    }
-    @Deprecated
-    public Identity(HashNameKeyPair keyPair) {
-        mKeyPairs.put(Telehash.get().getCrypto().getCipherSet().getCipherSetId(), keyPair);
-        try {
-            mHashName = HashName.calculateHashName(getHashNamePublicKeys());
-        } catch (TelehashException e) {
-            e.printStackTrace();
-            mHashName = null;
-        }
-    }
-
 
     /**
      * Return the hashname of this identity, which is a SHA-256 digest of the

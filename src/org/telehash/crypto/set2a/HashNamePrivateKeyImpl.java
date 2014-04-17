@@ -7,6 +7,7 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.HashNamePrivateKey;
 
@@ -53,6 +54,11 @@ public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
 
     public AsymmetricKeyParameter getKey() {
         return mKey;
+    }
+
+    @Override
+    public CipherSetIdentifier getCipherSetIdentifier() {
+        return CipherSet2aImpl.CIPHER_SET_ID;
     }
 
     @Override

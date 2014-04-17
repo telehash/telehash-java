@@ -85,7 +85,7 @@ public class LinePacket extends Packet {
         }
 
         // cipherset processing of inner packet
-        byte[] inner = crypto.getCipherSet().renderLineInnerPacket(mLine, channelPlaintext);
+        byte[] inner = mLine.getCipherSet().renderLineInnerPacket(mLine, channelPlaintext);
 
         byte[] headerLengthPrefix = new byte[] {0,0};
         byte[] packet = Util.concatenateByteArrays(headerLengthPrefix, lineBytes, inner);
@@ -124,7 +124,7 @@ public class LinePacket extends Packet {
         System.arraycopy(splitPacket.body, LineIdentifier.SIZE, innerPacket, 0, innerPacketSize);
 
         // cipherset processing of inner packet
-        byte[] channelPlaintext = crypto.getCipherSet().parseLineInnerPacket(line, innerPacket);
+        byte[] channelPlaintext = line.getCipherSet().parseLineInnerPacket(line, innerPacket);
 
         // parse the embedded channel packet
         ChannelPacket channelPacket = ChannelPacket.parse(telehash, channelPlaintext, path);

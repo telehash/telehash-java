@@ -138,7 +138,7 @@ public class LineManager {
 
     private void calculateLineKeys(Line line, OpenPacket incomingOpen, OpenPacket outgoingOpen) {
         // calculate ECDH
-        byte[] sharedSecret = mTelehash.getCrypto().getCipherSet().calculateECDHSharedSecret(
+        byte[] sharedSecret = line.getCipherSet().calculateECDHSharedSecret(
                 incomingOpen.getLinePublicKey(),
                 outgoingOpen.getLinePrivateKey()
         );
@@ -225,7 +225,7 @@ public class LineManager {
         }
 
         // create a line, an outgoing open packet, and record these in the line tracker
-        final Line line = new Line(mTelehash);
+        final Line line = new Line(mTelehash, csid);
         line.setRemoteNode(destination);
         line.addOpenCompletionHandler(handler, attachment);
         // create an open packet
@@ -233,7 +233,6 @@ public class LineManager {
         // note: this open packet is *outgoing* but its embedded line identifier
         // is to be used for *incoming* line packets.
         Log.i("openPacket.lineid="+openPacket.getLineIdentifier());
-        line.setCipherSetIdentifier(csid);
         line.setIncomingLineIdentifier(openPacket.getLineIdentifier());
         line.setLocalOpenPacket(openPacket);
         mLineTracker.add(line);
@@ -379,10 +378,9 @@ public class LineManager {
                 replyOpenPacket = new OpenPacket(
                         mTelehash.getIdentity(),
                         incomingOpenPacket.getSourceNode(),
-                        incomingOpenPacket.getCipherSetIdentifier()
+                        incomingOpenPacket.getCipherSet().getCipherSetId()
                 );
-                line = new Line(mTelehash);
-                line.setCipherSetIdentifier(incomingOpenPacket.getCipherSetIdentifier());
+                line = new Line(mTelehash, incomingOpenPacket.getCipherSet().getCipherSetId());
                 line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
                 line.setLocalOpenPacket(replyOpenPacket);
                 line.setRemoteNode(incomingOpenPacket.getSourceNode());

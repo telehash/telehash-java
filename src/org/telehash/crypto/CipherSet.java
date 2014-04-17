@@ -9,6 +9,8 @@ import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.network.Path;
 
+import java.io.IOException;
+
 public interface CipherSet {
 
     /**
@@ -155,4 +157,61 @@ public interface CipherSet {
             LinePublicKey remotePublicKey,
             LinePrivateKey localPrivateKey
     );
+
+    /**
+     * Parse a storage-formatted hashname public key
+     *
+     * @param string The string read from storage.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    public HashNamePublicKey parseHashNamePublicKeyFromStorage(
+            String string
+    ) throws TelehashException;
+
+    /**
+     * Read a storage-formatted hashname public key from a file.
+     *
+     * @param filename The filename of the file containing the key.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    public HashNamePublicKey readHashNamePublicKeyFromFile(
+            String filename
+    ) throws TelehashException;
+
+    /**
+     * Read a storage-formatted hashname private key from a file.
+     *
+     * @param filename The filename of the file containing the private key.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    public HashNamePrivateKey readHashNamePrivateKeyFromFile(
+            String filename
+    ) throws TelehashException;
+
+    /**
+     * Write a storage-formatted hashname public key to a file.
+     *
+     * @param filename The filename of the file to write.
+     * @param key The key to write.
+     * @throws IOException If a problem occurs while reading the file.
+     */
+    public void writeHashNamePublicKeyToFile(
+            String filename,
+            HashNamePublicKey key
+    ) throws TelehashException;
+
+    /**
+     * Write a storage-formatted hashname private key to a file.
+     *
+     * @param filename The filename of the file to write.
+     * @param key The key to write.
+     * @throws IOException If a problem occurs while reading the file.
+     */
+    public void writeHashNamePrivateKeyToFile(
+            String filename,
+            HashNamePrivateKey key
+    ) throws TelehashException;
 }

@@ -1,5 +1,7 @@
 package org.telehash.crypto;
 
-public interface LinePrivateKey {
+import org.telehash.core.CipherSetIdentifier;
 
+public interface LinePrivateKey {
+    public CipherSetIdentifier getCipherSetIdentifier();
 }

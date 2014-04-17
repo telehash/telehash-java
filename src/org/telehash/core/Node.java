@@ -4,6 +4,7 @@ import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.Path;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -99,26 +100,20 @@ public class Node {
         mPath = path;
     }
 
-    @Deprecated
-    public Node(HashNamePublicKey publicKey, Path path) throws TelehashException {
-        mPublicKeys.put(Telehash.get().getCrypto().getCipherSet().getCipherSetId(), publicKey);
-        mHashName = HashName.calculateHashName(mPublicKeys);
-        Map<CipherSetIdentifier,byte[]> fingerprints = new TreeMap<CipherSetIdentifier,byte[]>();
-        fingerprints.put(
-                Telehash.get().getCrypto().getCipherSet()
-                .getCipherSetId(), publicKey.getFingerprint()
-        );
-        mFingerprints = new FingerprintSet(fingerprints);
-        mPath = path;
-        validate();
-    }
-
     public HashName getHashName() {
         return mHashName;
     }
 
     public FingerprintSet getFingerprints() {
         return mFingerprints;
+    }
+
+    public Set<CipherSetIdentifier> getCipherSetIds() {
+        if (mFingerprints != null) {
+            return mFingerprints.keySet();
+        } else {
+            return null;
+        }
     }
 
     public HashNamePublicKey getPublicKey(CipherSetIdentifier csid) {
@@ -185,7 +180,6 @@ public class Node {
     }
 
     public static CipherSetIdentifier bestCipherSet(Node a, Node b) {
-        CipherSetIdentifier bestCipherSetIdentifier = null;
         return FingerprintSet.bestCipherSet(a.mFingerprints, b.mFingerprints);
     }
 

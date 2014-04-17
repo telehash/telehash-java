@@ -12,13 +12,9 @@ import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.signers.RSADigestSigner;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemReader;
-import org.bouncycastle.util.io.pem.PemWriter;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
@@ -34,14 +30,12 @@ import org.telehash.crypto.set2a.CipherSet2aImpl;
 import org.telehash.crypto.set2a.HashNamePrivateKeyImpl;
 import org.telehash.crypto.set2a.HashNamePublicKeyImpl;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -52,11 +46,6 @@ public class CryptoImpl implements Crypto {
 
     private static final String RSA_PRIVATE_KEY_PEM_TYPE = "RSA PRIVATE KEY";
     private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
-
-    // we only use the 2a cipher set for now.
-    // TODO: remove the concept of a "default cipher set".
-    @Deprecated
-    private CipherSet mDefaultCipherSet;
 
     // a simple cipher set registration scheme
     private Map<CipherSetIdentifier,CipherSet> mCipherSetMap =
@@ -78,7 +67,6 @@ public class CryptoImpl implements Crypto {
         // populate the cipher set map
         CipherSet2aImpl set2a = new CipherSet2aImpl(this);
         mCipherSetMap.put(set2a.getCipherSetId(), set2a);
-        mDefaultCipherSet = set2a;
 
         // initialize elliptic curve parameters and generator
         mECNamedCurveParameterSpec =
@@ -96,13 +84,12 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * TODO: REMOVE!!!
-     * @deprecated
+     * Return the set of all supported cipher sets.
+     * @return The set of cipher sets.
      */
-    @Deprecated
     @Override
-    public CipherSet getCipherSet() {
-        return mDefaultCipherSet;
+    public Set<CipherSet> getAllCipherSets() {
+        return new HashSet<CipherSet>(mCipherSetMap.values());
     }
 
     /**
@@ -113,6 +100,9 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public CipherSet getCipherSet(CipherSetIdentifier cipherSetId) {
+        if (cipherSetId == null) {
+            return null;
+        }
         return mCipherSetMap.get(cipherSetId);
     }
 
@@ -275,164 +265,6 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * Parse a PEM-formatted RSA public key
-     *
-     * @param pem The PEM string.
-     * @return The key.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    @Override
-    public HashNamePublicKey parseRSAPublicKeyFromPEM(String pem) throws TelehashException {
-        try {
-            PemReader pemReader = new PemReader(new StringReader(pem));
-            PemObject pemObject = pemReader.readPemObject();
-            pemReader.close();
-            if (pemObject == null) {
-                throw new TelehashException("cannot parse RSA public key PEM file.");
-            }
-            if (! pemObject.getType().equals(RSA_PUBLIC_KEY_PEM_TYPE)) {
-                throw new TelehashException(
-                        "RSA public key PEM file of incorrect type \"" +
-                        pemObject.getType() + "\""
-                );
-            }
-            return new HashNamePublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
-    }
-
-    /**
-     * Read a PEM-formatted RSA public key from a file.
-     *
-     * @param filename The filename of the file containing the PEM-formatted key.
-     * @return The key.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    @Override
-    public HashNamePublicKey readRSAPublicKeyFromFile(String filename) throws TelehashException {
-        try {
-            PemReader pemReader = new PemReader(new FileReader(filename));
-            PemObject pemObject = pemReader.readPemObject();
-            pemReader.close();
-            if (pemObject == null) {
-                throw new TelehashException("cannot parse RSA public key PEM file.");
-            }
-            if (! pemObject.getType().equals(RSA_PUBLIC_KEY_PEM_TYPE)) {
-                throw new TelehashException(
-                        "RSA public key PEM file of incorrect type \"" +
-                        pemObject.getType() + "\""
-                );
-            }
-            return new HashNamePublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
-    }
-
-    /**
-     * Read a PEM-formatted RSA private key from a file.
-     *
-     * @param filename The filename of the file containing the PEM-formatted key.
-     * @return The key.
-     * @throws TelehashException If a problem occurs while reading the file.
-     */
-    @Override
-    public HashNamePrivateKey readRSAPrivateKeyFromFile(String filename) throws TelehashException {
-        try {
-            PemReader pemReader = new PemReader(new FileReader(filename));
-            PemObject pemObject = pemReader.readPemObject();
-            pemReader.close();
-            if (pemObject == null) {
-                throw new TelehashException("cannot parse RSA private key PEM file.");
-            }
-            if (! pemObject.getType().equals(RSA_PRIVATE_KEY_PEM_TYPE)) {
-                throw new TelehashException(
-                        "RSA private key PEM file of incorrect type \"" +
-                        pemObject.getType() + "\""
-                );
-            }
-            return new HashNamePrivateKeyImpl(pemObject.getContent());
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
-    }
-
-    /**
-     * Write a PEM-formatted RSA public key to a file.
-     *
-     * @param filename The filename of the file to write.
-     * @param key The key to write.
-     * @throws IOException If a problem occurs while reading the file.
-     */
-    @Override
-    public void writeRSAPublicKeyToFile(
-            String filename,
-            HashNamePublicKey key
-    ) throws TelehashException {
-        try {
-            PemWriter pemWriter = new PemWriter(new FileWriter(filename));
-            PemObject pemObject = new PemObject(
-                    RSA_PUBLIC_KEY_PEM_TYPE,
-                    key.getEncoded()
-            );
-            pemWriter.writeObject(pemObject);
-            pemWriter.close();
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
-    }
-
-    /**
-     * Write a PEM-formatted RSA private key to a file.
-     *
-     * @param filename The filename of the file to write.
-     * @param key The key to write.
-     * @throws IOException If a problem occurs while reading the file.
-     */
-    @Override
-    public void writeRSAPrivateKeyToFile(
-            String filename,
-            HashNamePrivateKey key
-    ) throws TelehashException {
-        try {
-            PemWriter pemWriter = new PemWriter(new FileWriter(filename));
-            PemObject pemObject = new PemObject(
-                    RSA_PRIVATE_KEY_PEM_TYPE,
-                    key.getEncoded()
-            );
-            pemWriter.writeObject(pemObject);
-            pemWriter.close();
-        } catch (IOException e) {
-            throw new TelehashException(e);
-        }
-    }
-
-    /**
-     * Decode a public key.
-     *
-     * @param buffer The byte buffer containing the encoded key.
-     * @return The decoded public key.
-     * @throws TelehashException If the buffer cannot be parsed.
-     */
-    @Override
-    public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException {
-        return mDefaultCipherSet.decodeHashNamePublicKey(buffer);
-    }
-
-    /**
-     * Decode a private key.
-     *
-     * @param buffer The byte buffer containing the encoded key.
-     * @return The decoded private key.
-     * @throws TelehashException If the buffer cannot be parsed.
-     */
-    @Override
-    public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException {
-        return mDefaultCipherSet.decodeHashNamePrivateKey(buffer);
-    }
-
-    /**
      * Create a new HashNameKeyPair from the provided public and private key.
      * @param privateKey
      * @param publicKey
@@ -443,31 +275,11 @@ public class CryptoImpl implements Crypto {
             HashNamePublicKey publicKey,
             HashNamePrivateKey privateKey
     ) {
-        return mDefaultCipherSet.createHashNameKeyPair(publicKey, privateKey);
-    }
-
-    /**
-     * Decode an ANSI X9.63-encoded public key into an ECPublicKey object.
-     *
-     * @param buffer The byte buffer containing the ANSI X9.63-encoded key.
-     * @return The decoded public key.
-     * @throws TelehashException If the ANSI X9.63 buffer cannot be parsed.
-     */
-    @Override
-    public LinePublicKey decodeLinePublicKey(byte[] buffer) throws TelehashException {
-        return mDefaultCipherSet.decodeLinePublicKey(buffer);
-    }
-
-    /**
-     * Decode a byte-encoded private key into an ECPrivateKey object.
-     *
-     * @param buffer The byte buffer containing the encoded key.
-     * @return The decoded private key.
-     * @throws TelehashException If the byte buffer cannot be parsed.
-     */
-    @Override
-    public LinePrivateKey decodeLinePrivateKey(byte[] buffer) throws TelehashException {
-        return mDefaultCipherSet.decodeLinePrivateKey(buffer);
+        CipherSetIdentifier csid = publicKey.getCipherSetIdentifier();
+        if (! csid.equals(privateKey.getCipherSetIdentifier())) {
+            throw new IllegalArgumentException("cipher set mismatch");
+        }
+        return getCipherSet(csid).createHashNameKeyPair(publicKey, privateKey);
     }
 
     /**
@@ -481,6 +293,10 @@ public class CryptoImpl implements Crypto {
             LinePublicKey publicKey,
             LinePrivateKey privateKey
     ) throws TelehashException {
-        return mDefaultCipherSet.createLineKeyPair(publicKey, privateKey);
+        CipherSetIdentifier csid = publicKey.getCipherSetIdentifier();
+        if (! csid.equals(privateKey.getCipherSetIdentifier())) {
+            throw new IllegalArgumentException("cipher set mismatch");
+        }
+        return getCipherSet(csid).createLineKeyPair(publicKey, privateKey);
     }
 }

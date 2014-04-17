@@ -16,14 +16,21 @@ import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
 import org.telehash.core.Telehash;
 import org.telehash.core.Util;
+import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
+import org.telehash.crypto.HashNameKeyPair;
 import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.crypto.LineKeyPair;
 import org.telehash.network.Path;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 public class PacketTest {
 
-    private static final byte[] IDENTITY_PUBLIC_KEY = Util.base64Decode(
+    private static final CipherSetIdentifier IDENTITY1_CIPHER_SET_ID =
+            new CipherSetIdentifier(0x2a);
+    private static final byte[] IDENTITY1_PUBLIC_KEY = Util.base64Decode(
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvxH9lSUkd++wMBizH1Ot"+
             "JUf2MT6XpSH2VVc73sYWhetINckL4xhtozWY2VUfSrPt0a0DgZtyWhVh1Tlzhy4p"+
             "l31OYlTv/H0BLtKd2HrSsJUZSNeX8kp4KC0siU98AnZitA4misBvnJ+s/xXSZsWd"+
@@ -32,8 +39,7 @@ public class PacketTest {
             "mGSKfI7k4dG1SznBXl3sa9Ibq66XRtltrattn+mW6sQ2GB0DiggDeEoLCqhz1ICj"+
             "CwIDAQAB"
     );
-
-    private static final byte[] IDENTITY_PRIVATE_KEY = Util.base64Decode(
+    private static final byte[] IDENTITY1_PRIVATE_KEY = Util.base64Decode(
             "MIIEpQIBAAKCAQEAvxH9lSUkd++wMBizH1OtJUf2MT6XpSH2VVc73sYWhetINckL"+
             "4xhtozWY2VUfSrPt0a0DgZtyWhVh1Tlzhy4pl31OYlTv/H0BLtKd2HrSsJUZSNeX"+
             "8kp4KC0siU98AnZitA4misBvnJ+s/xXSZsWdCAbCPxwkDgWt9cgQX4iiKo3DV5/9"+
@@ -61,7 +67,9 @@ public class PacketTest {
             "d66vFcnmRXGncwTdoHInpdJAnYVfrcT6Nv2RUPWk55t4p8/4FevvO+s="
     );
 
-    private static final byte[] IDENTITY_PUBLIC_KEY_2 = Util.base64Decode(
+    private static final CipherSetIdentifier IDENTITY2_CIPHER_SET_ID
+            = new CipherSetIdentifier(0x2a);
+    private static final byte[] IDENTITY2_PUBLIC_KEY = Util.base64Decode(
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm4LytLuYiIvtv+Dcg27D"+
             "IFDvM+1zIBLVB3wrdwziRxwC0Z1Kqsu6rTi1TscU0UGxJz+xIn11ZQVONyDF7p0z"+
             "I4URwEoMRxMUzljWKm+woPbnV7vFTzOiRixoHbp1Ym8AalAzZ5PEyi89EoQufa4c"+
@@ -71,7 +79,7 @@ public class PacketTest {
             "fwIDAQAB"
     );
 
-    private static final byte[] IDENTITY_PRIVATE_KEY_2 = Util.base64Decode(
+    private static final byte[] IDENTITY2_PRIVATE_KEY = Util.base64Decode(
             "MIIEogIBAAKCAQEAm4LytLuYiIvtv+Dcg27DIFDvM+1zIBLVB3wrdwziRxwC0Z1K"+
             "qsu6rTi1TscU0UGxJz+xIn11ZQVONyDF7p0zI4URwEoMRxMUzljWKm+woPbnV7vF"+
             "TzOiRixoHbp1Ym8AalAzZ5PEyi89EoQufa4clTpxPuCrwwyv/DJHDDU6OjOIoDLC"+
@@ -99,6 +107,7 @@ public class PacketTest {
             "avWco0OFhsp/yUegAK0qxLSuzFELjSYrydSrYyd0rnPlu/U+u00="
     );
 
+    private static final byte DESTINATION_CIPHER_SET_ID = 0x2a;
     private static final byte[] DESTINATION_PUBLIC_KEY = Util.base64Decode(
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgBnwwPNTOA+0dljOzjfc"+
             "fDGVs61U328CXCFzvDCDfFVYMBuoiOI8O9W5Ydfgcyd7N6hjxW8tQU7ZXfq6SoTT"+
@@ -140,34 +149,47 @@ public class PacketTest {
             "{\"type\": \"ipv4\", \"ip\": \"127.0.0.1\", \"port\": 4242}";
 
     private Crypto mCrypto;
-    private Identity mIdentity;
+    private CipherSet mCipherSet1;
+    private CipherSet mCipherSet2;
+    private Identity mIdentity1;
     private Identity mIdentity2;
-    private Telehash mTelehash = new Telehash();
+    private Telehash mTelehash1 = new Telehash();
     private Telehash mTelehash2 = new Telehash();
 
     @Before
     public void setUp() throws Exception {
-        mCrypto = mTelehash.getCrypto();
+        mCrypto = mTelehash1.getCrypto();
 
-        mIdentity = new Identity(
+        mCipherSet1 = mCrypto.getCipherSet(IDENTITY1_CIPHER_SET_ID);
+        mCipherSet2 = mCrypto.getCipherSet(IDENTITY2_CIPHER_SET_ID);
+
+        Map<CipherSetIdentifier,HashNameKeyPair> keyPairs1 =
+                new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
+        keyPairs1.put(
+                IDENTITY1_CIPHER_SET_ID,
                 mCrypto.createHashNameKeyPair(
-                        mCrypto.decodeHashNamePublicKey(IDENTITY_PUBLIC_KEY),
-                        mCrypto.decodeHashNamePrivateKey(IDENTITY_PRIVATE_KEY)
+                        mCipherSet1.decodeHashNamePublicKey(IDENTITY1_PUBLIC_KEY),
+                        mCipherSet1.decodeHashNamePrivateKey(IDENTITY1_PRIVATE_KEY)
                 )
         );
-        mTelehash.setIdentity(mIdentity);
+        mIdentity1 = new Identity(keyPairs1);
+        mTelehash1.setIdentity(mIdentity1);
 
-        mIdentity2 = new Identity(
+        Map<CipherSetIdentifier,HashNameKeyPair> keyPairs2 =
+                new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
+        keyPairs2.put(
+                IDENTITY2_CIPHER_SET_ID,
                 mCrypto.createHashNameKeyPair(
-                        mCrypto.decodeHashNamePublicKey(IDENTITY_PUBLIC_KEY_2),
-                        mCrypto.decodeHashNamePrivateKey(IDENTITY_PRIVATE_KEY_2)
+                        mCipherSet2.decodeHashNamePublicKey(IDENTITY2_PUBLIC_KEY),
+                        mCipherSet2.decodeHashNamePrivateKey(IDENTITY2_PRIVATE_KEY)
                 )
         );
+        mIdentity2 = new Identity(keyPairs2);
         mTelehash2.setIdentity(mIdentity2);
 
         mECKeyPair = mCrypto.createECKeyPair(
-                mCrypto.decodeLinePublicKey(TEST_EC_PUBLIC_KEY),
-                mCrypto.decodeLinePrivateKey(TEST_EC_PRIVATE_KEY)
+                mCipherSet1.decodeLinePublicKey(TEST_EC_PUBLIC_KEY),
+                mCipherSet1.decodeLinePrivateKey(TEST_EC_PRIVATE_KEY)
         );
     }
 
@@ -177,16 +199,18 @@ public class PacketTest {
 
     @Test
     public void testOpenPacket() throws Exception {
+        CipherSetIdentifier csid = new CipherSetIdentifier(DESTINATION_CIPHER_SET_ID);
         HashNamePublicKey destinationPublicKey =
-                mCrypto.decodeHashNamePublicKey(DESTINATION_PUBLIC_KEY);
+                mCipherSet1.decodeHashNamePublicKey(DESTINATION_PUBLIC_KEY);
+        Map<CipherSetIdentifier,HashNamePublicKey> destinationPublicKeys =
+                new TreeMap<CipherSetIdentifier,HashNamePublicKey>();
+        destinationPublicKeys.put(csid, destinationPublicKey);
         Node remoteNode = new Node(
-                destinationPublicKey,
+                destinationPublicKeys,
                 Path.parsePath(SAMPLE_PATH)
         );
 
-        CipherSetIdentifier csid = Telehash.get().getCrypto().getCipherSet().getCipherSetId();
-        OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode, csid);
-
+        OpenPacket openPacket = new OpenPacket(mIdentity1, remoteNode, csid);
         openPacket.setLinePublicKey(mECKeyPair.getPublicKey());
         openPacket.setLinePrivateKey(mECKeyPair.getPrivateKey());
         openPacket.setOpenTime(TEST_OPEN_TIME);
@@ -198,7 +222,7 @@ public class PacketTest {
         assertNotNull(openPacketBuffer);
         assertArrayEquals(
                 EXPECTED_PACKET_SHA256,
-                mTelehash.getCrypto().sha256Digest(openPacketBuffer)
+                mTelehash1.getCrypto().sha256Digest(openPacketBuffer)
         );
     }
 
@@ -206,12 +230,8 @@ public class PacketTest {
     public void testOpenPacketParse() throws Exception {
         Path localPath = Path.parsePath(SAMPLE_PATH);
         Path remotePath = Path.parsePath(SAMPLE_PATH);
-        Node remoteNode = new Node(
-                mIdentity2.getPublicKey(),
-                remotePath
-        );
-        CipherSetIdentifier csid = Telehash.get().getCrypto().getCipherSet().getCipherSetId();
-        OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode, csid);
+        Node remoteNode = mIdentity2.getNode(remotePath);
+        OpenPacket openPacket = new OpenPacket(mIdentity1, remoteNode, IDENTITY2_CIPHER_SET_ID);
         byte[] openPacketBuffer = openPacket.render();
         assertNotNull(openPacketBuffer);
 

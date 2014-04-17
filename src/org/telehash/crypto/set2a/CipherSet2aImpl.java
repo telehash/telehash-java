@@ -41,12 +41,12 @@ import org.telehash.crypto.LinePrivateKey;
 import org.telehash.crypto.LinePublicKey;
 import org.telehash.network.Path;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.Security;
 
 public class CipherSet2aImpl implements CipherSet {
-    private final static CipherSetIdentifier CIPHER_SET_ID = new CipherSetIdentifier(0x2a);
     private static final byte[] FIXED_IV = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
     private static final int OPEN_INNER_MAC_BITS = 128;
     private static final int OPEN_SIGNATURE_MAC_BITS = 32;
@@ -55,6 +55,11 @@ public class CipherSet2aImpl implements CipherSet {
     private static final int SIGNATURE_CIPHERTEXT_BYTES = 256 + 4; // includes MAC
     private static final int OPEN_HEADER_BYTES = 3;
     private static final int LINE_IV_SIZE = 16;
+
+    private static final String RSA_PRIVATE_KEY_PEM_TYPE = "RSA PRIVATE KEY";
+    private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
+
+    public static final CipherSetIdentifier CIPHER_SET_ID = new CipherSetIdentifier(0x2a);
 
     private Crypto mCrypto;
 
@@ -378,7 +383,7 @@ public class CipherSet2aImpl implements CipherSet {
         // Extract the hashname public key of the sender from the inner
         // packet BODY (binary encoded format).
         HashNamePublicKey senderHashNamePublicKey =
-                mCrypto.decodeHashNamePublicKey(innerPacket.body);
+                decodeHashNamePublicKey(innerPacket.body);
 
         // derive the sender's hashname and create a node object
         //Node sourceNode = new Node(senderHashNamePublicKey, path);
@@ -429,6 +434,7 @@ public class CipherSet2aImpl implements CipherSet {
         // TODO: handle at higher level
 
         return new OpenPacket(
+            CIPHER_SET_ID,
             sourceNode,
             linePublicKey,
             innerHead.mOpenTime,
@@ -644,5 +650,77 @@ public class CipherSet2aImpl implements CipherSet {
                 agreement.calculateAgreement(((LinePublicKeyImpl)remotePublicKey).getKey());
         byte[] secretBytes = BigIntegers.asUnsignedByteArray(32, secretInteger);
         return secretBytes;
+    }
+
+    /**
+     * Parse a PEM-formatted RSA public key
+     *
+     * @param pem The PEM string.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    @Override
+    public HashNamePublicKey parseHashNamePublicKeyFromStorage(
+            String string
+    ) throws TelehashException {
+        return RSAUtils.parseRSAPublicKeyFromStorage(string);
+    }
+
+    /**
+     * Read a PEM-formatted RSA public key from a file.
+     *
+     * @param filename The filename of the file containing the PEM-formatted key.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    @Override
+    public HashNamePublicKey readHashNamePublicKeyFromFile(
+            String filename
+    ) throws TelehashException {
+        return RSAUtils.readRSAPublicKeyFromFile(filename);
+    }
+
+    /**
+     * Read a PEM-formatted RSA private key from a file.
+     *
+     * @param filename The filename of the file containing the PEM-formatted key.
+     * @return The key.
+     * @throws TelehashException If a problem occurs while reading the file.
+     */
+    @Override
+    public HashNamePrivateKey readHashNamePrivateKeyFromFile(
+            String filename
+    ) throws TelehashException {
+        return RSAUtils.readRSAPrivateKeyFromFile(filename);
+    }
+
+    /**
+     * Write a PEM-formatted RSA public key to a file.
+     *
+     * @param filename The filename of the file to write.
+     * @param key The key to write.
+     * @throws IOException If a problem occurs while reading the file.
+     */
+    @Override
+    public void writeHashNamePublicKeyToFile(
+            String filename,
+            HashNamePublicKey key
+    ) throws TelehashException {
+        RSAUtils.writeRSAPublicKeyToFile(filename, key);
+    }
+
+    /**
+     * Write a PEM-formatted RSA private key to a file.
+     *
+     * @param filename The filename of the file to write.
+     * @param key The key to write.
+     * @throws IOException If a problem occurs while reading the file.
+     */
+    @Override
+    public void writeHashNamePrivateKeyToFile(
+            String filename,
+            HashNamePrivateKey key
+    ) throws TelehashException {
+        RSAUtils.writeRSAPrivateKeyToFile(filename, key);
     }
 }

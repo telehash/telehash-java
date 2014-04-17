@@ -34,6 +34,8 @@ public class CryptoTest {
     private static final String TEST_MESSAGE_DIGEST =
             "a8a2f6ebe286697c527eb35a58b5539532e9b3ae3b64d4eb0a46fb657b41562c";
 
+    private static final CipherSetIdentifier CIPHER_SET_ID = new CipherSetIdentifier(0x2a);
+
     private static final String IDENTITY_PUBLIC_KEY =
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvv8h0XuJHXaUaQpBDFTA" +
             "e6Pj2evamzkTgA2QfYcMjcmRK4V+o7Kv54RvD02MQIGJGSEF2nsqKcE4MpseRWGB" +
@@ -96,20 +98,20 @@ public class CryptoTest {
     );
 
     private Crypto mCrypto;
+    private CipherSet mCipherSet;
     private Identity mIdentity;
 
     @Before
     public void setUp() throws Exception {
         mCrypto = new CryptoImpl();
-        CipherSet cipherSet = mCrypto.getCipherSet();
-        CipherSetIdentifier csid = cipherSet.getCipherSetId();
-        HashNameKeyPair keyPair = cipherSet.createHashNameKeyPair(
-                cipherSet.decodeHashNamePublicKey(Util.base64Decode(IDENTITY_PUBLIC_KEY)),
-                cipherSet.decodeHashNamePrivateKey(Util.base64Decode(IDENTITY_PRIVATE_KEY))
+        mCipherSet = mCrypto.getCipherSet(CIPHER_SET_ID);
+        HashNameKeyPair keyPair = mCipherSet.createHashNameKeyPair(
+                mCipherSet.decodeHashNamePublicKey(Util.base64Decode(IDENTITY_PUBLIC_KEY)),
+                mCipherSet.decodeHashNamePrivateKey(Util.base64Decode(IDENTITY_PRIVATE_KEY))
         );
         Map<CipherSetIdentifier,HashNameKeyPair> keyPairMap =
                 new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
-        keyPairMap.put(csid, keyPair);
+        keyPairMap.put(CIPHER_SET_ID, keyPair);
         mIdentity = new Identity(keyPairMap);
     }
 
@@ -136,28 +138,28 @@ public class CryptoTest {
     @Test
     public void testRSAPublicKeyEncodeDecode() throws Exception {
         // DER-encode the public key
-        HashNamePublicKey publicKey = mIdentity.getPublicKey();
+        HashNamePublicKey publicKey = mIdentity.getHashNamePublicKey(CIPHER_SET_ID);
         byte[] publicKeyBytes = publicKey.getEncoded();
         String publicKeyHex = Util.bytesToHex(publicKeyBytes);
 
         // DER-decode the public key
         byte[] publicKeyBytes2 = Util.hexToBytes(publicKeyHex);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKeyBytes2));
-        HashNamePublicKey publicKey2 = mCrypto.decodeHashNamePublicKey(publicKeyBytes2);
+        HashNamePublicKey publicKey2 = mCipherSet.decodeHashNamePublicKey(publicKeyBytes2);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKey2.getEncoded()));
     }
 
     @Test
     public void testRSAPrivateKeyEncodeDecode() throws Exception {
         // DER-encode the private key
-        HashNamePrivateKey privateKey = mIdentity.getPrivateKey();
+        HashNamePrivateKey privateKey = mIdentity.getHashNamePrivateKey(CIPHER_SET_ID);
         byte[] privateKeyBytes = privateKey.getEncoded();
         String privateKeyHex = Util.bytesToHex(privateKeyBytes);
 
         // DER-decode the private key
         byte[] privateKeyBytes2 = Util.hexToBytes(privateKeyHex);
         assertEquals(privateKeyHex, Util.bytesToHex(privateKeyBytes2));
-        HashNamePrivateKey privateKey2 = mCrypto.decodeHashNamePrivateKey(privateKeyBytes2);
+        HashNamePrivateKey privateKey2 = mCipherSet.decodeHashNamePrivateKey(privateKeyBytes2);
         assertEquals(privateKeyHex, Util.bytesToHex(privateKey2.getEncoded()));
     }
 
@@ -169,53 +171,35 @@ public class CryptoTest {
         String privateKeyFilename = privateKeyFile.getAbsolutePath();
 
         // write to files
-        mCrypto.writeRSAPublicKeyToFile(publicKeyFilename, mIdentity.getPublicKey());
-        mCrypto.writeRSAPrivateKeyToFile(privateKeyFilename, mIdentity.getPrivateKey());
+        mCipherSet.writeHashNamePublicKeyToFile(
+                publicKeyFilename,
+                mIdentity.getHashNamePublicKey(CIPHER_SET_ID)
+        );
+        mCipherSet.writeHashNamePrivateKeyToFile(
+                privateKeyFilename,
+                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID)
+        );
 
         // read from files
-        HashNamePublicKey readPublicKey = mCrypto.readRSAPublicKeyFromFile(publicKeyFilename);
-        HashNamePrivateKey readPrivateKey = mCrypto.readRSAPrivateKeyFromFile(privateKeyFilename);
+        HashNamePublicKey readPublicKey =
+                mCipherSet.readHashNamePublicKeyFromFile(publicKeyFilename);
+        HashNamePrivateKey readPrivateKey =
+                mCipherSet.readHashNamePrivateKeyFromFile(privateKeyFilename);
 
         // assert equality
-        assertArrayEquals(mIdentity.getPublicKey().getEncoded(), readPublicKey.getEncoded());
-        assertArrayEquals(mIdentity.getPrivateKey().getEncoded(), readPrivateKey.getEncoded());
+        assertArrayEquals(
+                mIdentity.getHashNamePublicKey(CIPHER_SET_ID).getEncoded(),
+                readPublicKey.getEncoded()
+        );
+        assertArrayEquals(
+                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID).getEncoded(),
+                readPrivateKey.getEncoded()
+        );
 
         // clean up
         publicKeyFile.delete();
         privateKeyFile.delete();
     }
-
-    /*
-    @Test
-    public void testRSAEncryptDecrypt() throws Exception {
-        // cycle keys through an encode/decode cycle to validate that
-        // those methods aren't losing information necessary for the
-        // encryption/decryption.  (The test*EncodeDecode() methods
-        // above only verify consistency, not correctness.)
-        HashNamePublicKey publicKey = mCrypto.decodeHashNamePublicKey(
-                Util.hexToBytes(
-                        Util.bytesToHex(
-                                mIdentity.getPublicKey().getEncoded()
-                        )
-                )
-        );
-        HashNamePrivateKey privateKey = mCrypto.decodeHashNamePrivateKey(
-                Util.hexToBytes(
-                        Util.bytesToHex(
-                                mIdentity.getPrivateKey().getEncoded()
-                        )
-                )
-        );
-
-        // encrypt
-        byte[] cipherText = mCrypto.encryptRSA(publicKey, TEST_MESSAGE.getBytes("UTF-8"));
-        // decrypt
-        byte[] clearText = mCrypto.decryptRSA(privateKey, cipherText);
-        String clearTextString = new String(clearText, "UTF-8");
-
-        assertEquals(clearTextString, TEST_MESSAGE);
-    }
-    */
 
     @Test
     public void testRSAEncryptDecryptOAEP() throws Exception {
@@ -223,17 +207,17 @@ public class CryptoTest {
         // those methods aren't losing information necessary for the
         // encryption/decryption.  (The test*EncodeDecode() methods
         // above only verify consistency, not correctness.)
-        HashNamePublicKey publicKey = mCrypto.decodeHashNamePublicKey(
+        HashNamePublicKey publicKey = mCipherSet.decodeHashNamePublicKey(
                 Util.hexToBytes(
                         Util.bytesToHex(
-                                mIdentity.getPublicKey().getEncoded()
+                                mIdentity.getHashNamePublicKey(CIPHER_SET_ID).getEncoded()
                         )
                 )
         );
-        HashNamePrivateKey privateKey = mCrypto.decodeHashNamePrivateKey(
+        HashNamePrivateKey privateKey = mCipherSet.decodeHashNamePrivateKey(
                 Util.hexToBytes(
                         Util.bytesToHex(
-                                mIdentity.getPrivateKey().getEncoded()
+                                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID).getEncoded()
                         )
                 )
         );
@@ -258,7 +242,7 @@ public class CryptoTest {
     @Test
     public void testRSASigning() throws Exception {
         byte[] signature = mCrypto.signRSA(
-                mIdentity.getPrivateKey(),
+                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID),
                 TEST_MESSAGE.getBytes("UTF-8")
         );
         assertNotNull(signature);
@@ -327,7 +311,7 @@ public class CryptoTest {
     @Test
     public void testRSASigning2() throws Exception {
         byte[] signature = mCrypto.signRSA(
-                mCrypto.decodeHashNamePrivateKey(RSA_PRIVATE_KEY),
+                mCipherSet.decodeHashNamePrivateKey(RSA_PRIVATE_KEY),
                 MESSAGE_TO_SIGN
         );
 
@@ -336,7 +320,7 @@ public class CryptoTest {
         assertArrayEquals(EXPECTED_SIGNATURE_2, signature);
 
         boolean verify = mCrypto.verifyRSA(
-                mCrypto.decodeHashNamePublicKey(RSA_PUBLIC_KEY),
+                mCipherSet.decodeHashNamePublicKey(RSA_PUBLIC_KEY),
                 MESSAGE_TO_SIGN,
                 signature
         );
@@ -345,7 +329,7 @@ public class CryptoTest {
 
     @Test
     public void testECPublicKeyEncodeDecode() throws Exception {
-        LineKeyPair keyPair = mCrypto.getCipherSet().generateLineKeyPair();
+        LineKeyPair keyPair = mCipherSet.generateLineKeyPair();
 
         // DER-encode the public key
         LinePublicKey publicKey = keyPair.getPublicKey();
@@ -355,7 +339,7 @@ public class CryptoTest {
         // DER-decode the public key
         byte[] publicKeyBytes2 = Util.hexToBytes(publicKeyHex);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKeyBytes2));
-        LinePublicKey publicKey2 = mCrypto.decodeLinePublicKey(publicKeyBytes2);
+        LinePublicKey publicKey2 = mCipherSet.decodeLinePublicKey(publicKeyBytes2);
         assertEquals(publicKeyHex, Util.bytesToHex(publicKey2.getEncoded()));
     }
 
@@ -379,8 +363,8 @@ public class CryptoTest {
 
     @Test
     public void testECDHKeyAgreement() throws Exception {
-        LineKeyPair localKeyPair = mCrypto.getCipherSet().generateLineKeyPair();
-        LineKeyPair remoteKeyPair = mCrypto.getCipherSet().generateLineKeyPair();
+        LineKeyPair localKeyPair = mCipherSet.generateLineKeyPair();
+        LineKeyPair remoteKeyPair = mCipherSet.generateLineKeyPair();
 
         // cycle the remote end's received version of the local public
         // key through an encode/decode cycle to validate that
@@ -388,7 +372,7 @@ public class CryptoTest {
         // ECDH.  (The test*EncodeDecode() methods above only verify
         // consistency, not correctness.)
         LinePublicKey localPublicKeyAsReceivedByRemote =
-                mCrypto.decodeLinePublicKey(
+                mCipherSet.decodeLinePublicKey(
                         Util.hexToBytes(
                                 Util.bytesToHex(
                                         localKeyPair.getPublicKey().getEncoded()
@@ -396,11 +380,11 @@ public class CryptoTest {
                         )
                 );
 
-        byte[] localSharedSecret = mCrypto.getCipherSet().calculateECDHSharedSecret(
+        byte[] localSharedSecret = mCipherSet.calculateECDHSharedSecret(
                 remoteKeyPair.getPublicKey(),
                 localKeyPair.getPrivateKey()
         );
-        byte[] remoteSharedSecret = mCrypto.getCipherSet().calculateECDHSharedSecret(
+        byte[] remoteSharedSecret = mCipherSet.calculateECDHSharedSecret(
                 localPublicKeyAsReceivedByRemote,
                 remoteKeyPair.getPrivateKey()
         );

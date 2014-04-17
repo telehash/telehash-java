@@ -6,6 +6,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -32,6 +33,11 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
 
     public AsymmetricKeyParameter getKey() {
         return mKey;
+    }
+
+    @Override
+    public CipherSetIdentifier getCipherSetIdentifier() {
+        return CipherSet2aImpl.CIPHER_SET_ID;
     }
 
     @Override

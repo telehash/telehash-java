@@ -2,6 +2,7 @@ package org.telehash.core;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.telehash.crypto.CipherSet;
 import org.telehash.network.Path;
 
 import java.io.UnsupportedEncodingException;
@@ -92,14 +93,15 @@ public abstract class Packet {
             // TODO: remove all uses of OPEN_TYPE and LINE_TYPE, as these don't actually
             // use a type field any more.
             if (splitPacket.headerLength == OPEN_HEADER_LENGTH) {
-                if (splitPacket.singleByteHeader ==
-                        telehash.getCrypto().getCipherSet().getCipherSetId().getByte()) {
-                    type = OpenPacket.OPEN_TYPE;
-                } else {
+                CipherSet cipherSet = telehash.getCrypto().getCipherSet(
+                        new CipherSetIdentifier(splitPacket.singleByteHeader)
+                );
+                if (cipherSet == null) {
                     throw new TelehashException(
                             "unsupported open cipher set: "+splitPacket.singleByteHeader
                     );
                 }
+                type = OpenPacket.OPEN_TYPE;
             } else if (splitPacket.headerLength == LINE_HEADER_LENGTH) {
                 type = LinePacket.LINE_TYPE;
             } else {

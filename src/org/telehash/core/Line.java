@@ -1,5 +1,7 @@
 package org.telehash.core;
 
+import org.telehash.crypto.CipherSet;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -36,7 +38,7 @@ public class Line implements OnTimeoutListener {
     }
     private List<Completion<Line>> mOpenCompletionHandlers = new ArrayList<Completion<Line>>();
 
-    private CipherSetIdentifier mCipherSetIdentifier;
+    private CipherSet mCipherSet;
     private LineIdentifier mIncomingLineIdentifier;
     private LineIdentifier mOutgoingLineIdentifier;
     private Node mRemoteNode;
@@ -52,8 +54,12 @@ public class Line implements OnTimeoutListener {
     private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
     private boolean mFinished = false;
 
-    public Line(Telehash telehash) {
+    public Line(Telehash telehash, CipherSetIdentifier cipherSetIdentifier) {
         mTelehash = telehash;
+        mCipherSet = telehash.getCrypto().getCipherSet(cipherSetIdentifier);
+        if (mCipherSet == null) {
+            throw new IllegalArgumentException("line requested with invalid cipherset id");
+        }
         mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
 
@@ -64,12 +70,8 @@ public class Line implements OnTimeoutListener {
         return mState;
     }
 
-    public void setCipherSetIdentifier(CipherSetIdentifier cipherSetIdentifier) {
-        mCipherSetIdentifier = cipherSetIdentifier;
-    }
-
-    public CipherSetIdentifier getCipherSetIdentifier() {
-        return mCipherSetIdentifier;
+    public CipherSet getCipherSet() {
+        return mCipherSet;
     }
 
     public void setIncomingLineIdentifier(LineIdentifier lineIdentifier) {

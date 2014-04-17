@@ -21,6 +21,7 @@ import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.Path;
 import org.telehash.storage.Storage;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ public class StorageImpl implements Storage {
     private static final String PATHS_KEY = "paths";
 
     /**
-     * Read the local Telehash identity (RSA key pair) from files named using
+     * Read the local Telehash identity (hashname key pairs) from files named using
      * the specified base filename.
      *
      * @param identityBaseFilename
@@ -55,21 +56,35 @@ public class StorageImpl implements Storage {
      */
     @Override
     public Identity readIdentity(String identityBaseFilename) throws TelehashException {
-        String privateKeyFilename = identityBaseFilename + PRIVATE_KEY_FILENAME_SUFFIX;
-        String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;
-
-        // read keys
-        HashNamePrivateKey privateKey =
-                Telehash.get().getCrypto().readRSAPrivateKeyFromFile(privateKeyFilename);
-        HashNamePublicKey publicKey =
-                Telehash.get().getCrypto().readRSAPublicKeyFromFile(publicKeyFilename);
-
         Map<CipherSetIdentifier,HashNameKeyPair> keyPairs =
                 new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
-        keyPairs.put(
-                Telehash.get().getCrypto().getCipherSet().getCipherSetId(),
-                Telehash.get().getCrypto().createHashNameKeyPair(publicKey, privateKey)
-        );
+        for (CipherSet cipherSet : Telehash.get().getCrypto().getAllCipherSets()) {
+            CipherSetIdentifier csid = cipherSet.getCipherSetId();
+            String csidExtension = "." + csid.asHex();
+            String publicKeyFilename =
+                    identityBaseFilename + csidExtension + PUBLIC_KEY_FILENAME_SUFFIX;
+            String privateKeyFilename =
+                    identityBaseFilename + csidExtension + PRIVATE_KEY_FILENAME_SUFFIX;
+            if (new File(publicKeyFilename).exists() && new File(privateKeyFilename).exists()) {
+                Log.i("keys exist for cipher set: "+cipherSet);
+
+                // read keys
+                HashNamePublicKey publicKey =
+                        cipherSet.readHashNamePublicKeyFromFile(publicKeyFilename);
+                HashNamePrivateKey privateKey =
+                        cipherSet.readHashNamePrivateKeyFromFile(privateKeyFilename);
+                keyPairs.put(
+                        csid,
+                        cipherSet.createHashNameKeyPair(publicKey, privateKey)
+                );
+            }
+        }
+        if (keyPairs.isEmpty()) {
+            throw new TelehashException(
+                "no key pairs found for identity: "+identityBaseFilename,
+                new FileNotFoundException()
+            );
+        }
         return new Identity(keyPairs);
     }
 
@@ -100,12 +115,26 @@ public class StorageImpl implements Storage {
     @Override
     public void writeIdentity(Identity identity, String identityBaseFilename)
             throws TelehashException {
-        String privateKeyFilename = identityBaseFilename + PRIVATE_KEY_FILENAME_SUFFIX;
-        String publicKeyFilename = identityBaseFilename + PUBLIC_KEY_FILENAME_SUFFIX;
         Crypto crypto = Telehash.get().getCrypto();
-        CipherSetIdentifier csid = crypto.getCipherSet().getCipherSetId();
-        crypto.writeRSAPublicKeyToFile(publicKeyFilename, identity.getHashNamePublicKey(csid));
-        crypto.writeRSAPrivateKeyToFile(privateKeyFilename, identity.getHashNamePrivateKey(csid));
+        for (Map.Entry<CipherSetIdentifier,HashNameKeyPair> entry :
+                identity.getHashNameKeyPairs().entrySet()) {
+            CipherSetIdentifier csid = entry.getKey();
+            HashNameKeyPair keyPair = entry.getValue();
+            CipherSet cipherSet = crypto.getCipherSet(csid);
+            String csidExtension = "." + csid.asHex();
+            String publicKeyFilename =
+                    identityBaseFilename + csidExtension + PUBLIC_KEY_FILENAME_SUFFIX;
+            String privateKeyFilename =
+                    identityBaseFilename + csidExtension + PRIVATE_KEY_FILENAME_SUFFIX;
+            cipherSet.writeHashNamePublicKeyToFile(
+                    publicKeyFilename,
+                    keyPair.getPublicKey()
+            );
+            cipherSet.writeHashNamePrivateKeyToFile(
+                    privateKeyFilename,
+                    keyPair.getPrivateKey()
+            );
+        }
     }
 
     /**

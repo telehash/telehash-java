@@ -2,6 +2,7 @@ package org.telehash.crypto.set2a;
 
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.LinePrivateKey;
@@ -22,6 +23,11 @@ public class LinePrivateKeyImpl implements LinePrivateKey {
     ) throws TelehashException {
         BigInteger d = new BigInteger(Util.bytesToHex(buffer), 16);
         mKey = new ECPrivateKeyParameters(d, domainParameters);
+    }
+
+    @Override
+    public CipherSetIdentifier getCipherSetIdentifier() {
+        return CipherSet2aImpl.CIPHER_SET_ID;
     }
 
     public ECPrivateKeyParameters getKey() {
