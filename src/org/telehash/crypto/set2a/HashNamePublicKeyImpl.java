@@ -6,7 +6,9 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
+import org.telehash.core.Util;
 import org.telehash.crypto.HashNamePublicKey;
 
 import java.io.IOException;
@@ -23,6 +25,7 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
         try {
             mKey = PublicKeyFactory.createKey(derBuffer);
         } catch (IOException e) {
+            Util.hexdump(derBuffer);
             throw new TelehashException(e);
         }
     }
@@ -55,5 +58,10 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
         } catch (IOException e) {
             throw new TelehashException(e);
         }
+    }
+
+    @Override
+    public byte[] getFingerprint() throws TelehashException {
+        return Telehash.get().getCrypto().sha256Digest(getEncoded());
     }
 }

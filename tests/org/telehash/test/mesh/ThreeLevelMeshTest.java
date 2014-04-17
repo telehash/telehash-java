@@ -13,6 +13,7 @@ import org.telehash.core.CompletionHandler;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.TelehashException;
+import org.telehash.dht.DHT;
 
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +92,7 @@ public class ThreeLevelMeshTest {
                         Log.i("line open success");
 
                         // src seeks the dst
-                        Channel channel = line.openChannel("peer", new ChannelHandler() {
+                        Channel channel = line.openChannel(DHT.PEER_TYPE, new ChannelHandler() {
                             @Override
                             public void handleError(Channel channel, Throwable error) {
                                 Log.i("peer failed");
@@ -112,7 +113,7 @@ public class ThreeLevelMeshTest {
                         Log.i("peer channel open success");
 
                         Map<String,Object> fields = new HashMap<String,Object>();
-                        fields.put("peer", dst.getNode().getHashName().asHex());
+                        fields.put(DHT.PEER_KEY, dst.getNode().getHashName().asHex());
                         try {
                             channel.send(null, fields, false);
                         } catch (TelehashException e) {

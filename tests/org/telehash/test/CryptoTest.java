@@ -11,10 +11,13 @@ import static org.junit.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.HashName;
 import org.telehash.core.Identity;
 import org.telehash.core.Util;
+import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
+import org.telehash.crypto.HashNameKeyPair;
 import org.telehash.crypto.HashNamePrivateKey;
 import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.crypto.LineKeyPair;
@@ -22,6 +25,8 @@ import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.impl.CryptoImpl;
 
 import java.io.File;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class CryptoTest {
 
@@ -96,16 +101,16 @@ public class CryptoTest {
     @Before
     public void setUp() throws Exception {
         mCrypto = new CryptoImpl();
-        mIdentity = new Identity(
-                mCrypto.createHashNameKeyPair(
-                        mCrypto.decodeHashNamePublicKey(
-                                Util.base64Decode(IDENTITY_PUBLIC_KEY)
-                        ),
-                        mCrypto.decodeHashNamePrivateKey(
-                                Util.base64Decode(IDENTITY_PRIVATE_KEY)
-                        )
-                )
+        CipherSet cipherSet = mCrypto.getCipherSet();
+        CipherSetIdentifier csid = cipherSet.getCipherSetId();
+        HashNameKeyPair keyPair = cipherSet.createHashNameKeyPair(
+                cipherSet.decodeHashNamePublicKey(Util.base64Decode(IDENTITY_PUBLIC_KEY)),
+                cipherSet.decodeHashNamePrivateKey(Util.base64Decode(IDENTITY_PRIVATE_KEY))
         );
+        Map<CipherSetIdentifier,HashNameKeyPair> keyPairMap =
+                new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
+        keyPairMap.put(csid, keyPair);
+        mIdentity = new Identity(keyPairMap);
     }
 
     @After

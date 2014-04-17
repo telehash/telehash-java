@@ -1,5 +1,6 @@
 package org.telehash.crypto;
 
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.Line;
 import org.telehash.core.OpenPacket;
@@ -13,16 +14,16 @@ public interface CipherSet {
     /**
      * Return the Cipher Set ID (CSID) for this cipher set.
      */
-    public short getCipherSetId();
+    public CipherSetIdentifier getCipherSetId();
 
     /**
-     * Generate a fresh identity (i.e., RSA public and private key pair) for a
-     * newly provisioned Telehash node.
+     * Generate a fresh hashname key pair for a newly provisioned Telehash node.
      *
-     * @return The new identity.
+     * @return The new hashname key pair.
      * @throws TelehashException
      */
-    public Identity generateIdentity() throws TelehashException;
+    public HashNameKeyPair generateHashNameKeyPair() throws TelehashException;
+
 
     /**
      * Create a new HashNameKeyPair from the provided public and private key.

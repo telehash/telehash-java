@@ -36,6 +36,7 @@ public class Line implements OnTimeoutListener {
     }
     private List<Completion<Line>> mOpenCompletionHandlers = new ArrayList<Completion<Line>>();
 
+    private CipherSetIdentifier mCipherSetIdentifier;
     private LineIdentifier mIncomingLineIdentifier;
     private LineIdentifier mOutgoingLineIdentifier;
     private Node mRemoteNode;
@@ -61,6 +62,14 @@ public class Line implements OnTimeoutListener {
     }
     public State getState() {
         return mState;
+    }
+
+    public void setCipherSetIdentifier(CipherSetIdentifier cipherSetIdentifier) {
+        mCipherSetIdentifier = cipherSetIdentifier;
+    }
+
+    public CipherSetIdentifier getCipherSetIdentifier() {
+        return mCipherSetIdentifier;
     }
 
     public void setIncomingLineIdentifier(LineIdentifier lineIdentifier) {

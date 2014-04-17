@@ -62,16 +62,14 @@ public class NodeTracker {
 
         public void submitNode(Node node) {
             TrackedNode trackedNode = new TrackedNode(node);
-            if (mTrackedNodes.contains(trackedNode) && node.getPublicKey() != null) {
-                // already present in bucket -- make sure the
-                // RSA public key of the tracked node is populated.
+            if (mTrackedNodes.contains(trackedNode)) {
+                // already present in bucket -- update the existing node object
+                // with any new public keys, etc., we have noticed.
                 // (This is quite awkward. Maybe we need to maintain a sister
                 // collection map to directly access the relevant node?)
                 for (TrackedNode existingNode : mTrackedNodes) {
                     if (existingNode.equals(trackedNode)) {
-                        if (existingNode.node.getPublicKey() == null) {
-                            existingNode.node.setPublicKey(node.getPublicKey());
-                        }
+                        existingNode.node.update(trackedNode.node);
                         break;
                     }
                 }
@@ -114,7 +112,7 @@ public class NodeTracker {
     }
 
     public void submitNode(Node node) {
-        if (node.getPublicKey() == null) {
+        if (! node.hasPublicKey()) {
             throw new IllegalArgumentException("attempt to track node without RSA public key.");
         }
         int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());

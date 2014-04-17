@@ -93,7 +93,7 @@ public abstract class Packet {
             // use a type field any more.
             if (splitPacket.headerLength == OPEN_HEADER_LENGTH) {
                 if (splitPacket.singleByteHeader ==
-                        telehash.getCrypto().getCipherSet().getCipherSetId()) {
+                        telehash.getCrypto().getCipherSet().getCipherSetId().getByte()) {
                     type = OpenPacket.OPEN_TYPE;
                 } else {
                     throw new TelehashException(

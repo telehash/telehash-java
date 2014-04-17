@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.LineIdentifier;
 import org.telehash.core.Node;
@@ -133,7 +134,7 @@ public class PacketTest {
             Util.hexToBytes("a8259e94d600277fe865ca9efca87b4d341a8496e15b17a79121d89054b48da1");
 
     private static final byte[] EXPECTED_PACKET_SHA256 =
-            Util.hexToBytes("74b4504c85a0b0c3fad2574ad668f775112deb96f218cb8cba0a0b5e93b221a6");
+            Util.hexToBytes("3e434d6a5e6ee2ee47712ececa9a8f5fbd47d1f071d889805ec253dfd1be5f80");
 
     private static final String SAMPLE_PATH =
             "{\"type\": \"ipv4\", \"ip\": \"127.0.0.1\", \"port\": 4242}";
@@ -183,7 +184,8 @@ public class PacketTest {
                 Path.parsePath(SAMPLE_PATH)
         );
 
-        OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
+        CipherSetIdentifier csid = Telehash.get().getCrypto().getCipherSet().getCipherSetId();
+        OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode, csid);
 
         openPacket.setLinePublicKey(mECKeyPair.getPublicKey());
         openPacket.setLinePrivateKey(mECKeyPair.getPrivateKey());
@@ -208,7 +210,8 @@ public class PacketTest {
                 mIdentity2.getPublicKey(),
                 remotePath
         );
-        OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode);
+        CipherSetIdentifier csid = Telehash.get().getCrypto().getCipherSet().getCipherSetId();
+        OpenPacket openPacket = new OpenPacket(mIdentity, remoteNode, csid);
         byte[] openPacketBuffer = openPacket.render();
         assertNotNull(openPacketBuffer);
 

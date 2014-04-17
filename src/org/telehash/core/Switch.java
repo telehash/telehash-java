@@ -74,7 +74,8 @@ public class Switch implements DatagramHandler, MessageHandler {
         }
         InetPath inetPath = (InetPath)localPath;
         inetPath = new InetPath(inetPath.getAddress(), mPort);
-        mLocalNode = new Node(mTelehash.getIdentity().getPublicKey(), inetPath);
+
+        mLocalNode = new Node(mTelehash.getIdentity().getHashNamePublicKeys(), inetPath);
 
         // provision the reactor
         mReactor = mTelehash.getNetwork().createReactor(mPort);

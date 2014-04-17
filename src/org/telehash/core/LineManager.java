@@ -1,5 +1,6 @@
 package org.telehash.core;
 
+import org.telehash.dht.DHT;
 import org.telehash.dht.NodeLookupTask;
 
 import java.util.Collection;
@@ -215,15 +216,24 @@ public class LineManager {
             return;
         }
 
+        // determine the best cipher set which is common between our two nodes
+        CipherSetIdentifier csid =
+                Node.bestCipherSet(destination, mTelehash.getIdentity().getNode());
+        if (csid == null) {
+            // TODO: TelehashException!
+            throw new RuntimeException("no common cipher set with the remote node");
+        }
+
         // create a line, an outgoing open packet, and record these in the line tracker
         final Line line = new Line(mTelehash);
         line.setRemoteNode(destination);
         line.addOpenCompletionHandler(handler, attachment);
         // create an open packet
-        OpenPacket openPacket = new OpenPacket(mTelehash.getIdentity(), destination);
+        OpenPacket openPacket = new OpenPacket(mTelehash.getIdentity(), destination, csid);
         // note: this open packet is *outgoing* but its embedded line identifier
         // is to be used for *incoming* line packets.
         Log.i("openPacket.lineid="+openPacket.getLineIdentifier());
+        line.setCipherSetIdentifier(csid);
         line.setIncomingLineIdentifier(openPacket.getLineIdentifier());
         line.setLocalOpenPacket(openPacket);
         mLineTracker.add(line);
@@ -234,7 +244,7 @@ public class LineManager {
         // or we have been asked to initiate an open to this node via
         // peer/connect).  Otherwise, we must ask the referring node to
         // introduce us via peer/connect.
-        if (destination.getPublicKey() == null || destination.getPath() == null) {
+        if (destination.getPublicKey(csid) == null || destination.getPath() == null) {
             Node referringNode = destination.getReferringNode();
             if (referringNode != null) {
                 openLineReverse(line, referringNode);
@@ -304,7 +314,7 @@ public class LineManager {
         line.setState(Line.State.REVERSE_OPEN_PENDING);
         line.startOpenTimer();
 
-        referringLine.openChannel("peer", new ChannelHandler() {
+        referringLine.openChannel(DHT.PEER_TYPE, new ChannelHandler() {
             @Override
             public void handleError(Channel channel, Throwable error) {
                 mLineTracker.remove(line);
@@ -317,7 +327,7 @@ public class LineManager {
             @Override
             public void handleOpen(Channel channel) {
                 Map<String,Object> fields = new HashMap<String,Object>();
-                fields.put("peer", line.getRemoteNode().getHashName().asHex());
+                fields.put(DHT.PEER_KEY, line.getRemoteNode().getHashName().asHex());
                 // TODO: if we have multiple public (non-site-local) paths, they
                 // should be indicated in a "paths" key.
                 try {
@@ -333,6 +343,9 @@ public class LineManager {
 
     /** intentionally package-private */
     void handleOpenPacket(OpenPacket incomingOpenPacket) throws TelehashException {
+
+        Log.i("OPEN received from: "+incomingOpenPacket.getSourceNode());
+
         // is there a pending line for this?
         Node remoteNode = incomingOpenPacket.getSourceNode();
         Line line = mLineTracker.getByNode(remoteNode);
@@ -365,9 +378,11 @@ public class LineManager {
                 // create a new open package and line.
                 replyOpenPacket = new OpenPacket(
                         mTelehash.getIdentity(),
-                        incomingOpenPacket.getSourceNode()
+                        incomingOpenPacket.getSourceNode(),
+                        incomingOpenPacket.getCipherSetIdentifier()
                 );
                 line = new Line(mTelehash);
+                line.setCipherSetIdentifier(incomingOpenPacket.getCipherSetIdentifier());
                 line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
                 line.setLocalOpenPacket(replyOpenPacket);
                 line.setRemoteNode(incomingOpenPacket.getSourceNode());

@@ -6,6 +6,8 @@ import org.json.JSONObject;
 import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
+import org.telehash.core.CipherSetIdentifier;
+import org.telehash.core.FingerprintSet;
 import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
@@ -13,6 +15,7 @@ import org.telehash.core.Node;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
+import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.network.InetPath;
 import org.telehash.network.Path;
@@ -30,12 +33,13 @@ public class DHT {
 
     private static final String SEEK_TYPE = "seek";
     private static final String LINK_TYPE = "link";
-    private static final String PEER_TYPE = "peer";
     private static final String CONNECT_TYPE = "connect";
     private static final String SEEK_KEY = "seek";
     private static final String SEED_KEY = "seed";
     private static final String SEE_KEY = "see";
-    private static final String PEER_KEY = "peer";
+
+    public static final String PEER_TYPE = "peer";
+    public static final String PEER_KEY = "peer";
 
     private Telehash mTelehash;
     private Node mLocalNode;
@@ -260,16 +264,28 @@ public class DHT {
             return;
         }
         InetPath path = (InetPath)originatingNode.getPath();
+        if (originatingNode.getFingerprints() == null) {
+            Log.e("peer originator has no fingerprints: "+originatingNode.getHashName());
+            return;
+        }
+
+        // cipher set matchmaking
+        CipherSetIdentifier csid = Node.bestCipherSet(originatingNode, line.getRemoteNode());
+        if (csid == null) {
+            Log.e("error while matching cipher sets", new TelehashException("null csid"));
+            return;
+        }
 
         // send a connect message to the target with the originator's information
         Channel newChannel = line.openChannel(CONNECT_TYPE, null);
         List<JSONObject> paths = new ArrayList<JSONObject>(1);
         paths.add(path.toJSONObject());
         Map<String,Object> fields = new HashMap<String,Object>();
+        fields.put("from", originatingNode.getFingerprints().toJSON());
         fields.put("paths", paths);
         try {
             newChannel.send(
-                    channel.getRemoteNode().getPublicKey().getEncoded(),
+                    channel.getRemoteNode().getPublicKey(csid).getEncoded(),
                     fields,
                     true
             );
@@ -293,14 +309,36 @@ public class DHT {
         // TODO: support more than the first path
         Path path = paths.get(0);
 
+        // cipher set matchmaking
+        Object fromObject = channelPacket.get("from");
+        if (fromObject == null) {
+            throw new TelehashException("connect packet is missing from!");
+        }
+        if (! (fromObject instanceof JSONObject)) {
+            throw new TelehashException("expected JSONObject!");
+        }
+        FingerprintSet fingerprints = new FingerprintSet((JSONObject)fromObject);
+        CipherSetIdentifier csid = FingerprintSet.bestCipherSet(
+                mTelehash.getIdentity().getNode().getFingerprints(),
+                fingerprints
+        );
+        if (csid == null) {
+            Log.e("error while matching cipher sets", new TelehashException("null csid"));
+        }
+
         // extract the peer's public key
         byte[] body = channelPacket.getBody();
         if (body == null) {
             return;
         }
-        HashNamePublicKey publicKey = mTelehash.getCrypto().decodeHashNamePublicKey(body);
+        CipherSet cipherSet = mTelehash.getCrypto().getCipherSet(csid);
+        if (cipherSet == null) {
+            throw new TelehashException("unknown cipher set id in connect");
+        }
+        HashNamePublicKey publicKey = cipherSet.decodeHashNamePublicKey(body);
 
-        Node node = new Node(publicKey, path);
+        Node node = new Node(fingerprints.getHashName(), csid, publicKey, path);
+        node.updateFingerprints(fingerprints);
         mTelehash.getSwitch().getLineManager().openLine(node, false, null, null);
     }
 

@@ -19,6 +19,7 @@ import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.CipherSet;
@@ -37,8 +38,11 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * This class contains implementations for the basic cryptographic functions
@@ -50,7 +54,13 @@ public class CryptoImpl implements Crypto {
     private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
 
     // we only use the 2a cipher set for now.
-    private CipherSet mCipherSet = new CipherSet2aImpl(this);
+    // TODO: remove the concept of a "default cipher set".
+    @Deprecated
+    private CipherSet mDefaultCipherSet;
+
+    // a simple cipher set registration scheme
+    private Map<CipherSetIdentifier,CipherSet> mCipherSetMap =
+            new TreeMap<CipherSetIdentifier,CipherSet>();
 
     private SecureRandom random = new SecureRandom();
 
@@ -65,6 +75,11 @@ public class CryptoImpl implements Crypto {
     };
 
     public CryptoImpl() {
+        // populate the cipher set map
+        CipherSet2aImpl set2a = new CipherSet2aImpl(this);
+        mCipherSetMap.put(set2a.getCipherSetId(), set2a);
+        mDefaultCipherSet = set2a;
+
         // initialize elliptic curve parameters and generator
         mECNamedCurveParameterSpec =
                 ECNamedCurveTable.getParameterSpec("prime256v1");
@@ -87,7 +102,18 @@ public class CryptoImpl implements Crypto {
     @Deprecated
     @Override
     public CipherSet getCipherSet() {
-        return mCipherSet;
+        return mDefaultCipherSet;
+    }
+
+    /**
+     * Return the cipher set associated with the provided cipher set id.
+     * @param cipherSetId
+     * @return The cipher set implementation, or null if no cipher set
+     * matches the id.
+     */
+    @Override
+    public CipherSet getCipherSet(CipherSetIdentifier cipherSetId) {
+        return mCipherSetMap.get(cipherSetId);
     }
 
     /**
@@ -132,6 +158,17 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
+     * Return a SHA-256 digest of the provided UTF-8 string.
+     *
+     * @param string The string to digest.
+     * @return A 32-byte array representing the digest.
+     */
+    @Override
+    public byte[] sha256Digest(String string) {
+        return sha256Digest(string.getBytes(Charset.forName("UTF-8")));
+    }
+
+    /**
      * Generate a fresh identity (i.e., hashname public and private key pair)
      * for a newly provisioned Telehash node.
      *
@@ -140,7 +177,16 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public Identity generateIdentity() throws TelehashException {
-        return mCipherSet.generateIdentity();
+        // Note: this iteration is implicitly sorted by ascending keys via TreeSet.
+        Map<CipherSetIdentifier,HashNameKeyPair> keyPairs =
+                new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
+        for (Map.Entry<CipherSetIdentifier, CipherSet> entry : mCipherSetMap.entrySet()) {
+            CipherSetIdentifier cipherSetId = entry.getKey();
+            CipherSet cipherSet = entry.getValue();
+            HashNameKeyPair hashNameKeyPair = cipherSet.generateHashNameKeyPair();
+            keyPairs.put(cipherSetId, hashNameKeyPair);
+        }
+        return new Identity(keyPairs);
     }
 
     /**
@@ -371,7 +417,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public HashNamePublicKey decodeHashNamePublicKey(byte[] buffer) throws TelehashException {
-        return mCipherSet.decodeHashNamePublicKey(buffer);
+        return mDefaultCipherSet.decodeHashNamePublicKey(buffer);
     }
 
     /**
@@ -383,7 +429,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public HashNamePrivateKey decodeHashNamePrivateKey(byte[] buffer) throws TelehashException {
-        return mCipherSet.decodeHashNamePrivateKey(buffer);
+        return mDefaultCipherSet.decodeHashNamePrivateKey(buffer);
     }
 
     /**
@@ -397,7 +443,7 @@ public class CryptoImpl implements Crypto {
             HashNamePublicKey publicKey,
             HashNamePrivateKey privateKey
     ) {
-        return mCipherSet.createHashNameKeyPair(publicKey, privateKey);
+        return mDefaultCipherSet.createHashNameKeyPair(publicKey, privateKey);
     }
 
     /**
@@ -409,7 +455,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public LinePublicKey decodeLinePublicKey(byte[] buffer) throws TelehashException {
-        return mCipherSet.decodeLinePublicKey(buffer);
+        return mDefaultCipherSet.decodeLinePublicKey(buffer);
     }
 
     /**
@@ -421,7 +467,7 @@ public class CryptoImpl implements Crypto {
      */
     @Override
     public LinePrivateKey decodeLinePrivateKey(byte[] buffer) throws TelehashException {
-        return mCipherSet.decodeLinePrivateKey(buffer);
+        return mDefaultCipherSet.decodeLinePrivateKey(buffer);
     }
 
     /**
@@ -435,6 +481,6 @@ public class CryptoImpl implements Crypto {
             LinePublicKey publicKey,
             LinePrivateKey privateKey
     ) throws TelehashException {
-        return mCipherSet.createLineKeyPair(publicKey, privateKey);
+        return mDefaultCipherSet.createLineKeyPair(publicKey, privateKey);
     }
 }

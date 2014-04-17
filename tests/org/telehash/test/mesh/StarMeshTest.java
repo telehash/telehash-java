@@ -12,6 +12,7 @@ import org.telehash.core.CompletionHandler;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.TelehashException;
+import org.telehash.dht.DHT;
 
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +76,7 @@ public class StarMeshTest {
         final TelehashTestInstance dst = mNodes.get(NODE_B);
         Log.i("OPEN "+src.getNode()+" -> "+dst.getNode());
 
-        src.getSwitch().openChannel(seed.getNode(), "peer", new ChannelHandler() {
+        src.getSwitch().openChannel(seed.getNode(), DHT.PEER_TYPE, new ChannelHandler() {
             @Override
             public void handleError(Channel channel, Throwable error) {
                 Log.i("cannot open peer channel");
@@ -88,7 +89,7 @@ public class StarMeshTest {
             @Override
             public void handleOpen(Channel channel) {
                 Map<String,Object> fields = new HashMap<String,Object>();
-                fields.put("peer", dst.getNode().getHashName().asHex());
+                fields.put(DHT.PEER_KEY, dst.getNode().getHashName().asHex());
                 try {
                     channel.send(null, fields, false);
                 } catch (TelehashException e) {

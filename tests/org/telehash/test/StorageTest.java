@@ -18,40 +18,74 @@ import java.util.Set;
 public class StorageTest {
 
     // Use this JSON structure to test the parsing of seeds.
-    // Java-stringified using the following command line:
-    // sed 's/\\/\\\\/g; s/"/\\"/g; s/^/"/; $!s/$/\\n" +/; $s/$/\\n";/;' < seeds.json > seeds.txt
     // This seeds file was taken from
-    //     https://github.com/telehash/thjs/blob/master/seeds.json
-    // but the IPv4 port numbers have been changed to equal 9000 + the
-    // last octet of the IPv4 address (for validation purposes), and the
-    // network path format has been updated.
+    //     https://github.com/quartzjer/telehash-seeds/blob/master/seeds.json
+    // and Java-stringified using the "stringinator.pl" tool found
+    // elsewhere in this repository. The network paths have been
+    // changed so that port numbers equal 9000 + the last octet of the
+    // IPv4 address (for validation purposes).
     private static final String SEEDS_JSON =
-        "[{\n" +
-        "  \"paths\": [{\"type\":\"ipv4\",\"ip\":\"208.68.164.253\",\"port\":9253},{\"type\":\"ipv6\",\"ip\":\"2605:da00:5222:5269:230:48ff:fe35:6572\",\"port\":42424}],\n" +
-        "  \"hashname\": \"5fa6f146d784c9ae6f6d762fbc56761d472f3d097dfba3915c890eec9b79a088\",\n" +
-        "  \"pubkey\": \"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxoQkh8uIPe18Ym5kO3VX\\nqPhKsc7vhrMMH8HgUO3tSZeIcowHxZe+omFadTvquW4az7CV/+3EBVHWzuX90Vof\\nsDsgbPXhzeV/TPOgrwz9B6AgEAq+UZ+cs5BSjZXXQgFrTHzEy9uboio+StBt3nB9\\npLi/LlB0YNIoEk83neX++6dN63C3mSa55P8r4FvCWUXue2ZWfT6qamSGQeOPIUBo\\n4aiN6P4Hzqaco6YRO9v901jV+nq0qp0yHKnxlIYgiY7501vXWceMtnqcEkgzX4Rr\\n7nIoA6QnlUMkTUDP7N3ariNSwl8OL1ZjsFJz7XjfIJMQ+9kd1nNJ3sb4o3jOWCzj\\nXwIDAQAB\\n-----END PUBLIC KEY-----\\n\",\n" +
-        "  \"http\": \"http://208.68.164.253:42424\",\n" +
-        "  \"bridge\": true\n" +
-        "}, {\n" +
-        "  \"paths\": [{\"type\":\"ipv4\",\"ip\":\"173.255.220.185\",\"port\":9185},{\"type\":\"ipv6\",\"ip\":\"2600:3c01::f03c:91ff:fe70:ff59\",\"port\":42424}],\n" +
-        "  \"hashname\": \"b61120844c809260126aa0cf75390ef7f72c65a9ce03366efcf89ff549233758\",\n" +
-        "  \"pubkey\": \"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4xkpFtu9IQc/WiWNHGgm\\nKnJ/TgiU9ltLLD4yJSu5LOiV5nH5lcjD8LPD4IgxPbOVKS/Xs2sosNqYsxVbSH60\\nJ5EOzc3okIdTLj0OhDoEhpwBXpnWzRCYOqlRSeF78yu2oWxdP1zA9nMC7laB2veA\\nDJ4KIaGKcs1uHesD5DGTGtPSHErove03HkMSlOBHpt239bNnv4XayQuwoRBsCoiT\\ntKTPRxkbDN7KQtHozuumwq0wSedYoJe4r0Z36V6UU9KNnFvz2QR+CdRn3idDOeYj\\nGnKFa5775fQGU5pwOk31u7J+gQ8h+tTQq6WZL5VaEeeFD6V4a6Zet2kBGhT6Z7h0\\nuQIDAQAB\\n-----END PUBLIC KEY-----\\n\"\n" +
-        "}, {\n" +
-        "  \"paths\": [{\"type\":\"ipv4\",\"ip\":\"204.45.252.101\",\"port\":9101}],\n" +
-        "  \"hashname\": \"6b171cedc8945ca7ba078392c0d1bc34fe0e7f161fc60e7b1cdb246f68bcb683\",\n" +
-        "  \"pubkey\": \"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsXUyU223dwN5VbPZN9nn\\niiQ7gTcTK90ad83I+/Nd6M87QF0qwHuF+cQYeQP2aJEfgZsFVCVVwcjRUxjRaVX/\\nBSE4eKtIGazHr4idajkYka0No5hIJfw7p9INLZw6ALx4y9678sy2dyMAm0BHhY+A\\n4AzlFd0uO+I3MJKED5DF0baACLNu9VdNIaRQ/OQeL/Jl1b4VJF/yZ6FZGcyYGYF7\\nwf/ttSHMv1v1gCCC6o42Q2P67M+HpbPO1RD2IRrwmGI5Onmqp1bAqGmu4BMCfFsj\\nn/mCVJnVVC1GNiUWQY6n549j2y7Ow7JKmRGlWq2i+QWSGOUylZIvue+XIObY7/dv\\nPwIDAQAB\\n-----END PUBLIC KEY-----\\n\"\n" +
-        "}, {\n" +
-        "  \"paths\": [{\"type\":\"ipv4\",\"ip\":\"208.126.199.195\",\"port\": 9195},{\"type\":\"ipv6\",\"ip\":\"2001:470:c0a6:3::10\",\"port\":42424}],\n" +
-        "  \"hashname\": \"39c7f1d641947f51960ec5ab070680ea9dff110e8406cb07e4ae093a2e5d823a\",\n" +
-        "  \"pubkey\": \"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAltxAjgqbG441oAiqwF0p\\nbJBUpPi06W1c0m3lrGg/h5nv5njiZq7s6LV9JZKPLINRk4UA4DdILBvOlKXG8/kQ\\n0fMxve8di8EFbsaUCKaZ5zFWFYv1FPKc6TU29zIyQEGoZIZfphnfFUvk7PIOBd3m\\nyEkncLBviFHVrfY3sDupni9ZOLGeAqpinQfuD1kmc3FbsZ+6j3A7QfMqlXI56jw3\\nZRKrXyVL6eudj2FHL0ZO70m+MC3AcUBzXtwyDIY9xowIrcp6+dfSyQncGqKKDF3H\\nqLRch+KpYrAZ6abHKjuN93tlIPyyKNCYQwex+j/UKN/5SlqDV8ctp4LwImCZQYGb\\nLwIDAQAB\\n-----END PUBLIC KEY-----\\n\",\n" +
-        "  \"http\": \"http://208.126.199.195:42424\",\n" +
-        "  \"bridge\": true\n" +
-        "}, {\n" +
-        "  \"paths\": [{\"type\":\"ipv4\",\"ip\":\"162.243.1.152\",\"port\": 9152}],\n" +
-        "  \"hashname\": \"9ba9c175c3c26af9df5c8163ea91d4ae4eca59ba95d66deb287c89ea0c596979\",\n" +
-        "  \"pubkey\": \"-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnMrFnowz5jQAQrXSdj6M\\nZE8mqbWweXwc53oe0kNC+AmBCnobYkdL4ZXk8JiHxP+sNtaTxbEagdQohoqTX1Ap\\njjZ+pGt5Dcnqy1OfPMtUQyvEI1hL6xDU9msLPwK0NztHp1BlKeozppeBswNcPPxG\\nevAn6yd51dP+BcrRAM34G8C+TrnNQWmBTRob1eKifDS+80taVxma5jt2/JUHFTxo\\n2ualo4Wf/mScg8RXH4Pfhn7nIMBFQPom+58ERtORZWHl3aOty6It2inpPAx0PFBb\\nNzBbYRMLOkW7IYfTdXz+Y17pM6kEWK1Y5xUHGmxTMY4IZtvX2L5bTTMhAdSYgqSF\\nEQIDAQAB\\n-----END PUBLIC KEY-----\\n\"\n" +
-        "}]\n";
-    private static final int NUM_SEEDS = 5;
+        "{\n"+
+        "  \"89a4cbc6c27eb913c1bcaf06bac2d8b872c7cbef626b35b6d7eaf993590d37de\": {\n"+
+        "    \"admin\":\"http://github.com/quartzjer\",\n"+
+        "    \"paths\": [{\n"+
+        "      \"type\": \"ipv4\",\n"+
+        "      \"ip\": \"208.68.164.253\",\n"+
+        "      \"port\": 9253\n"+
+        "    }, {\n"+
+        "      \"type\": \"ipv6\",\n"+
+        "      \"ip\": \"2605:da00:5222:5269:230:48ff:fe35:6572\",\n"+
+        "      \"port\": 9253\n"+
+        "    }, {\n"+
+        "      \"type\": \"http\",\n"+
+        "      \"http\": \"http://208.68.164.253:42424\"\n"+
+        "    }],\n"+
+        "    \"parts\": {\n"+
+        "      \"2a\": \"beb07e8864786e1d3d70b0f537e96fb719ca2bbb4a2a3791ca45e215e2f67c9a\",\n"+
+        "      \"1a\": \"6c0da502755941a463454e9d478b16bbe4738e67\"\n"+
+        "    },\n"+
+        "    \"keys\": {\n"+
+        "      \"2a\": \"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvJlhpi2pZZRrnf+bmnnRRAQHfzMz"+
+                "DwOV+s+JzamyL0X9wwJK8m2DHCFcpJQSLFIzv3v+e102+pZlIWAU6vvO5s6J60C+9UwQoKj9L3cxUL/X"+
+                "mEBjAnbwfs+61HGSjf8yS8Uon/0oDXxssJyJjnrzAJT7K5G+Nqf5N5IJiEfhYkfa9wkhWR4fU1ZiC3PZ"+
+                "ZoMrGurGxWAwIs4No2LlBkZXUtAC31jISWODBAahGcaRjPgHFVaDxQ+gEQFse0Aa0mWA7KCRiSbBC89B"+
+                "rx837AREWFa7t14UAi01BLcPSkbAIbIv1SmM+E3k7HdN6rXTjz2h7Na5DOCS4z1LgujXW460WQIDAQAB"+
+                "\",\n"+
+        "      \"1a\": \"hhzKwBDYADu6gQdDrP2AgQJmAE5iIbEqpPmLLZI9w72rLTCCqob9sw==\"\n"+
+        "    },\n"+
+        "    \"bridge\": true\n"+
+        "  },\n"+
+        "  \"f50f423ce7f94fe98cdd09268c7e57001aed300b23020840a84a881c76739471\": {\n"+
+        "    \"admin\":\"http://github.com/quartzjer\",\n"+
+        "    \"paths\": [{\n"+
+        "      \"type\": \"ipv4\",\n"+
+        "      \"ip\": \"208.126.199.195\",\n"+
+        "      \"port\": 9195\n"+
+        "    }, {\n"+
+        "      \"type\": \"ipv6\",\n"+
+        "      \"ip\": \"2001:470:c0a6:3::10\",\n"+
+        "      \"port\": 9195\n"+
+        "    }, {\n"+
+        "      \"type\": \"http\",\n"+
+        "      \"http\": \"http://208.126.199.195:42424\"\n"+
+        "    }],\n"+
+        "    \"parts\": {\n"+
+        "      \"2a\": \"8a5235d7cebb82d48a945e7c4b301efed40503d50ea1063464fe839b12278d93\",\n"+
+        "      \"1a\": \"b3c9341ff5d11670c1e1c918ad51631b1251448a\"\n"+
+        "    },\n"+
+        "    \"keys\": {\n"+
+        "      \"2a\": \"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5mWOu3o0chHcpcxPYX43fD6DTWGk"+
+                "Cj09QaWerHbTX1Gua5eW8VdPOM/Ki21WEY2xcBa55/s37hIRP1XZveFiWgIXft9g/L+1AsF56cO0ZGnH"+
+                "hrp5Wabrt+L5mVuWg2VcSAUQ/gdoSLmDRTdOc0ruzroIN4a4Wnfk6rwvFYq/LfTj2w5cBD3ziVts4XSi"+
+                "cX9fnmWElrTKfGLWyC6W5ICbLZ0BmTt9CZLbdNmotuYqQkPXPJ0wccsWAuI8yjbmU2my+F+vakWbGFvM"+
+                "SCBlLlQLXMTnLbLtgnwgeujTHiJaB0Iycw5Q9FS0RiQ0QeFqUvmMX9BezKfayq2hHjcob58WbwIDAQAB"+
+                "\",\n"+
+        "      \"1a\": \"idT0VmmEmSdDF1eMrajIVHP0XZ/8Udgeas1Zxy0va5tD/KP393Ri3w==\"\n"+
+        "    },\n"+
+        "    \"bridge\": true\n"+
+        "  }\n"+
+        "}\n";
+    private static final int NUM_SEEDS = 2;
 
     private Storage mStorage;
 

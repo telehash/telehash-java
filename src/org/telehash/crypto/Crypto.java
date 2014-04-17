@@ -1,5 +1,6 @@
 package org.telehash.crypto;
 
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.TelehashException;
 
@@ -19,6 +20,14 @@ public interface Crypto {
     public CipherSet getCipherSet();
 
     /**
+     * Return the cipher set associated with the provided cipher set id.
+     * @param cipherSetId
+     * @return The cipher set implementation, or null if no cipher set
+     * matches the id.
+     */
+    public CipherSet getCipherSet(CipherSetIdentifier cipherSetId);
+
+    /**
      * Generate a cryptographically secure pseudo-random array of byte values.
      *
      * @param size The number of random bytes to produce.
@@ -33,6 +42,14 @@ public interface Crypto {
      * @return A 32-byte array representing the digest.
      */
     public byte[] sha256Digest(byte[] buffer);
+
+    /**
+     * Return a SHA-256 digest of the provided UTF-8 string.
+     *
+     * @param string The string to digest.
+     * @return A 32-byte array representing the digest.
+     */
+    public byte[] sha256Digest(String string);
 
     /**
      * Generate a fresh identity (i.e., RSA public and private key pair) for a

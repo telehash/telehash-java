@@ -30,6 +30,9 @@ public class Log {
     public static void i(String msg, Object... args) {
         println(msg, args);
     }
+    public static void w(String msg, Object... args) {
+        println(msg, args);
+    }
     public static void e(String msg, Object... args) {
         println(msg, args);
     }

@@ -1,5 +1,6 @@
 package org.telehash.test.mesh;
 
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.Identity;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
@@ -8,6 +9,7 @@ import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.Crypto;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.crypto.impl.CryptoImpl;
 import org.telehash.network.InetPath;
 import org.telehash.network.Network;
@@ -22,6 +24,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class TelehashTestInstance {
@@ -155,13 +158,22 @@ public class TelehashTestInstance {
             PrintWriter out = new PrintWriter(summaryFile);
             out.println("index: "+mIndex);
             out.println("hashname: "+mIdentity.getHashName());
-            Log.i("pub: "+mIdentity.getPublicKey());
-            out.println("rsa pub: "+Util.bytesToHex(
-                    mTelehash.getCrypto().sha256Digest(mIdentity.getPublicKey().getEncoded())
-            ));
-            out.println("rsa pri: "+Util.bytesToHex(
-                    mTelehash.getCrypto().sha256Digest(mIdentity.getPrivateKey().getEncoded())
-            ));
+            Map<CipherSetIdentifier, HashNamePublicKey> publicKeys =
+                    mIdentity.getHashNamePublicKeys();
+            for (Map.Entry<CipherSetIdentifier, HashNamePublicKey> entry : publicKeys.entrySet()) {
+                CipherSetIdentifier csid = entry.getKey();
+                Log.i(""+csid+" pub: "+entry.getValue());
+                out.println(""+csid+" pub: "+Util.bytesToHex(
+                        mTelehash.getCrypto().sha256Digest(
+                                mIdentity.getHashNamePublicKey(csid).getEncoded()
+                        )
+                ));
+                out.println(""+csid+" pri: "+Util.bytesToHex(
+                        mTelehash.getCrypto().sha256Digest(
+                                mIdentity.getHashNamePrivateKey(csid).getEncoded()
+                        )
+                ));
+            }
             out.close();
         } catch (Throwable e) {
             e.printStackTrace();
@@ -188,10 +200,7 @@ public class TelehashTestInstance {
         try {
             InetPath path =
                     new InetPath(((InetPath)mNetwork.getPreferredLocalPath()).getAddress(), mPort);
-            return new Node(
-                    mIdentity.getPublicKey(),
-                    path
-            );
+            return mIdentity.getNode(path);
         } catch (TelehashException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

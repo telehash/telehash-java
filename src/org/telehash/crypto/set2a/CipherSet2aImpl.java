@@ -19,6 +19,9 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.util.BigIntegers;
+import org.telehash.core.CipherSetIdentifier;
+import org.telehash.core.FingerprintSet;
+import org.telehash.core.HashName;
 import org.telehash.core.Identity;
 import org.telehash.core.Line;
 import org.telehash.core.Node;
@@ -43,7 +46,7 @@ import java.security.SecureRandom;
 import java.security.Security;
 
 public class CipherSet2aImpl implements CipherSet {
-    private final static short CIPHER_SET_ID = 0x2a;
+    private final static CipherSetIdentifier CIPHER_SET_ID = new CipherSetIdentifier(0x2a);
     private static final byte[] FIXED_IV = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
     private static final int OPEN_INNER_MAC_BITS = 128;
     private static final int OPEN_SIGNATURE_MAC_BITS = 32;
@@ -89,19 +92,18 @@ public class CipherSet2aImpl implements CipherSet {
      * Return the Cipher Set ID (CSID) for this cipher set.
      */
     @Override
-    public short getCipherSetId() {
+    public CipherSetIdentifier getCipherSetId() {
         return CIPHER_SET_ID;
     }
 
     /**
-     * Generate a fresh identity (i.e., RSA public and private key pair) for a
-     * newly provisioned Telehash node.
+     * Generate a fresh hashname key pair for a newly provisioned Telehash node.
      *
-     * @return The new identity.
+     * @return The new hashname key pair.
      * @throws TelehashException
      */
     @Override
-    public Identity generateIdentity() throws TelehashException {
+    public HashNameKeyPair generateHashNameKeyPair() throws TelehashException {
         // generate a 2048 bit key pair
         RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
         generator.init(
@@ -120,11 +122,9 @@ public class CipherSet2aImpl implements CipherSet {
         if (! (privateKey instanceof RSAPrivateCrtKeyParameters)) {
             throw new TelehashException("generated key is not an RSA private key.");
         }
-        return new Identity(
-                new HashNameKeyPairImpl(
-                        new HashNamePublicKeyImpl(publicKey),
-                        new HashNamePrivateKeyImpl((RSAPrivateCrtKeyParameters)privateKey)
-                )
+        return new HashNameKeyPairImpl(
+                new HashNamePublicKeyImpl(publicKey),
+                new HashNamePrivateKeyImpl((RSAPrivateCrtKeyParameters)privateKey)
         );
     }
 
@@ -318,7 +318,8 @@ public class CipherSet2aImpl implements CipherSet {
             SplitPacket splitPacket,
             Path path
     ) throws TelehashException {
-        if (splitPacket.json != null || splitPacket.singleByteHeader != CIPHER_SET_ID) {
+        CipherSetIdentifier csid = new CipherSetIdentifier(splitPacket.singleByteHeader);
+        if (splitPacket.json != null || (! csid.equals(CIPHER_SET_ID))) {
             throw new TelehashException("invalid open packet");
         }
         if (splitPacket.body.length <
@@ -349,7 +350,7 @@ public class CipherSet2aImpl implements CipherSet {
 
         // Using your hashname private key, decrypt the line public key of the sender.
         byte[] linePublicKeyBuffer =
-                mCrypto.decryptRSAOAEP(telehash.getIdentity().getPrivateKey(), lineKeyCiphertext);
+                mCrypto.decryptRSAOAEP(telehash.getIdentity().getHashNamePrivateKey(CIPHER_SET_ID), lineKeyCiphertext);
         LinePublicKey linePublicKey = decodeLinePublicKey(linePublicKeyBuffer);
 
         // Hash the ECC public key with SHA-256 to generate the AES key
@@ -379,8 +380,12 @@ public class CipherSet2aImpl implements CipherSet {
         HashNamePublicKey senderHashNamePublicKey =
                 mCrypto.decodeHashNamePublicKey(innerPacket.body);
 
-        // SHA-256 hash the hashname public key to derive the sender's hashname
-        Node sourceNode = new Node(senderHashNamePublicKey, path);
+        // derive the sender's hashname and create a node object
+        //Node sourceNode = new Node(senderHashNamePublicKey, path);
+        FingerprintSet senderFingerprints = new FingerprintSet(innerHead.mFrom);
+        HashName senderHashName = senderFingerprints.getHashName();
+        Node sourceNode = new Node(senderHashName, csid, senderHashNamePublicKey, path);
+        sourceNode.updateFingerprints(senderFingerprints);
 
         // Verify the "at" timestamp is newer than any other "open"
         // requests received from the sender.
@@ -456,7 +461,7 @@ public class CipherSet2aImpl implements CipherSet {
         // generate KEYC (the line key ciphertext) by encrypting the
         // public line key with the recipient's hashname public key.
         byte[] lineKeyCiphertext = crypto.encryptRSAOAEP(
-                open.getDestinationNode().getPublicKey(),
+                open.getDestinationNode().getPublicKey(CIPHER_SET_ID),
                 open.getLinePublicKey().getEncoded()
         );
         if (lineKeyCiphertext.length != LINE_KEY_CIPHERTEXT_BYTES) {
@@ -498,7 +503,8 @@ public class CipherSet2aImpl implements CipherSet {
         OpenPacket.Inner innerHead = new OpenPacket.Inner(
                 open.getDestinationNode().getHashName(),
                 open.getOpenTime(),
-                open.getLineIdentifier()
+                open.getLineIdentifier(),
+                identity.getNode().getFingerprints()
         );
         byte[] innerPacket = innerHead.serialize();
         innerPacket = Util.concatenateByteArrays(
@@ -507,7 +513,7 @@ public class CipherSet2aImpl implements CipherSet {
                         (byte)(innerPacket.length & 0xFF)
                 },
                 innerPacket,
-                identity.getPublicKey().getEncoded()
+                identity.getHashNamePublicKey(CIPHER_SET_ID).getEncoded()
         );
 
         // Encrypt the inner packet using the hashed line public key from #4
@@ -517,7 +523,10 @@ public class CipherSet2aImpl implements CipherSet {
 
         // Create a signature from the encrypted inner packet using your own hashname
         // keypair, a SHA 256 digest, and PKCSv1.5 padding
-        byte[] signature = mCrypto.signRSA(identity.getPrivateKey(), innerPacketCiphertext);
+        byte[] signature = mCrypto.signRSA(
+                identity.getHashNamePrivateKey(CIPHER_SET_ID),
+                innerPacketCiphertext
+        );
 
         // Encrypt the signature using a new AES-256-CTR cipher with the same IV
         // and a new SHA-256 key hashed from the line public key + the
@@ -539,7 +548,7 @@ public class CipherSet2aImpl implements CipherSet {
         byte[] openHeader = new byte[OPEN_HEADER_BYTES];
         openHeader[0] = 0x00;
         openHeader[1] = 0x01;
-        openHeader[2] = CIPHER_SET_ID;
+        openHeader[2] = CIPHER_SET_ID.getByte();
         byte[] buffer = Util.concatenateByteArrays(
                 openHeader, lineKeyCiphertext, signatureCiphertext, innerPacketCiphertext
         );

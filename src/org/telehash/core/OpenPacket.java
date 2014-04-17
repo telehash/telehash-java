@@ -1,6 +1,7 @@
 package org.telehash.core;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.crypto.LinePrivateKey;
@@ -8,6 +9,9 @@ import org.telehash.crypto.LinePublicKey;
 import org.telehash.network.Path;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * A Telehash "open" packet is used to establish a line between two Telehash
@@ -41,6 +45,7 @@ public class OpenPacket extends Packet {
     public static final String OPEN_TIME_KEY = "at";
     public static final String DESTINATION_KEY = "to";
     public static final String LINE_IDENTIFIER_KEY = "line";
+    public static final String FROM_KEY = "from";
 
     public static final int IV_SIZE = 16;
     public static final int LINE_IDENTIFIER_SIZE = 16;
@@ -53,6 +58,7 @@ public class OpenPacket extends Packet {
     private HashNamePublicKey mSenderHashNamePublicKey;
     private LinePublicKey mLinePublicKey;
     private LinePrivateKey mLinePrivateKey;
+    private CipherSetIdentifier mCipherSetIdentifier;
 
     // TODO: remove these in favor of an Inner object?
     private long mOpenTime;
@@ -62,15 +68,21 @@ public class OpenPacket extends Packet {
     private byte[] mPreRenderedLineKeyCiphertext;
 
     public static class Inner {
-        // TODO: "from" field
         public HashName mDestination;
         public long mOpenTime;
         public LineIdentifier mLineIdentifier;
+        public Map<CipherSetIdentifier,byte[]> mFrom =
+                new TreeMap<CipherSetIdentifier,byte[]>();
 
-        public Inner(HashName destination, long openTime, LineIdentifier lineIdentifier) {
+        public Inner(HashName destination, long openTime,
+                LineIdentifier lineIdentifier,
+                Map<CipherSetIdentifier, byte[]> from) {
             mDestination = destination;
             mOpenTime = openTime;
             mLineIdentifier = lineIdentifier;
+            if (from != null) {
+                mFrom.putAll(from);
+            }
         }
 
         public static Inner deserialize(SplitPacket innerPacket) throws TelehashException {
@@ -86,16 +98,40 @@ public class OpenPacket extends Packet {
             byte[] lineIdentifierBytes = Util.hexToBytes(lineIdentifierString);
             Util.assertBufferSize(lineIdentifierBytes, OpenPacket.LINE_IDENTIFIER_SIZE);
             LineIdentifier lineIdentifier = new LineIdentifier(lineIdentifierBytes);
-            return new Inner(destination, openTime, lineIdentifier);
+
+            // parse the "from" fingerprints
+            JSONObject from = innerPacket.json.getJSONObject(FROM_KEY);
+            Iterator<?> fromIterator = from.keys();
+            Map<CipherSetIdentifier, byte[]> fingerprints =
+                    new TreeMap<CipherSetIdentifier, byte[]>();
+            while (fromIterator.hasNext()) {
+                String key = (String)fromIterator.next();
+                String value = from.getString(key);
+                byte[] csidBuffer = Util.hexToBytes(key);
+                if (csidBuffer == null || csidBuffer.length != 1 || csidBuffer[0] == 0) {
+                    throw new TelehashException("invalid cipher set id in open.from");
+                }
+                CipherSetIdentifier csid = new CipherSetIdentifier(csidBuffer[0]);
+                byte[] fingerprint = Util.hexToBytes(value);
+                fingerprints.put(csid, fingerprint);
+            }
+
+            return new Inner(destination, openTime, lineIdentifier, fingerprints);
         }
 
         public byte[] serialize() throws TelehashException {
             byte[] innerPacketHeaders;
             try {
+                JSONObject fromJson = new JSONObject();
+                for (Map.Entry<CipherSetIdentifier,byte[]> entry : mFrom.entrySet()) {
+                    fromJson.put(entry.getKey().asHex(), Util.bytesToHex(entry.getValue()));
+                }
                 innerPacketHeaders = new JSONStringer()
                     .object()
                     .key(OPEN_TIME_KEY)
                     .value(mOpenTime)
+                    .key(FROM_KEY)
+                    .value(fromJson)
                     .key(DESTINATION_KEY)
                     .value(mDestination.asHex())
                     .key(LINE_IDENTIFIER_KEY)
@@ -112,12 +148,15 @@ public class OpenPacket extends Packet {
         }
     }
 
-    public OpenPacket(Identity identity, Node destinationNode) {
+    public OpenPacket(Identity identity, Node destinationNode, CipherSetIdentifier csid) {
         mIdentity = identity;
         mDestinationNode = destinationNode;
-        mSenderHashNamePublicKey = identity.getPublicKey();
+        mSenderHashNamePublicKey = identity.getHashNamePublicKey(csid);
+        if (mSenderHashNamePublicKey == null) {
+            throw new IllegalArgumentException("invalid cipher set id");
+        }
 
-        if (destinationNode.getPublicKey() == null) {
+        if (destinationNode.getPublicKey(csid) == null) {
             throw new IllegalArgumentException(
                     "attempt to open a line to a node with unknown public key"
             );
@@ -162,6 +201,14 @@ public class OpenPacket extends Packet {
     }
     public LinePrivateKey getLinePrivateKey() {
         return mLinePrivateKey;
+    }
+
+    public void setCipherSetIdentifier(CipherSetIdentifier cipherSetIdentifier) {
+        mCipherSetIdentifier = cipherSetIdentifier;
+    }
+
+    public CipherSetIdentifier getCipherSetIdentifier() {
+        return mCipherSetIdentifier;
     }
 
     public void setOpenTime(long openTime) {
@@ -233,11 +280,19 @@ public class OpenPacket extends Packet {
             SplitPacket splitPacket,
             Path path
     ) throws TelehashException {
-        return Telehash.get().getCrypto().getCipherSet().parseOpenPacket(
+        CipherSetIdentifier cipherSetIdentifier =
+                new CipherSetIdentifier(splitPacket.singleByteHeader);
+        if (! cipherSetIdentifier.equals(
+                Telehash.get().getCrypto().getCipherSet().getCipherSetId())) {
+            throw new TelehashException("unsupported cipher set id");
+        }
+        OpenPacket openPacket = Telehash.get().getCrypto().getCipherSet().parseOpenPacket(
                 telehash,
                 splitPacket,
                 path
         );
+        openPacket.setCipherSetIdentifier(cipherSetIdentifier);
+        return openPacket;
     }
 
     @Override
