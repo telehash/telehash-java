@@ -206,20 +206,24 @@ public class DHT {
 
         Log.i("processing: seek "+target);
 
-        JSONArray see = new JSONArray();
+        JSONArray seeArray = new JSONArray();
         for (PeerNode node : nodes) {
             if (node.getPath() instanceof InetPath) {
-                InetPath path = (InetPath)node.getPath();
-                String seeNode =
-                        node.getHashName().asHex() + "," +
-                        path.getAddress().getHostAddress() + "," +
-                        path.getPort();
-                see.put(seeNode);
-                Log.i("\tsee: "+seeNode);
+                PeerNode requestingNode =
+                        (PeerNode)channel.getLine().getRemoteNode();
+                CipherSetIdentifier csid = PeerNode.bestCipherSet(requestingNode, node);
+                if (csid == null) {
+                    Log.e("seek handling: cannot determine best cipher set match between nodes");
+                    continue;
+                }
+                SeeNode see = new SeeNode(node.getHashName(), node.getActiveCipherSetIdentifier(), node.getPath());
+                seeArray.put(see.render());
+                Log.i("\tsee: " + see.render());
+
             }
         }
         Map<String,Object> fields = new HashMap<String,Object>();
-        fields.put(SEE_KEY, see);
+        fields.put(SEE_KEY, seeArray);
         try {
             channel.send(null, fields, true);
         } catch (TelehashException e) {

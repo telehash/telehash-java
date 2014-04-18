@@ -1,5 +1,6 @@
 package org.telehash.core;
 
+import org.telehash.network.InetPath;
 import org.telehash.network.Path;
 
 /**
@@ -12,7 +13,7 @@ public class SeeNode extends Node {
     private final Path mHolePunchPath;
     private final PeerNode mReferringNode;
 
-    private SeeNode(
+    public SeeNode(
             HashName hashName,
             CipherSetIdentifier cipherSetIdentifier,
             Path holePunchPath
@@ -27,7 +28,7 @@ public class SeeNode extends Node {
     public static SeeNode parse(Node referringNode, String seeLine) throws TelehashException {
         String[] parts  = seeLine.split(",");
         if (parts.length != 2 && parts.length != 4) {
-            throw new TelehashException("invalid see line");
+            throw new TelehashException("invalid see line: "+seeLine);
         }
 
         HashName hashName = new HashName(Util.hexToBytes(parts[0]));
@@ -44,6 +45,16 @@ public class SeeNode extends Node {
             holePunchPath = null;
         }
         return new SeeNode(hashName, cipherSetIdentifier, holePunchPath);
+    }
+
+    public String render() {
+        if (mHolePunchPath == null || (!(mHolePunchPath instanceof InetPath))) {
+            return mHashName.asHex() + "," + mCipherSetIdentifier.asHex();
+        } else {
+            return mHashName.asHex() + "," + mCipherSetIdentifier.asHex() + ","
+                    + ((InetPath)mHolePunchPath).getAddress().getHostAddress() + ","
+                    + ((InetPath)mHolePunchPath).getPort();
+        }
     }
 
     public CipherSetIdentifier getCipherSetIdentifier() {

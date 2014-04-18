@@ -146,6 +146,13 @@ TODO
         * Persistent peer channels for relay (auto-bridge).
         * Path channel for network path negotiation.
 
+* Opportunities to reduce redundancy
+    * Consider not tracking the remote node in a Line object.
+    * There's no need having a separate SeedNode object, if we don't
+      track the full set of public keys for seeds.  When parsing the
+      seeds.json, only extract the best csid/PK for our switch into
+      PeerNode objects.
+
 * Other required changes
     * Paths
         * ~~Support multiple paths via path arrays.~~
