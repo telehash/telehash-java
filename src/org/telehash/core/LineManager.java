@@ -8,11 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * The Switch class is the heart of Telehash. The switch is responsible for
- * managing identity and node information, maintaining the DHT, and facilitating
- * inter-node communication.
- */
 public class LineManager {
 
     private Telehash mTelehash;
@@ -87,7 +82,7 @@ public class LineManager {
                     sb.append(line.getOutgoingLineIdentifier()+" ");
                 }
                 sb.append(line.getState().name()+" ");
-                sb.append(node.getPath()+"\n");
+                //sb.append(node.getPath()+"\n");
             }
             return sb.toString();
         }
@@ -105,7 +100,7 @@ public class LineManager {
     }
 
     public void openChannel(
-            Node destination,
+            PeerNode destination,
             final String type,
             final ChannelHandler channelHandler
     ) throws TelehashException {
@@ -176,7 +171,7 @@ public class LineManager {
         mLineTracker.remove(line);
     }
 
-    public Line getLineByNode(Node node) {
+    public Line getLineByNode(PeerNode node) {
         return mLineTracker.getByNode(node);
     }
 
@@ -208,17 +203,26 @@ public class LineManager {
 
         // if a line is already open to this node, re-use the same line by
         // simply adding the provided completion handler.
-        Line existingLine = mLineTracker.getByNode(destination);
-        if ((! reopen) && existingLine != null) {
-            // if the line is PENDING, the handler will be called with the line is ESTABLISHED.
-            // if the line is ESTABLISHED, the handler will be called immediately.
-            existingLine.addOpenCompletionHandler(handler, null);
-            return;
+        if (destination instanceof PeerNode) {
+            Line existingLine = mLineTracker.getByNode(destination);
+            if ((! reopen) && existingLine != null) {
+                // if the line is PENDING, the handler will be called with the line is ESTABLISHED.
+                // if the line is ESTABLISHED, the handler will be called immediately.
+                existingLine.addOpenCompletionHandler(handler, null);
+                return;
+            }
         }
 
         // determine the best cipher set which is common between our two nodes
-        CipherSetIdentifier csid =
-                Node.bestCipherSet(destination, mTelehash.getIdentity().getNode());
+        CipherSetIdentifier csid;
+        if (destination instanceof PeerNode) {
+            csid = ((PeerNode)destination).getActiveCipherSetIdentifier();
+        } else if (destination instanceof See) {
+            csid = ((See)destination).getCipherSetIdentifier();
+        } else {
+            // TODO: support PlaceholderNode
+            throw new RuntimeException("node inheritance hierarchy changed - unknown type");
+        }
         if (csid == null) {
             // TODO: TelehashException!
             throw new RuntimeException("no common cipher set with the remote node");
@@ -228,13 +232,21 @@ public class LineManager {
         final Line line = new Line(mTelehash, csid);
         line.setRemoteNode(destination);
         line.addOpenCompletionHandler(handler, attachment);
-        // create an open packet
-        OpenPacket openPacket = new OpenPacket(mTelehash.getIdentity(), destination, csid);
-        // note: this open packet is *outgoing* but its embedded line identifier
-        // is to be used for *incoming* line packets.
-        Log.i("openPacket.lineid="+openPacket.getLineIdentifier());
-        line.setIncomingLineIdentifier(openPacket.getLineIdentifier());
-        line.setLocalOpenPacket(openPacket);
+        // create an open packet, if we have cs/pubkey for the remote
+        // (i.e. destination is a PeerNode.)
+        // TODO: move this to a point after which we *certainly* have a PeerNode.
+        if (destination instanceof PeerNode) {
+            OpenPacket openPacket = new OpenPacket(
+                    mTelehash.getLocalNode(),
+                    (PeerNode)destination,
+                    csid
+            );
+            // note: this open packet is *outgoing* but its embedded line identifier
+            // is to be used for *incoming* line packets.
+            Log.i("openPacket.lineid="+openPacket.getLineIdentifier());
+            line.setIncomingLineIdentifier(openPacket.getLineIdentifier());
+            line.setLocalOpenPacket(openPacket);
+        }
         mLineTracker.add(line);
 
         // Determine if this is a direct line open, or a reverse line open.
@@ -243,15 +255,19 @@ public class LineManager {
         // or we have been asked to initiate an open to this node via
         // peer/connect).  Otherwise, we must ask the referring node to
         // introduce us via peer/connect.
-        if (destination.getPublicKey(csid) == null || destination.getPath() == null) {
-            Node referringNode = destination.getReferringNode();
-            if (referringNode != null) {
-                openLineReverse(line, referringNode);
-            } else {
-                openLineReverseWithNodeLookup(line);
+        if (destination instanceof PeerNode) {
+            if (((PeerNode) destination).getPath() == null) {
+                throw new RuntimeException("peer node has no path!");
             }
-        } else {
             openLineDirect(line);
+        } else if (destination instanceof See) {
+            See see = (See)destination;
+            PeerNode referringNode = see.getReferringNode();
+            openLineReverse(line, referringNode);
+        } else if (destination instanceof PlaceholderNode) {
+            openLineReverseWithNodeLookup(line);
+        } else {
+            throw new RuntimeException("node inheritance hierarchy changed - unknown type");
         }
     }
 
@@ -283,17 +299,29 @@ public class LineManager {
                         line.fail(e);
                     }
                     @Override
-                    public void handleCompletion(NodeLookupTask task, Node result) {
+                    public void handleCompletion(NodeLookupTask task, Node resultNode) {
                         // if no nodes could be found, error out
-                        if (result == null) {
+                        if (resultNode == null) {
                             mLineTracker.remove(line);
                             line.fail(new TelehashException("node not found"));
                             return;
                         }
-                        // replace the line's remote node object with the new one which
-                        // should have network path information and a referring node.
-                        line.setRemoteNode(result);
-                        openLineReverse(line, result.getReferringNode());
+
+                        // replace the line's placeholder node with the lookup result
+                        line.setRemoteNode(resultNode);
+
+                        // the result of a node lookup should be either a SeeNode
+                        // or a PeerNode.
+                        if (resultNode instanceof See) {
+                            See see = (See)resultNode;
+                            openLineReverse(line, see.getReferringNode());
+                        } else if (resultNode instanceof PeerNode) {
+                            openLineDirect(line);
+                        } else {
+                            mLineTracker.remove(line);
+                            line.fail(new TelehashException("lookup returned unknown type"));
+                            return;
+                        }
                     }
                 }
         );
@@ -301,7 +329,7 @@ public class LineManager {
 
     private void openLineReverse(
             final Line line,
-            final Node referringNode
+            final PeerNode referringNode
     ) {
         Line referringLine = getLineByNode(referringNode);
         if (referringLine == null) {
@@ -346,7 +374,7 @@ public class LineManager {
         Log.i("OPEN received from: "+incomingOpenPacket.getSourceNode());
 
         // is there a pending line for this?
-        Node remoteNode = incomingOpenPacket.getSourceNode();
+        PeerNode remoteNode = incomingOpenPacket.getSourceNode();
         Line line = mLineTracker.getByNode(remoteNode);
         if (line != null && line.getState() == Line.State.DIRECT_OPEN_PENDING && (
                 line.getOutgoingLineIdentifier() == null ||
@@ -376,7 +404,7 @@ public class LineManager {
             } else {
                 // create a new open package and line.
                 replyOpenPacket = new OpenPacket(
-                        mTelehash.getIdentity(),
+                        mTelehash.getLocalNode(),
                         incomingOpenPacket.getSourceNode(),
                         incomingOpenPacket.getCipherSet().getCipherSetId()
                 );

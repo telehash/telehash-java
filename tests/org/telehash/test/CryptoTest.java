@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.HashName;
-import org.telehash.core.Identity;
+import org.telehash.core.LocalNode;
 import org.telehash.core.Util;
 import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
@@ -25,7 +25,7 @@ import org.telehash.crypto.LinePublicKey;
 import org.telehash.crypto.impl.CryptoImpl;
 
 import java.io.File;
-import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 public class CryptoTest {
@@ -36,7 +36,7 @@ public class CryptoTest {
 
     private static final CipherSetIdentifier CIPHER_SET_ID = new CipherSetIdentifier(0x2a);
 
-    private static final String IDENTITY_PUBLIC_KEY =
+    private static final String LOCALNODE_PUBLIC_KEY =
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvv8h0XuJHXaUaQpBDFTA" +
             "e6Pj2evamzkTgA2QfYcMjcmRK4V+o7Kv54RvD02MQIGJGSEF2nsqKcE4MpseRWGB" +
             "PH3/mILG+ru30IxjKscIPwADHll8DOTkfez24XP5CvqNeXkoKV9/AgtYkrII4Kh/" +
@@ -44,7 +44,7 @@ public class CryptoTest {
             "nBuEcKSeGSpyFyzXJF4sz8kietALRnoKjkAGNTyrrteYLRiPRa0ek/1kq7tZ6168" +
             "dhOxRQD4vZwh6wZm35eV1XlbllchvgtgCt10lXsSZhSKsb6/4TW2KlZtb8IaHCqt" +
             "lwIDAQAB";
-    private static final String IDENTITY_PRIVATE_KEY =
+    private static final String LOCALNODE_PRIVATE_KEY =
             "MIIEowIBAAKCAQEAvv8h0XuJHXaUaQpBDFTAe6Pj2evamzkTgA2QfYcMjcmRK4V+" +
             "o7Kv54RvD02MQIGJGSEF2nsqKcE4MpseRWGBPH3/mILG+ru30IxjKscIPwADHll8" +
             "DOTkfez24XP5CvqNeXkoKV9/AgtYkrII4Kh/P9qxREs/aPuov2JSlZAspznaj45S" +
@@ -99,20 +99,20 @@ public class CryptoTest {
 
     private Crypto mCrypto;
     private CipherSet mCipherSet;
-    private Identity mIdentity;
+    private LocalNode mLocalNode;
 
     @Before
     public void setUp() throws Exception {
         mCrypto = new CryptoImpl();
         mCipherSet = mCrypto.getCipherSet(CIPHER_SET_ID);
         HashNameKeyPair keyPair = mCipherSet.createHashNameKeyPair(
-                mCipherSet.decodeHashNamePublicKey(Util.base64Decode(IDENTITY_PUBLIC_KEY)),
-                mCipherSet.decodeHashNamePrivateKey(Util.base64Decode(IDENTITY_PRIVATE_KEY))
+                mCipherSet.decodeHashNamePublicKey(Util.base64Decode(LOCALNODE_PUBLIC_KEY)),
+                mCipherSet.decodeHashNamePrivateKey(Util.base64Decode(LOCALNODE_PRIVATE_KEY))
         );
-        Map<CipherSetIdentifier,HashNameKeyPair> keyPairMap =
+        SortedMap<CipherSetIdentifier,HashNameKeyPair> keyPairMap =
                 new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
         keyPairMap.put(CIPHER_SET_ID, keyPair);
-        mIdentity = new Identity(keyPairMap);
+        mLocalNode = new LocalNode(keyPairMap);
     }
 
     @After
@@ -126,9 +126,9 @@ public class CryptoTest {
     }
 
     @Test
-    public void testGenerateIdentity() throws Exception {
-        Identity identity = mCrypto.generateIdentity();
-        HashName hashName = identity.getHashName();
+    public void testGenerateLocalNode() throws Exception {
+        LocalNode localNode = mCrypto.generateLocalNode();
+        HashName hashName = localNode.getHashName();
         assertNotNull(hashName);
         byte[] hashNameBytes = hashName.getBytes();
         assertNotNull(hashNameBytes);
@@ -138,7 +138,7 @@ public class CryptoTest {
     @Test
     public void testRSAPublicKeyEncodeDecode() throws Exception {
         // DER-encode the public key
-        HashNamePublicKey publicKey = mIdentity.getHashNamePublicKey(CIPHER_SET_ID);
+        HashNamePublicKey publicKey = mLocalNode.getPublicKey(CIPHER_SET_ID);
         byte[] publicKeyBytes = publicKey.getEncoded();
         String publicKeyHex = Util.bytesToHex(publicKeyBytes);
 
@@ -152,7 +152,7 @@ public class CryptoTest {
     @Test
     public void testRSAPrivateKeyEncodeDecode() throws Exception {
         // DER-encode the private key
-        HashNamePrivateKey privateKey = mIdentity.getHashNamePrivateKey(CIPHER_SET_ID);
+        HashNamePrivateKey privateKey = mLocalNode.getPrivateKey(CIPHER_SET_ID);
         byte[] privateKeyBytes = privateKey.getEncoded();
         String privateKeyHex = Util.bytesToHex(privateKeyBytes);
 
@@ -173,11 +173,11 @@ public class CryptoTest {
         // write to files
         mCipherSet.writeHashNamePublicKeyToFile(
                 publicKeyFilename,
-                mIdentity.getHashNamePublicKey(CIPHER_SET_ID)
+                mLocalNode.getPublicKey(CIPHER_SET_ID)
         );
         mCipherSet.writeHashNamePrivateKeyToFile(
                 privateKeyFilename,
-                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID)
+                mLocalNode.getPrivateKey(CIPHER_SET_ID)
         );
 
         // read from files
@@ -188,11 +188,11 @@ public class CryptoTest {
 
         // assert equality
         assertArrayEquals(
-                mIdentity.getHashNamePublicKey(CIPHER_SET_ID).getEncoded(),
+                mLocalNode.getPublicKey(CIPHER_SET_ID).getEncoded(),
                 readPublicKey.getEncoded()
         );
         assertArrayEquals(
-                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID).getEncoded(),
+                mLocalNode.getPrivateKey(CIPHER_SET_ID).getEncoded(),
                 readPrivateKey.getEncoded()
         );
 
@@ -210,14 +210,14 @@ public class CryptoTest {
         HashNamePublicKey publicKey = mCipherSet.decodeHashNamePublicKey(
                 Util.hexToBytes(
                         Util.bytesToHex(
-                                mIdentity.getHashNamePublicKey(CIPHER_SET_ID).getEncoded()
+                                mLocalNode.getPublicKey(CIPHER_SET_ID).getEncoded()
                         )
                 )
         );
         HashNamePrivateKey privateKey = mCipherSet.decodeHashNamePrivateKey(
                 Util.hexToBytes(
                         Util.bytesToHex(
-                                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID).getEncoded()
+                                mLocalNode.getPrivateKey(CIPHER_SET_ID).getEncoded()
                         )
                 )
         );
@@ -242,7 +242,7 @@ public class CryptoTest {
     @Test
     public void testRSASigning() throws Exception {
         byte[] signature = mCrypto.signRSA(
-                mIdentity.getHashNamePrivateKey(CIPHER_SET_ID),
+                mLocalNode.getPrivateKey(CIPHER_SET_ID),
                 TEST_MESSAGE.getBytes("UTF-8")
         );
         assertNotNull(signature);

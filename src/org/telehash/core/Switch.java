@@ -10,13 +10,14 @@ import org.telehash.network.Path;
 import org.telehash.network.Reactor;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * The Switch class is the heart of Telehash. The switch is responsible for
- * managing identity and node information, maintaining the DHT, and facilitating
+ * managing local node parameters, maintaining the DHT, and facilitating
  * inter-node communication.
  */
 public class Switch implements DatagramHandler, MessageHandler {
@@ -24,7 +25,7 @@ public class Switch implements DatagramHandler, MessageHandler {
     private static final int DEFAULT_PORT = 42424;
 
     private Telehash mTelehash;
-    private Set<Node> mSeeds;
+    private Set<PeerNode> mSeeds;
     private int mPort;
     private Reactor mReactor;
     private Thread mThread;
@@ -33,7 +34,7 @@ public class Switch implements DatagramHandler, MessageHandler {
     private Flag mStopFlag = new Flag();
     private boolean mStopRequested = false;
 
-    private Node mLocalNode;
+    private PeerNode mLocalNode;
     private Scheduler mScheduler = new Scheduler();
 
     private DHT mDHT;
@@ -50,13 +51,13 @@ public class Switch implements DatagramHandler, MessageHandler {
         }
     }
 
-    public Switch(Telehash telehash, Set<Node> seeds) {
+    public Switch(Telehash telehash, Set<PeerNode> seeds) {
         mTelehash = telehash;
         mSeeds = seeds;
         mPort = DEFAULT_PORT;
     }
 
-    public Switch(Telehash telehash, Set<Node> seeds, int port) {
+    public Switch(Telehash telehash, Set<PeerNode> seeds, int port) {
         mTelehash = telehash;
         mSeeds = seeds;
         mPort = port;
@@ -75,7 +76,8 @@ public class Switch implements DatagramHandler, MessageHandler {
         InetPath inetPath = (InetPath)localPath;
         inetPath = new InetPath(inetPath.getAddress(), mPort);
 
-        mLocalNode = new Node(mTelehash.getIdentity().getHashNamePublicKeys(), inetPath);
+        mLocalNode = mTelehash.getLocalNode();
+        mLocalNode.setPaths(Collections.singleton(inetPath));
 
         // provision the reactor
         mReactor = mTelehash.getNetwork().createReactor(mPort);
@@ -169,7 +171,7 @@ public class Switch implements DatagramHandler, MessageHandler {
         if (packet == null) {
             return;
         }
-        Node destination = packet.getDestinationNode();
+        PeerNode destination = packet.getDestinationNode();
         Log.i("outgoing packet: "+packet);
 
         Datagram datagram =
@@ -181,7 +183,7 @@ public class Switch implements DatagramHandler, MessageHandler {
     }
 
     private void loop() {
-        Log.i("switch loop with identity="+mTelehash.getIdentity()+" and seeds="+mSeeds);
+        Log.i("switch loop with localnode="+mTelehash.getLocalNode()+" and seeds="+mSeeds);
 
         mLineManager = new LineManager(mTelehash);
         mLineManager.init();

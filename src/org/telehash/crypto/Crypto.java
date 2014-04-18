@@ -1,9 +1,10 @@
 package org.telehash.crypto;
 
 import org.telehash.core.CipherSetIdentifier;
-import org.telehash.core.Identity;
+import org.telehash.core.LocalNode;
 import org.telehash.core.TelehashException;
 
+import java.util.NavigableSet;
 import java.util.Set;
 
 /**
@@ -27,6 +28,12 @@ public interface Crypto {
      * @return The set of cipher sets.
      */
     public Set<CipherSet> getAllCipherSets();
+
+    /**
+     * Return the set of all supported cipher sets ids.
+     * @return The set of cipher set identifiers.
+     */
+    public NavigableSet<CipherSetIdentifier> getAllCipherSetsIds();
 
     /**
      * Generate a cryptographically secure pseudo-random array of byte values.
@@ -53,13 +60,13 @@ public interface Crypto {
     public byte[] sha256Digest(String string);
 
     /**
-     * Generate a fresh identity (i.e., RSA public and private key pair) for a
+     * Generate a fresh local node (i.e., public and private key pair) for a
      * newly provisioned Telehash node.
      *
-     * @return The new identity.
+     * @return The new local node.
      * @throws TelehashException
      */
-    public Identity generateIdentity() throws TelehashException;
+    public LocalNode generateLocalNode() throws TelehashException;
 
     /**
      * Encrypt data with an RSA public key

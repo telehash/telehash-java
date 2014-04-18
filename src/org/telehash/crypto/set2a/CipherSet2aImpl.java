@@ -22,12 +22,12 @@ import org.bouncycastle.util.BigIntegers;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.FingerprintSet;
 import org.telehash.core.HashName;
-import org.telehash.core.Identity;
 import org.telehash.core.Line;
-import org.telehash.core.Node;
+import org.telehash.core.LocalNode;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet;
 import org.telehash.core.Packet.SplitPacket;
+import org.telehash.core.PeerNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.Collections;
 
 public class CipherSet2aImpl implements CipherSet {
     private static final byte[] FIXED_IV = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
@@ -354,8 +355,10 @@ public class CipherSet2aImpl implements CipherSet {
         );
 
         // Using your hashname private key, decrypt the line public key of the sender.
-        byte[] linePublicKeyBuffer =
-                mCrypto.decryptRSAOAEP(telehash.getIdentity().getHashNamePrivateKey(CIPHER_SET_ID), lineKeyCiphertext);
+        byte[] linePublicKeyBuffer = mCrypto.decryptRSAOAEP(
+                telehash.getLocalNode().getPrivateKey(CIPHER_SET_ID),
+                lineKeyCiphertext
+        );
         LinePublicKey linePublicKey = decodeLinePublicKey(linePublicKeyBuffer);
 
         // Hash the ECC public key with SHA-256 to generate the AES key
@@ -376,8 +379,8 @@ public class CipherSet2aImpl implements CipherSet {
         OpenPacket.Inner innerHead = OpenPacket.Inner.deserialize(innerPacket);
 
         // Verify the "to" value of the inner packet matches your hashname
-        if (! innerHead.mDestination.equals(telehash.getIdentity().getHashName())) {
-            throw new TelehashException("received packet not destined for this identity.");
+        if (! innerHead.mDestination.equals(telehash.getLocalNode().getHashName())) {
+            throw new TelehashException("received packet not destined for the local node.");
         }
 
         // Extract the hashname public key of the sender from the inner
@@ -389,7 +392,10 @@ public class CipherSet2aImpl implements CipherSet {
         //Node sourceNode = new Node(senderHashNamePublicKey, path);
         FingerprintSet senderFingerprints = new FingerprintSet(innerHead.mFrom);
         HashName senderHashName = senderFingerprints.getHashName();
-        Node sourceNode = new Node(senderHashName, csid, senderHashNamePublicKey, path);
+        PeerNode sourceNode = new PeerNode(
+                senderHashName, csid, senderHashNamePublicKey, Collections.singleton(path)
+        );
+
         sourceNode.updateFingerprints(senderFingerprints);
 
         // Verify the "at" timestamp is newer than any other "open"
@@ -466,8 +472,11 @@ public class CipherSet2aImpl implements CipherSet {
 
         // generate KEYC (the line key ciphertext) by encrypting the
         // public line key with the recipient's hashname public key.
+        if (! open.getDestinationNode().getActiveCipherSetIdentifier().equals(CIPHER_SET_ID)) {
+            throw new TelehashException("cipher set mismatch");
+        }
         byte[] lineKeyCiphertext = crypto.encryptRSAOAEP(
-                open.getDestinationNode().getPublicKey(CIPHER_SET_ID),
+                open.getDestinationNode().getActivePublicKey(),
                 open.getLinePublicKey().getEncoded()
         );
         if (lineKeyCiphertext.length != LINE_KEY_CIPHERTEXT_BYTES) {
@@ -493,7 +502,7 @@ public class CipherSet2aImpl implements CipherSet {
     @Override
     public byte[] renderOpenPacket(
             OpenPacket open,
-            Identity identity,
+            LocalNode localNode,
             byte[] lineKeyCiphertext
     ) throws TelehashException {
         byte[] encodedLinePublicKey = open.getLinePublicKey().getEncoded();
@@ -510,7 +519,7 @@ public class CipherSet2aImpl implements CipherSet {
                 open.getDestinationNode().getHashName(),
                 open.getOpenTime(),
                 open.getLineIdentifier(),
-                identity.getNode().getFingerprints()
+                localNode.getFingerprints()
         );
         byte[] innerPacket = innerHead.serialize();
         innerPacket = Util.concatenateByteArrays(
@@ -519,7 +528,7 @@ public class CipherSet2aImpl implements CipherSet {
                         (byte)(innerPacket.length & 0xFF)
                 },
                 innerPacket,
-                identity.getHashNamePublicKey(CIPHER_SET_ID).getEncoded()
+                localNode.getPublicKey(CIPHER_SET_ID).getEncoded()
         );
 
         // Encrypt the inner packet using the hashed line public key from #4
@@ -530,7 +539,7 @@ public class CipherSet2aImpl implements CipherSet {
         // Create a signature from the encrypted inner packet using your own hashname
         // keypair, a SHA 256 digest, and PKCSv1.5 padding
         byte[] signature = mCrypto.signRSA(
-                identity.getHashNamePrivateKey(CIPHER_SET_ID),
+                localNode.getPrivateKey(CIPHER_SET_ID),
                 innerPacketCiphertext
         );
 

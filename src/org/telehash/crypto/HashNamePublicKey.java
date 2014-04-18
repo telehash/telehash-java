@@ -6,5 +6,5 @@ import org.telehash.core.TelehashException;
 public interface HashNamePublicKey {
     public CipherSetIdentifier getCipherSetIdentifier();
     public byte[] getEncoded() throws TelehashException;
-    public byte[] getFingerprint() throws TelehashException;
+    public byte[] getFingerprint();
 }

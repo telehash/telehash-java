@@ -1,9 +1,9 @@
 package org.telehash.test.mesh;
 
 import org.telehash.core.CipherSetIdentifier;
-import org.telehash.core.Identity;
+import org.telehash.core.LocalNode;
 import org.telehash.core.Log;
-import org.telehash.core.Node;
+import org.telehash.core.PeerNode;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -22,14 +22,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 
 public class TelehashTestInstance {
 
-    private static final String IDENTITY_BASE_FILENAME = "telehash-node";
+    private static final String LOCALNODE_BASE_FILENAME = "telehash-node";
     private static final String BASE_DIRECTORY =
             System.getProperty("user.dir")+File.separator+"nodes";
     private static final int PORT = 42424;
@@ -37,8 +39,8 @@ public class TelehashTestInstance {
     private int mIndex;
     private File mConfigDirectory;
     private int mPort;
-    private Identity mIdentity;
-    private Set<Node> mSeeds;
+    private LocalNode mLocalNode;
+    private Set<PeerNode> mSeeds;
     private Telehash mTelehash;
     private Crypto mCrypto = new CryptoImpl();
     private Network mNetwork = new NetworkImpl();
@@ -51,7 +53,7 @@ public class TelehashTestInstance {
         } catch (TelehashException e) {
             path = "?";
         }
-        Log.i("  ["+node.mIndex+"] "+node.mIdentity.getHashName()+" "+path);
+        Log.i("  ["+node.mIndex+"] "+node.mLocalNode.getHashName()+" "+path);
     }
 
     private static void dumpNodeList(List<TelehashTestInstance> list) {
@@ -63,11 +65,11 @@ public class TelehashTestInstance {
     private static TelehashTestInstance createInstance(
             NetworkSimulator networkSimulator,
             int index,
-            Node seed
+            PeerNode seed
     ) {
-        Set<Node> seeds = null;
+        Set<PeerNode> seeds = null;
         if (seed != null) {
-            seeds = new HashSet<Node>();
+            seeds = new HashSet<PeerNode>();
             seeds.add(seed);
         }
         TelehashTestInstance node = new TelehashTestInstance(index, PORT, seeds);
@@ -85,7 +87,7 @@ public class TelehashTestInstance {
     }
 
     public static List<TelehashTestInstance> createStarTopology(int numNodes) {
-        Node seed = null;
+        PeerNode seed = null;
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(numNodes);
         NetworkSimulator networkSimulator = new NetworkSimulator();
 
@@ -121,7 +123,7 @@ public class TelehashTestInstance {
         return list;
     }
 
-    public TelehashTestInstance(int index, int port, Set<Node> seeds) {
+    public TelehashTestInstance(int index, int port, Set<PeerNode> seeds) {
         File configDirectory = new File(
                 String.format("%s%s%03d", BASE_DIRECTORY, File.separator, index)
         );
@@ -147,8 +149,8 @@ public class TelehashTestInstance {
     }
 
     public void start() {
-        loadIdentity();
-        mTelehash = new Telehash(mIdentity, mCrypto, mStorage, mNetwork);
+        loadLocalNode();
+        mTelehash = new Telehash(mLocalNode, mCrypto, mStorage, mNetwork);
 
         // store a summary of this node
         try {
@@ -157,20 +159,20 @@ public class TelehashTestInstance {
             );
             PrintWriter out = new PrintWriter(summaryFile);
             out.println("index: "+mIndex);
-            out.println("hashname: "+mIdentity.getHashName());
-            Map<CipherSetIdentifier, HashNamePublicKey> publicKeys =
-                    mIdentity.getHashNamePublicKeys();
+            out.println("hashname: "+mLocalNode.getHashName());
+            SortedMap<CipherSetIdentifier, HashNamePublicKey> publicKeys =
+                    mLocalNode.getPublicKeys();
             for (Map.Entry<CipherSetIdentifier, HashNamePublicKey> entry : publicKeys.entrySet()) {
                 CipherSetIdentifier csid = entry.getKey();
                 Log.i(""+csid+" pub: "+entry.getValue());
                 out.println(""+csid+" pub: "+Util.bytesToHex(
                         mTelehash.getCrypto().sha256Digest(
-                                mIdentity.getHashNamePublicKey(csid).getEncoded()
+                                mLocalNode.getPublicKey(csid).getEncoded()
                         )
                 ));
                 out.println(""+csid+" pri: "+Util.bytesToHex(
                         mTelehash.getCrypto().sha256Digest(
-                                mIdentity.getHashNamePrivateKey(csid).getEncoded()
+                                mLocalNode.getPrivateKey(csid).getEncoded()
                         )
                 ));
             }
@@ -196,11 +198,12 @@ public class TelehashTestInstance {
         mTelehash.getSwitch().stop();
     }
 
-    public Node getNode() {
+    public PeerNode getNode() {
         try {
             InetPath path =
                     new InetPath(((InetPath)mNetwork.getPreferredLocalPath()).getAddress(), mPort);
-            return mIdentity.getNode(path);
+            mLocalNode.setPaths(Collections.singleton(path));
+            return mLocalNode;
         } catch (TelehashException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -212,19 +215,19 @@ public class TelehashTestInstance {
         return mTelehash.getSwitch();
     }
 
-    private void loadIdentity() {
-        // load or create an identity
+    private void loadLocalNode() {
+        // load or create a local node
         Storage storage = new StorageImpl();
-        String identityBaseFilename =
-                mConfigDirectory.getAbsolutePath() + File.separator + IDENTITY_BASE_FILENAME;
+        String localNodeBaseFilename =
+                mConfigDirectory.getAbsolutePath() + File.separator + LOCALNODE_BASE_FILENAME;
         try {
-            mIdentity = storage.readIdentity(identityBaseFilename);
+            mLocalNode = storage.readLocalNode(localNodeBaseFilename);
         } catch (TelehashException e) {
             if (e.getCause() instanceof FileNotFoundException) {
-                // no identity found -- create a new one.
+                // no local node found -- create a new one.
                 try {
-                    mIdentity = Telehash.get().getCrypto().generateIdentity();
-                    storage.writeIdentity(mIdentity, identityBaseFilename);
+                    mLocalNode = Telehash.get().getCrypto().generateLocalNode();
+                    storage.writeLocalNode(mLocalNode, localNodeBaseFilename);
                 } catch (TelehashException e1) {
                     e1.printStackTrace();
                     return;

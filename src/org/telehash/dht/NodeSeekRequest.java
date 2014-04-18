@@ -9,10 +9,10 @@ import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
+import org.telehash.core.See;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
-import org.telehash.network.Path;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +38,7 @@ public class NodeSeekRequest {
     private HashName mTargetHashName;
     private Handler mHandler;
     private Line mLine;
-    private Set<Node> mResultNodes;
+    private Set<See> mResultNodes;
 
     public NodeSeekRequest(
             Telehash telehash,
@@ -52,7 +52,7 @@ public class NodeSeekRequest {
         mHandler = handler;
     }
 
-    public Set<Node> getResultNodes() {
+    public Set<See> getResultNodes() {
         return mResultNodes;
     }
 
@@ -76,7 +76,7 @@ public class NodeSeekRequest {
 
                 // To protect the user's privacy, only provide enough of the target hashname
                 // to get useful results -- the distance to the query node plus one bytes.
-                HashName localHashName = mTelehash.getIdentity().getHashName();
+                HashName localHashName = mTelehash.getLocalNode().getHashName();
                 byte[] target;
                 if (! mTargetHashName.equals(localHashName)) {
                     int prefixLength = mQueryNode.getHashName().distanceMagnitude(localHashName)+1;
@@ -108,32 +108,17 @@ public class NodeSeekRequest {
         }
         JSONArray seeNodes = (JSONArray)seeObject;
 
-        mResultNodes = new HashSet<Node>();
+        mResultNodes = new HashSet<See>();
         for (int i=0; i<seeNodes.length(); i++) {
-            String seeNode;
+            String seeString;
             try {
-                seeNode = seeNodes.getString(i);
+                seeString = seeNodes.getString(i);
             } catch (JSONException e) {
                 fail(e);
                 return;
             }
-            String[] parts = seeNode.split(",", 3);
-            if (parts.length < 3) {
-                fail(new TelehashException("invalid see record"));
-                return;
-            }
-            HashName hashName = new HashName(Util.hexToBytes(parts[0]));
-            Path path;
             try {
-                path = mTelehash.getNetwork().parsePath(
-                        parts[1], Integer.parseInt(parts[2])
-                );
-                Node node = new Node(hashName, path);
-                node.setReferringNode(mQueryNode);
-                mResultNodes.add(node);
-            } catch (NumberFormatException e) {
-                fail(e);
-                return;
+                mResultNodes.add(See.parse(mQueryNode,seeString));
             } catch (TelehashException e) {
                 fail(e);
                 return;

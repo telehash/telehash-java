@@ -10,7 +10,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Path {
+public abstract class Path implements Comparable<Path> {
     public static final String IPV4_TYPE = "ipv4";
     public static final String IPV6_TYPE = "ipv6";
     public static final String TYPE_KEY = "type";
@@ -56,7 +56,9 @@ public abstract class Path {
             }
             JSONObject pathJson = (JSONObject)pathObject;
             Path path = Path.parsePath(pathJson);
-            paths.add(path);
+            if (path != null) {
+                paths.add(path);
+            }
         }
         return paths;
     }
@@ -75,4 +77,17 @@ public abstract class Path {
         return new InetPath(inetSocketAddress.getAddress(), inetSocketAddress.getPort());
     }
 
+    @Override
+    public int compareTo(Path path) {
+        // order by our preferred path types, for now...
+        if (path == null) {
+            return +1;
+        } else if (path instanceof InetPath) {
+            return +1;
+        } else if (!(this instanceof InetPath)) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
 }

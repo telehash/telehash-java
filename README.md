@@ -82,17 +82,18 @@ These functions are:
 
 Storage:
 
-* load the identity (telehash.pub, telehash.key)
-* save the identity (telehash.pub, telehash.key)
+* load the local node keys (telehash.pub, telehash.key)
+* save the local node keys (telehash.pub, telehash.key)
 * load the pre-authorized seeds, if present (telehash-seeds.json)
 * optional:
     * load the acquired seeds (?)
     * save the acquired seeds (?)
 
-For now, just have the switch take identity/seeds as arguments.
+For now, just have the switch take local node parameters and seeds
+as arguments.
 
 1. BasicSeed loads from files
-2. Switch(KeyPair identityKeyPair, Set<Node> seeds);
+2. Switch(KeyPair localNodeKeyPair, Set<Node> seeds);
 3. Switch must randomize seed ordering
 
 TODO

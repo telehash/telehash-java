@@ -38,8 +38,8 @@ public class Channel implements OnTimeoutListener {
         return mLine;
     }
 
-    public Node getRemoteNode() {
-        return mLine.getRemoteNode();
+    public PeerNode getRemoteNode() {
+        return mLine.getRemotePeerNode();
     }
 
     public ChannelIdentifier getChannelIdentifier() {

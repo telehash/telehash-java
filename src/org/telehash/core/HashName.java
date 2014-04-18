@@ -1,11 +1,11 @@
 package org.telehash.core;
 
-import org.telehash.crypto.Crypto;
 import org.telehash.crypto.HashNamePublicKey;
 
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
@@ -78,13 +78,11 @@ public class HashName {
     }
 
     public static HashName calculateHashName(
-            Map<CipherSetIdentifier,HashNamePublicKey> publicKeys
-    ) throws TelehashException {
-        Crypto crypto = Telehash.get().getCrypto();
-        byte[] hashNameBytes = null;
-
+            SortedMap<CipherSetIdentifier,HashNamePublicKey> publicKeys
+    ) {
         // compose the hash name
-        Map<CipherSetIdentifier,byte[]> fingerprintMap = new TreeMap<CipherSetIdentifier,byte[]>();
+        SortedMap<CipherSetIdentifier,byte[]> fingerprintMap =
+                new TreeMap<CipherSetIdentifier,byte[]>();
         for (Map.Entry<CipherSetIdentifier,HashNamePublicKey> entry : publicKeys.entrySet()) {
             fingerprintMap.put(entry.getKey(), entry.getValue().getFingerprint());
         }
@@ -95,6 +93,10 @@ public class HashName {
     @Override
     public String toString() {
         return asHex();
+    }
+
+    public String getShortHash() {
+        return toString().substring(0, 8);
     }
 
     // Java identity

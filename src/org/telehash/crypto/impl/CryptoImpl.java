@@ -16,7 +16,7 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.telehash.core.CipherSetIdentifier;
-import org.telehash.core.Identity;
+import org.telehash.core.LocalNode;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.CipherSet;
 import org.telehash.crypto.Crypto;
@@ -35,8 +35,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * This class contains implementations for the basic cryptographic functions
@@ -48,7 +51,7 @@ public class CryptoImpl implements Crypto {
     private static final String RSA_PUBLIC_KEY_PEM_TYPE = "PUBLIC KEY";
 
     // a simple cipher set registration scheme
-    private Map<CipherSetIdentifier,CipherSet> mCipherSetMap =
+    private SortedMap<CipherSetIdentifier,CipherSet> mCipherSetMap =
             new TreeMap<CipherSetIdentifier,CipherSet>();
 
     private SecureRandom random = new SecureRandom();
@@ -90,6 +93,15 @@ public class CryptoImpl implements Crypto {
     @Override
     public Set<CipherSet> getAllCipherSets() {
         return new HashSet<CipherSet>(mCipherSetMap.values());
+    }
+
+    /**
+     * Return the set of all supported cipher sets ids.
+     * @return The set of cipher set identifiers.
+     */
+    @Override
+    public NavigableSet<CipherSetIdentifier> getAllCipherSetsIds() {
+        return new TreeSet<CipherSetIdentifier>(mCipherSetMap.keySet());
     }
 
     /**
@@ -159,16 +171,15 @@ public class CryptoImpl implements Crypto {
     }
 
     /**
-     * Generate a fresh identity (i.e., hashname public and private key pair)
-     * for a newly provisioned Telehash node.
+     * Generate fresh local node keys for a newly provisioned Telehash node.
      *
-     * @return The new identity.
+     * @return The new local node.
      * @throws TelehashException
      */
     @Override
-    public Identity generateIdentity() throws TelehashException {
+    public LocalNode generateLocalNode() throws TelehashException {
         // Note: this iteration is implicitly sorted by ascending keys via TreeSet.
-        Map<CipherSetIdentifier,HashNameKeyPair> keyPairs =
+        SortedMap<CipherSetIdentifier,HashNameKeyPair> keyPairs =
                 new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
         for (Map.Entry<CipherSetIdentifier, CipherSet> entry : mCipherSetMap.entrySet()) {
             CipherSetIdentifier cipherSetId = entry.getKey();
@@ -176,7 +187,7 @@ public class CryptoImpl implements Crypto {
             HashNameKeyPair hashNameKeyPair = cipherSet.generateHashNameKeyPair();
             keyPairs.put(cipherSetId, hashNameKeyPair);
         }
-        return new Identity(keyPairs);
+        return new LocalNode(keyPairs);
     }
 
     /**

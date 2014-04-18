@@ -1,64 +1,64 @@
 package org.telehash.storage;
 
-import org.telehash.core.Identity;
-import org.telehash.core.Node;
+import org.telehash.core.LocalNode;
+import org.telehash.core.PeerNode;
 import org.telehash.core.TelehashException;
 
 import java.util.Set;
 
 /**
  * This interface contains methods that may be used to read and write Telehash
- * identities and seed cache information. Concrete implementations suitable for
- * specific platforms may be developed, and applications are free to extend
+ * local node keys and seed cache information. Concrete implementations suitable
+ * for specific platforms may be developed, and applications are free to extend
  * these implementations or provide their own.
  */
 public interface Storage {
     /**
-     * Read the local Telehash identity (RSA key pair) from files named using
-     * the specified base filename.
+     * Read the local Telehash node keys from files named using the specified
+     * base filename.
      *
-     * @param identityBaseFilename
-     *            The base filename, e.g. "identity".
-     * @return The read and parsed Telehash identity.
+     * @param localNodeBaseFilename
+     *            The base filename, e.g. "localnode".
+     * @return The read and parsed Telehash local node.
      * @throws TelehashException
-     *             If a problem happened while reading and parsing the identity.
+     *             If a problem happened while reading and parsing the local node.
      */
-    public Identity readIdentity(String identityBaseFilename) throws TelehashException;
+    public LocalNode readLocalNode(String localNodeBaseFilename) throws TelehashException;
 
     /**
-     * Read the local Telehash identity (RSA key pair) from files named using
-     * the default base filename.
+     * Read the local Telehash node keys from files named using the default
+     * base filename.
      *
-     * @return The read and parsed Telehash identity.
+     * @return The read and parsed Telehash local node.
      * @throws TelehashException
-     *             If a problem happened while reading and parsing the identity.
+     *             If a problem happened while reading and parsing the local node.
      */
-    public Identity readIdentity() throws TelehashException;
+    public LocalNode readLocalNode() throws TelehashException;
 
     /**
-     * Write the local Telehash identity (RSA key pair) into files named using
-     * the specified base filename.
+     * Write the local Telehash node keys into files named using the specified
+     * base filename.
      *
-     * @param identity
-     *            The identity to write.
-     * @param identityBaseFilename
-     *            The base filename, e.g. "identity".
+     * @param localNode
+     *            The local node to write.
+     * @param localNodeBaseFilename
+     *            The base filename, e.g. "localnode".
      * @throws TelehashException
-     *             If a problem happened while writing the identity.
+     *             If a problem happened while writing the local node.
      */
-    public void writeIdentity(Identity identity, String identityBaseFilename)
+    public void writeLocalNode(LocalNode localNode, String localNodeBaseFilename)
             throws TelehashException;
 
     /**
-     * Write the local Telehash identity (RSA key pair) into files named using
+     * Write the local Telehash local node (RSA key pair) into files named using
      * the default base filename.
      *
-     * @param identity
-     *            The identity to write.
+     * @param localNode
+     *            The local node to write.
      * @throws TelehashException
-     *             If a problem happened while writing the identity.
+     *             If a problem happened while writing the local node.
      */
-    public void writeIdentity(Identity identity) throws TelehashException;
+    public void writeLocalNode(LocalNode localNode) throws TelehashException;
 
     /**
      * Read the local seed cache to obtain a set of nodes that may be used to
@@ -70,5 +70,5 @@ public interface Storage {
      * @throws TelehashException
      *             If a problem happened while reading and parsing the seeds.
      */
-    public Set<Node> readSeeds(String seedsFilename) throws TelehashException;
+    public Set<PeerNode> readSeeds(String seedsFilename) throws TelehashException;
 }

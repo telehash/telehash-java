@@ -2,10 +2,12 @@ package org.telehash.core;
 
 import org.json.JSONObject;
 import org.telehash.crypto.Crypto;
+import org.telehash.crypto.HashNamePublicKey;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 @SuppressWarnings("serial")
@@ -14,7 +16,7 @@ public class FingerprintSet extends TreeMap<CipherSetIdentifier,byte[]> {
     private final HashName mHashName;
     private boolean mReadOnly = false;
 
-    public FingerprintSet(Map<CipherSetIdentifier,byte[]> fingerprints) {
+    public FingerprintSet(SortedMap<CipherSetIdentifier,byte[]> fingerprints) {
         putAll(fingerprints);
         mHashName = calculateHashNameFromFingerprints(this);
         mReadOnly = true;
@@ -55,8 +57,19 @@ public class FingerprintSet extends TreeMap<CipherSetIdentifier,byte[]> {
         return best;
     }
 
+    public static FingerprintSet fromPublicKeys(
+            SortedMap<CipherSetIdentifier,HashNamePublicKey> publicKeys
+    ) {
+        SortedMap<CipherSetIdentifier,byte[]> fingerprints =
+                new TreeMap<CipherSetIdentifier, byte[]>();
+        for (Map.Entry<CipherSetIdentifier, HashNamePublicKey> entry : publicKeys.entrySet()) {
+            fingerprints.put(entry.getKey(), entry.getValue().getFingerprint());
+        }
+        return new FingerprintSet(fingerprints);
+    }
+
     private static HashName calculateHashNameFromFingerprints(
-            Map<CipherSetIdentifier,byte[]> fingerprints
+            SortedMap<CipherSetIdentifier,byte[]> fingerprints
     ) {
         Crypto crypto = Telehash.get().getCrypto();
         byte[] hashNameBytes = null;

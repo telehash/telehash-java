@@ -39,12 +39,12 @@ public class Log {
 
     public static void println(String msg, Object... args) {
         String tag;
-        Identity identity = Telehash.get().getIdentity();
+        LocalNode localNode = Telehash.get().getLocalNode();
 
-        if (identity == null) {
+        if (localNode == null) {
             tag = "[        ] ";
         } else {
-            byte[] hashName = identity.getHashName().getBytes();
+            byte[] hashName = localNode.getHashName().getBytes();
             int a = hashName[0] & 0xFF;
             int b = hashName[1] & 0xFF;
             int c = hashName[2] & 0xFF;
@@ -53,8 +53,8 @@ public class Log {
         }
 
         if (ENABLE_COLOR) {
-            if (identity != null) {
-                HashName hashName = identity.getHashName();
+            if (localNode != null) {
+                HashName hashName = localNode.getHashName();
                 String color = sColorMap.get(hashName);
                 if (color == null) {
                     int size = sColorMap.size();
@@ -82,7 +82,7 @@ public class Log {
             }
         }
 
-        if (ENABLE_COLOR && identity != null) {
+        if (ENABLE_COLOR && localNode != null) {
             System.out.print(COLOR_RESET);
         }
 

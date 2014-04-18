@@ -4,6 +4,8 @@ import org.telehash.core.HashName;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.OnTimeoutListener;
+import org.telehash.core.PeerNode;
+import org.telehash.core.See;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Timeout;
@@ -43,7 +45,7 @@ public class NodeLookupTask implements OnTimeoutListener {
     private NodeTracker mNodeTracker;
     private HashName mTargetHashName;
 
-    private Node mSelfNode;
+    private PeerNode mSelfNode;
     private SortedSet<Node> mQueryNodes;
     private SortedSet<Node> mVisitedNodes;
     private Set<NodeSeekRequest> mOutstandingSeeks = new HashSet<NodeSeekRequest>();
@@ -74,7 +76,7 @@ public class NodeLookupTask implements OnTimeoutListener {
         mTargetHashName = targetHashName;
         mHandler = handler;
 
-        mSelfNode = telehash.getIdentity().getNode();
+        mSelfNode = telehash.getLocalNode();
         mQueryNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
         mVisitedNodes = new TreeSet<Node>(new NodeDistanceComparator(mTargetHashName));
 
@@ -222,9 +224,9 @@ public class NodeLookupTask implements OnTimeoutListener {
 
                             // remove ourselves from the returned list of nodes, unless
                             // this is a self-seek.
-                            Set<Node> nodes = seek.getResultNodes();
+                            Set<See> nodes = seek.getResultNodes();
                             if (mSelfSeek) {
-                                for (Node node : nodes) {
+                                for (See node : nodes) {
                                     if (mTargetHashName.equals(node.getHashName())) {
                                         complete(node);
                                         return;

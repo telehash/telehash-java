@@ -1,7 +1,7 @@
 package org.telehash.sample;
 
-import org.telehash.core.Identity;
-import org.telehash.core.Node;
+import org.telehash.core.LocalNode;
+import org.telehash.core.PeerNode;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -13,23 +13,23 @@ import java.util.Set;
 
 public class BasicNode {
 
-    private static final String IDENTITY_BASE_FILENAME = "telehash-node";
+    private static final String LOCALNODE_BASE_FILENAME = "telehash-node";
     private static final int PORT = 42424;
 
     public static final void main(String[] args) {
 
         Storage storage = new StorageImpl();
 
-        // load or create an identity
-        Identity identity;
+        // load or create a local node
+        LocalNode localNode;
         try {
-            identity = storage.readIdentity(IDENTITY_BASE_FILENAME);
+            localNode = storage.readLocalNode(LOCALNODE_BASE_FILENAME);
         } catch (TelehashException e) {
             if (e.getCause() instanceof FileNotFoundException) {
-                // no identity found -- create a new one.
+                // no local node found -- create a new one.
                 try {
-                    identity = Telehash.get().getCrypto().generateIdentity();
-                    storage.writeIdentity(identity, IDENTITY_BASE_FILENAME);
+                    localNode = Telehash.get().getCrypto().generateLocalNode();
+                    storage.writeLocalNode(localNode, LOCALNODE_BASE_FILENAME);
                 } catch (TelehashException e1) {
                     e1.printStackTrace();
                     return;
@@ -40,9 +40,9 @@ public class BasicNode {
             }
         }
 
-        System.out.println("my hash name: "+identity.getHashName());
+        System.out.println("my hash name: "+localNode.getHashName());
 
-        Set<Node> seeds = null;
+        Set<PeerNode> seeds = null;
         try {
             seeds = storage.readSeeds("seeds.json");
         } catch (TelehashException e2) {
@@ -51,7 +51,7 @@ public class BasicNode {
         }
 
         // launch the switch
-        final Telehash telehash = new Telehash(identity);
+        final Telehash telehash = new Telehash(localNode);
         final Switch telehashSwitch = new Switch(telehash, seeds, PORT);
         telehash.setSwitch(telehashSwitch);
         try {

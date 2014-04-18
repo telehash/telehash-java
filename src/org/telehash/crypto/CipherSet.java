@@ -1,8 +1,8 @@
 package org.telehash.crypto;
 
 import org.telehash.core.CipherSetIdentifier;
-import org.telehash.core.Identity;
 import org.telehash.core.Line;
+import org.telehash.core.LocalNode;
 import org.telehash.core.OpenPacket;
 import org.telehash.core.Packet.SplitPacket;
 import org.telehash.core.Telehash;
@@ -119,7 +119,7 @@ public interface CipherSet {
      */
     public byte[] renderOpenPacket(
             OpenPacket packet,
-            Identity identity,
+            LocalNode localNode,
             byte[] lineKeyCiphertext
     ) throws TelehashException;
 

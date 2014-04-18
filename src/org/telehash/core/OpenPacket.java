@@ -12,6 +12,7 @@ import org.telehash.network.Path;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
@@ -55,7 +56,7 @@ public class OpenPacket extends Packet {
         Packet.registerPacketType(OPEN_TYPE, OpenPacket.class);
     }
 
-    private Identity mIdentity;
+    private LocalNode mLocalNode;
     private HashNamePublicKey mSenderHashNamePublicKey;
     private LinePublicKey mLinePublicKey;
     private LinePrivateKey mLinePrivateKey;
@@ -72,12 +73,12 @@ public class OpenPacket extends Packet {
         public HashName mDestination;
         public long mOpenTime;
         public LineIdentifier mLineIdentifier;
-        public Map<CipherSetIdentifier,byte[]> mFrom =
+        public SortedMap<CipherSetIdentifier,byte[]> mFrom =
                 new TreeMap<CipherSetIdentifier,byte[]>();
 
         public Inner(HashName destination, long openTime,
                 LineIdentifier lineIdentifier,
-                Map<CipherSetIdentifier, byte[]> from) {
+                SortedMap<CipherSetIdentifier, byte[]> from) {
             mDestination = destination;
             mOpenTime = openTime;
             mLineIdentifier = lineIdentifier;
@@ -103,7 +104,7 @@ public class OpenPacket extends Packet {
             // parse the "from" fingerprints
             JSONObject from = innerPacket.json.getJSONObject(FROM_KEY);
             Iterator<?> fromIterator = from.keys();
-            Map<CipherSetIdentifier, byte[]> fingerprints =
+            SortedMap<CipherSetIdentifier, byte[]> fingerprints =
                     new TreeMap<CipherSetIdentifier, byte[]>();
             while (fromIterator.hasNext()) {
                 String key = (String)fromIterator.next();
@@ -149,10 +150,10 @@ public class OpenPacket extends Packet {
         }
     }
 
-    public OpenPacket(Identity identity, Node destinationNode, CipherSetIdentifier csid) {
-        mIdentity = identity;
+    public OpenPacket(LocalNode localNode, PeerNode destinationNode, CipherSetIdentifier csid) {
+        mLocalNode = localNode;
         mDestinationNode = destinationNode;
-        mSenderHashNamePublicKey = identity.getHashNamePublicKey(csid);
+        mSenderHashNamePublicKey = localNode.getPublicKey(csid);
 
         mCipherSet = Telehash.get().getCrypto().getCipherSet(csid);
         if (mCipherSet == null) {
@@ -163,7 +164,7 @@ public class OpenPacket extends Packet {
             throw new IllegalArgumentException("no public key for sender");
         }
 
-        if (destinationNode.getPublicKey(csid) == null) {
+        if (destinationNode.getActivePublicKey() == null) {
             throw new IllegalArgumentException(
                     "attempt to open a line to a node with unknown public key"
             );
@@ -177,7 +178,7 @@ public class OpenPacket extends Packet {
 
     public OpenPacket(
             CipherSetIdentifier cipherSetIdentifier,
-            Node sourceNode,
+            PeerNode sourceNode,
             LinePublicKey linePublicKey,
             long openTime,
             LineIdentifier lineIdentifier
@@ -278,7 +279,7 @@ public class OpenPacket extends Packet {
     ) throws TelehashException {
         return mCipherSet.renderOpenPacket(
                 this,
-                mIdentity,
+                mLocalNode,
                 lineKeyCiphertext
         );
     }

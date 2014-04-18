@@ -12,6 +12,8 @@ import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
+import org.telehash.core.PeerNode;
+import org.telehash.core.See;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -23,6 +25,7 @@ import org.telehash.network.Path;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,18 +45,18 @@ public class DHT {
     public static final String PEER_KEY = "peer";
 
     private Telehash mTelehash;
-    private Node mLocalNode;
+    private PeerNode mLocalNode;
 
     private NodeTracker mNodeTracker;
 
-    public DHT(Telehash telehash, Node localNode, Set<Node> seeds) {
+    public DHT(Telehash telehash, PeerNode localNode, Set<PeerNode> seeds) {
         mTelehash = telehash;
         mLocalNode = localNode;
         mNodeTracker = new NodeTracker(localNode);
 
         // install seeds in k-buckets.
         if (seeds != null && (! seeds.isEmpty())) {
-            for (Node node : seeds) {
+            for (PeerNode node : seeds) {
                 mNodeTracker.submitNode(node);
             }
         }
@@ -107,7 +110,7 @@ public class DHT {
     }
 
     public void handleNewLine(Line line) {
-        mNodeTracker.submitNode(line.getRemoteNode());
+        mNodeTracker.submitNode(line.getRemotePeerNode());
         // TODO: relay to refresher?
     }
 
@@ -199,12 +202,12 @@ public class DHT {
         }
 
         HashName target = new HashName(Util.hexToBytes(seekString));
-        Set<Node> nodes = mNodeTracker.getClosestNodes(target, MAX_SEEK_NODES_RETURNED);
+        Set<PeerNode> nodes = mNodeTracker.getClosestNodes(target, MAX_SEEK_NODES_RETURNED);
 
         Log.i("processing: seek "+target);
 
         JSONArray see = new JSONArray();
-        for (Node node : nodes) {
+        for (PeerNode node : nodes) {
             if (node.getPath() instanceof InetPath) {
                 InetPath path = (InetPath)node.getPath();
                 String seeNode =
@@ -228,7 +231,7 @@ public class DHT {
         // TODO: handle the "seed" boolean
         channelPacket.get(SEED_KEY);
 
-        Set<Node> seeNodes;
+        Set<See> seeNodes;
         try {
             seeNodes = parseSee(channelPacket.get(SEE_KEY), mLocalNode);
         } catch (TelehashException e) {
@@ -237,7 +240,7 @@ public class DHT {
         }
 
         // submit seeNodes to DHT for possible inclusion in buckets.
-        for (Node node : seeNodes) {
+        for (See node : seeNodes) {
             submitNode(node);
         }
 
@@ -259,7 +262,7 @@ public class DHT {
             return;
         }
 
-        Node originatingNode = channel.getRemoteNode();
+        PeerNode originatingNode = channel.getRemoteNode();
         if (! (originatingNode.getPath() instanceof InetPath)) {
             return;
         }
@@ -270,9 +273,14 @@ public class DHT {
         }
 
         // cipher set matchmaking
-        CipherSetIdentifier csid = Node.bestCipherSet(originatingNode, line.getRemoteNode());
+        CipherSetIdentifier csid =
+                PeerNode.bestCipherSet(originatingNode, line.getRemotePeerNode());
         if (csid == null) {
             Log.e("error while matching cipher sets", new TelehashException("null csid"));
+            return;
+        }
+        if (! channel.getRemoteNode().getActiveCipherSetIdentifier().equals(csid)) {
+            Log.e("cipher set mismatch");
             return;
         }
 
@@ -285,7 +293,7 @@ public class DHT {
         fields.put("paths", paths);
         try {
             newChannel.send(
-                    channel.getRemoteNode().getPublicKey(csid).getEncoded(),
+                    channel.getRemoteNode().getActivePublicKey().getEncoded(),
                     fields,
                     true
             );
@@ -295,7 +303,10 @@ public class DHT {
         }
     }
 
-    private void handleConnect(Channel channel, ChannelPacket channelPacket) throws TelehashException {
+    private void handleConnect(
+            Channel channel,
+            ChannelPacket channelPacket
+    ) throws TelehashException {
         // parse the paths
         Object pathsObject = channelPacket.get("paths");
         if (! (pathsObject instanceof JSONArray)) {
@@ -319,7 +330,7 @@ public class DHT {
         }
         FingerprintSet fingerprints = new FingerprintSet((JSONObject)fromObject);
         CipherSetIdentifier csid = FingerprintSet.bestCipherSet(
-                mTelehash.getIdentity().getNode().getFingerprints(),
+                mTelehash.getLocalNode().getFingerprints(),
                 fingerprints
         );
         if (csid == null) {
@@ -337,45 +348,31 @@ public class DHT {
         }
         HashNamePublicKey publicKey = cipherSet.decodeHashNamePublicKey(body);
 
-        Node node = new Node(fingerprints.getHashName(), csid, publicKey, path);
+        PeerNode node = new PeerNode(
+                fingerprints.getHashName(), csid, publicKey, Collections.singleton(path)
+        );
         node.updateFingerprints(fingerprints);
         mTelehash.getSwitch().getLineManager().openLine(node, false, null, null);
     }
 
-    private static Set<Node> parseSee(
+    private static Set<See> parseSee(
             Object seeObject,
-            Node referringNode
+            PeerNode referringNode
     ) throws TelehashException {
         if (! (seeObject instanceof JSONArray)) {
             throw new TelehashException("'see' object not an array");
         }
         JSONArray seeNodes = (JSONArray)seeObject;
 
-        Set<Node> sees = new HashSet<Node>(seeNodes.length());
+        Set<See> sees = new HashSet<See>(seeNodes.length());
         for (int i=0; i<seeNodes.length(); i++) {
-            String seeNode;
+            String seeString;
             try {
-                seeNode = seeNodes.getString(i);
+                seeString = seeNodes.getString(i);
             } catch (JSONException e) {
                 throw new TelehashException(e);
             }
-            String[] parts = seeNode.split(",", 3);
-            if (parts.length < 3) {
-                // TODO: support see nodes with hashname-only?  (i.e. reachable via non-IP paths)
-                throw new TelehashException("invalid see record");
-            }
-            HashName hashName = new HashName(Util.hexToBytes(parts[0]));
-            Path path;
-            try {
-                path = Telehash.get().getNetwork().parsePath(
-                        parts[1], Integer.parseInt(parts[2])
-                );
-                Node node = new Node(hashName, path);
-                node.setReferringNode(referringNode);
-                sees.add(node);
-            } catch (NumberFormatException e) {
-                throw new TelehashException(e);
-            }
+            sees.add(See.parse(referringNode, seeString));
         }
         return sees;
     }

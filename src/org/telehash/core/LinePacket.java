@@ -36,7 +36,7 @@ public class LinePacket extends Packet {
 
     public LinePacket(Line line) {
         mLine = line;
-        mDestinationNode = line.getRemoteNode();
+        mDestinationNode = (PeerNode)line.getRemoteNode();
     }
 
     public LinePacket(Line line, ChannelPacket channelPacket) {
@@ -44,7 +44,7 @@ public class LinePacket extends Packet {
         mChannelPacket = channelPacket;
         // TODO: this is wrong if we are parsing an incoming packet --
         //       line.getRemoteNode() should be the *source* not the *destination*!
-        mDestinationNode = line.getRemoteNode();
+        mDestinationNode = line.getRemotePeerNode();
     }
 
     // accessor methods

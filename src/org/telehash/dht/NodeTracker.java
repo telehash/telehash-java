@@ -3,6 +3,7 @@ package org.telehash.dht;
 import org.telehash.core.HashName;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
+import org.telehash.core.PeerNode;
 import org.telehash.core.Telehash;
 
 import java.util.HashSet;
@@ -20,11 +21,11 @@ public class NodeTracker {
     // TODO: synchronize access to NodeTracker
 
     private static class TrackedNode {
-        public Node node;
+        public PeerNode node;
 
         // TODO: lastValidTime, state = { GOOD, UNKNOWN, BAD }
 
-        public TrackedNode(Node node) {
+        public TrackedNode(PeerNode node) {
             this.node = node;
         }
 
@@ -60,19 +61,10 @@ public class NodeTracker {
             return mTrackedNodes.size();
         }
 
-        public void submitNode(Node node) {
+        public void submitNode(PeerNode node) {
             TrackedNode trackedNode = new TrackedNode(node);
             if (mTrackedNodes.contains(trackedNode)) {
-                // already present in bucket -- update the existing node object
-                // with any new public keys, etc., we have noticed.
-                // (This is quite awkward. Maybe we need to maintain a sister
-                // collection map to directly access the relevant node?)
-                for (TrackedNode existingNode : mTrackedNodes) {
-                    if (existingNode.equals(trackedNode)) {
-                        existingNode.node.update(trackedNode.node);
-                        break;
-                    }
-                }
+                // already present in bucket
                 return;
             }
             if (mTrackedNodes.size() == MAX_BUCKET_SIZE) {
@@ -84,7 +76,7 @@ public class NodeTracker {
             mLastNodeLookupTime = System.nanoTime();
         }
 
-        public void accumulateNodes(Set<Node> nodes) {
+        public void accumulateNodes(Set<PeerNode> nodes) {
             for (TrackedNode trackedNode : mTrackedNodes) {
                 nodes.add(trackedNode.node);
             }
@@ -93,9 +85,9 @@ public class NodeTracker {
 
     private Bucket[] mBuckets = new Bucket[BUCKET_COUNT];
 
-    private Node mLocalNode;
+    private PeerNode mLocalNode;
 
-    public NodeTracker(Node localNode) {
+    public NodeTracker(PeerNode localNode) {
         mLocalNode = localNode;
 
         for (int i=0; i<BUCKET_COUNT; i++) {
@@ -111,10 +103,7 @@ public class NodeTracker {
         return size;
     }
 
-    public void submitNode(Node node) {
-        if (! node.hasPublicKey()) {
-            throw new IllegalArgumentException("attempt to track node without RSA public key.");
-        }
+    public void submitNode(PeerNode node) {
         int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());
         if (distance == -1) {
             // the referenced node is us.
@@ -134,8 +123,9 @@ public class NodeTracker {
      * @return A set of nodes sorted by increasing distance from the target
      *         hashname.
      */
-    public SortedSet<Node> getClosestNodes(HashName targetHashName, int maxNodes) {
-        SortedSet<Node> sortedNodes = new TreeSet<Node>(new NodeDistanceComparator(targetHashName));
+    public SortedSet<PeerNode> getClosestNodes(HashName targetHashName, int maxNodes) {
+        SortedSet<PeerNode> sortedNodes =
+                new TreeSet<PeerNode>(new NodeDistanceComparator(targetHashName));
 
         // determine the starting bucket based on the distance from me.
         int startingBucket = mLocalNode.getHashName().distanceMagnitude(targetHashName);
@@ -199,7 +189,7 @@ public class NodeTracker {
                         int neighborDistance = 0;
                         Node neighbor = task.getClosestVisitedNode();
                         if (neighbor != null) {
-                            neighborDistance =mLocalNode.getHashName().distanceMagnitude(
+                            neighborDistance = mLocalNode.getHashName().distanceMagnitude(
                                     neighbor.getHashName()
                             );
                             Log.i("nearest neighbor = "+neighbor+" distance="+neighborDistance);

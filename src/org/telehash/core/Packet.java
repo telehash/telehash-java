@@ -26,8 +26,8 @@ public abstract class Packet {
     private static Map<String,Method> sTypeParseMap =
             new HashMap<String,Method>();
 
-    protected Node mSourceNode;
-    protected Node mDestinationNode;
+    protected PeerNode mSourceNode;
+    protected PeerNode mDestinationNode;
 
     public static final class SplitPacket {
         public SplitPacket(int headerLength, short singleByteHeader, JSONObject json, byte[] body) {
@@ -42,17 +42,17 @@ public abstract class Packet {
         public byte[] body;
     }
 
-    public void setSourceNode(Node sourceNode) {
+    public void setSourceNode(PeerNode sourceNode) {
         mSourceNode = sourceNode;
     }
-    public Node getSourceNode() {
+    public PeerNode getSourceNode() {
         return mSourceNode;
     }
 
-    public void setDestinationNode(Node destinationNode) {
+    public void setDestinationNode(PeerNode destinationNode) {
         mDestinationNode = destinationNode;
     }
-    public Node getDestinationNode() {
+    public PeerNode getDestinationNode() {
         return mDestinationNode;
     }
 

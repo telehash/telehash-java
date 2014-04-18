@@ -7,6 +7,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.telehash.core.CipherSetIdentifier;
+import org.telehash.core.Log;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -67,7 +68,12 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
     }
 
     @Override
-    public byte[] getFingerprint() throws TelehashException {
-        return Telehash.get().getCrypto().sha256Digest(getEncoded());
+    public byte[] getFingerprint() {
+        try {
+            return Telehash.get().getCrypto().sha256Digest(getEncoded());
+        } catch (TelehashException e) {
+            Log.e("sha256 failure", e);
+            return null;
+        }
     }
 }

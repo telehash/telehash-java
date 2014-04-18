@@ -98,6 +98,15 @@ public class Line implements OnTimeoutListener {
         return mRemoteNode;
     }
 
+    public PeerNode getRemotePeerNode() {
+        if (mRemoteNode instanceof PeerNode) {
+            return (PeerNode)mRemoteNode;
+        } else {
+            Log.e("peer node expected, but line still has: "+mRemoteNode);
+            return null;
+        }
+    }
+
     public void setLocalOpenPacket(OpenPacket localOpenPacket) {
         mLocalOpenPacket = localOpenPacket;
     }

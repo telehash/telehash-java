@@ -12,27 +12,27 @@ public class Telehash {
     private Crypto mCrypto;
     private Storage mStorage;
     private Network mNetwork;
-    private Identity mIdentity;
+    private LocalNode mLocalNode;
     private Switch mSwitch;
 
     public Telehash() {
         mCrypto = new CryptoImpl();
         mStorage = new StorageImpl();
         mNetwork = new NetworkImpl();
-        mIdentity = null;
+        mLocalNode = null;
         mSwitch = null;
     }
 
-    public Telehash(Identity identity) {
+    public Telehash(LocalNode localNode) {
         mCrypto = new CryptoImpl();
         mStorage = new StorageImpl();
         mNetwork = new NetworkImpl();
-        mIdentity = identity;
+        mLocalNode = localNode;
         mSwitch = null;
     }
 
-    public Telehash(Identity identity, Crypto crypto, Storage storage, Network network) {
-        mIdentity = identity;
+    public Telehash(LocalNode localNode, Crypto crypto, Storage storage, Network network) {
+        mLocalNode = localNode;
         mCrypto = crypto;
         mStorage = storage;
         mNetwork = network;
@@ -51,11 +51,11 @@ public class Telehash {
         return mNetwork;
     }
 
-    public void setIdentity(Identity identity) {
-        mIdentity = identity;
+    public void setLocalNode(LocalNode localNode) {
+        mLocalNode = localNode;
     }
-    public Identity getIdentity() {
-        return mIdentity;
+    public LocalNode getLocalNode() {
+        return mLocalNode;
     }
 
     public void setSwitch(Switch telehashSwitch) {

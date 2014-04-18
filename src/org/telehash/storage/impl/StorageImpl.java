@@ -7,9 +7,10 @@ import org.json.JSONTokener;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.FingerprintSet;
 import org.telehash.core.HashName;
-import org.telehash.core.Identity;
+import org.telehash.core.LocalNode;
 import org.telehash.core.Log;
-import org.telehash.core.Node;
+import org.telehash.core.PeerNode;
+import org.telehash.core.SeedNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -31,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
@@ -39,32 +41,32 @@ import java.util.TreeMap;
  */
 public class StorageImpl implements Storage {
 
-    private static final String DEFAULT_IDENTITY_FILENAME_BASE = "telehash-identity";
+    private static final String DEFAULT_LOCALNODE_FILENAME_BASE = "telehash-localnode";
     private static final String PRIVATE_KEY_FILENAME_SUFFIX = ".key";
     private static final String PUBLIC_KEY_FILENAME_SUFFIX = ".pub";
     private static final String PATHS_KEY = "paths";
 
     /**
-     * Read the local Telehash identity (hashname key pairs) from files named using
-     * the specified base filename.
+     * Read the local Telehash node keys from files named using the
+     * specified base filename.
      *
-     * @param identityBaseFilename
-     *            The base filename, e.g. "identity".
-     * @return The read and parsed Telehash identity.
+     * @param localNodeBaseFilename
+     *            The base filename, e.g. "localnode".
+     * @return The read and parsed Telehash local node.
      * @throws TelehashException
-     *             If a problem happened while reading and parsing the identity.
+     *             If a problem happened while reading and parsing the local node.
      */
     @Override
-    public Identity readIdentity(String identityBaseFilename) throws TelehashException {
-        Map<CipherSetIdentifier,HashNameKeyPair> keyPairs =
+    public LocalNode readLocalNode(String localNodeBaseFilename) throws TelehashException {
+        SortedMap<CipherSetIdentifier,HashNameKeyPair> keyPairs =
                 new TreeMap<CipherSetIdentifier,HashNameKeyPair>();
         for (CipherSet cipherSet : Telehash.get().getCrypto().getAllCipherSets()) {
             CipherSetIdentifier csid = cipherSet.getCipherSetId();
             String csidExtension = "." + csid.asHex();
             String publicKeyFilename =
-                    identityBaseFilename + csidExtension + PUBLIC_KEY_FILENAME_SUFFIX;
+                    localNodeBaseFilename + csidExtension + PUBLIC_KEY_FILENAME_SUFFIX;
             String privateKeyFilename =
-                    identityBaseFilename + csidExtension + PRIVATE_KEY_FILENAME_SUFFIX;
+                    localNodeBaseFilename + csidExtension + PRIVATE_KEY_FILENAME_SUFFIX;
             if (new File(publicKeyFilename).exists() && new File(privateKeyFilename).exists()) {
                 Log.i("keys exist for cipher set: "+cipherSet);
 
@@ -81,51 +83,51 @@ public class StorageImpl implements Storage {
         }
         if (keyPairs.isEmpty()) {
             throw new TelehashException(
-                "no key pairs found for identity: "+identityBaseFilename,
+                "no key pairs found for local node: "+localNodeBaseFilename,
                 new FileNotFoundException()
             );
         }
-        return new Identity(keyPairs);
+        return new LocalNode(keyPairs);
     }
 
     /**
-     * Read the local Telehash identity (RSA key pair) from files named using
+     * Read the local Telehash local node keys from files named using
      * the default base filename.
      *
-     * @return The read and parsed Telehash identity.
+     * @return The read and parsed Telehash local node.
      * @throws TelehashException
-     *             If a problem happened while reading and parsing the identity.
+     *             If a problem happened while reading and parsing the local node.
      */
     @Override
-    public Identity readIdentity() throws TelehashException {
-        return readIdentity(DEFAULT_IDENTITY_FILENAME_BASE);
+    public LocalNode readLocalNode() throws TelehashException {
+        return readLocalNode(DEFAULT_LOCALNODE_FILENAME_BASE);
     }
 
     /**
-     * Write the local Telehash identity (RSA key pair) into files named using
+     * Write the local Telehash local node keys into files named using
      * the specified base filename.
      *
-     * @param identity
-     *            The identity to write.
-     * @param identityBaseFilename
-     *            The base filename, e.g. "identity".
+     * @param localNode
+     *            The local node to write.
+     * @param localNodeBaseFilename
+     *            The base filename, e.g. "localnode".
      * @throws TelehashException
-     *             If a problem happened while writing the identity.
+     *             If a problem happened while writing the local node.
      */
     @Override
-    public void writeIdentity(Identity identity, String identityBaseFilename)
+    public void writeLocalNode(LocalNode localNode, String localNodeBaseFilename)
             throws TelehashException {
         Crypto crypto = Telehash.get().getCrypto();
         for (Map.Entry<CipherSetIdentifier,HashNameKeyPair> entry :
-                identity.getHashNameKeyPairs().entrySet()) {
+                localNode.getHashNameKeyPairs().entrySet()) {
             CipherSetIdentifier csid = entry.getKey();
             HashNameKeyPair keyPair = entry.getValue();
             CipherSet cipherSet = crypto.getCipherSet(csid);
             String csidExtension = "." + csid.asHex();
             String publicKeyFilename =
-                    identityBaseFilename + csidExtension + PUBLIC_KEY_FILENAME_SUFFIX;
+                    localNodeBaseFilename + csidExtension + PUBLIC_KEY_FILENAME_SUFFIX;
             String privateKeyFilename =
-                    identityBaseFilename + csidExtension + PRIVATE_KEY_FILENAME_SUFFIX;
+                    localNodeBaseFilename + csidExtension + PRIVATE_KEY_FILENAME_SUFFIX;
             cipherSet.writeHashNamePublicKeyToFile(
                     publicKeyFilename,
                     keyPair.getPublicKey()
@@ -138,17 +140,17 @@ public class StorageImpl implements Storage {
     }
 
     /**
-     * Write the local Telehash identity (RSA key pair) into files named using
+     * Write the local Telehash local node keys into files named using
      * the default base filename.
      *
-     * @param identity
-     *            The identity to write.
+     * @param localNode
+     *            The local node to write.
      * @throws TelehashException
-     *             If a problem happened while writing the identity.
+     *             If a problem happened while writing the local node.
      */
     @Override
-    public void writeIdentity(Identity identity) throws TelehashException {
-        writeIdentity(identity, DEFAULT_IDENTITY_FILENAME_BASE);
+    public void writeLocalNode(LocalNode localNode) throws TelehashException {
+        writeLocalNode(localNode, DEFAULT_LOCALNODE_FILENAME_BASE);
     }
 
     private static final String PUBLICKEYS_KEY = "keys";
@@ -165,8 +167,8 @@ public class StorageImpl implements Storage {
      *             If a problem happened while reading and parsing the seeds.
      */
     @Override
-    public Set<Node> readSeeds(String seedsFilename) throws TelehashException {
-        Set<Node> nodes = new HashSet<Node>();
+    public Set<PeerNode> readSeeds(String seedsFilename) throws TelehashException {
+        Set<PeerNode> nodes = new HashSet<PeerNode>();
 
         JSONTokener tokener;
         try {
@@ -208,11 +210,10 @@ public class StorageImpl implements Storage {
                 throw new TelehashException("no valid network paths found for seed!");
             }
 
-            // TODO: support multiple paths per node.
-            Node node = new Node(hashName, fingerprints, paths.get(0));
-
             JSONObject keysObject = seed.getJSONObject(PUBLICKEYS_KEY);
             Iterator<?> keysIter = keysObject.keys();
+            SortedMap<CipherSetIdentifier,HashNamePublicKey> publicKeys =
+                    new TreeMap<CipherSetIdentifier,HashNamePublicKey>();
             while (keysIter.hasNext()) {
                 // cipher set id
                 Object csidObject = keysIter.next();
@@ -233,19 +234,22 @@ public class StorageImpl implements Storage {
                         .getCipherSet(csid);
                 if (cipherSet == null) {
                     Log.w("unknown cipher set in seeds json: "+csid);
-                    continue;
-                }
-                HashNamePublicKey publicKey = cipherSet.decodeHashNamePublicKey(pubkeyBuffer);
+                } else {
+                    HashNamePublicKey publicKey = cipherSet.decodeHashNamePublicKey(pubkeyBuffer);
 
-                // confirm fingerprint
-                byte[] publicKeyFingerprint = publicKey.getFingerprint();
-                byte[] providedFingerprint = fingerprints.get(csid);
-                if (publicKeyFingerprint == null ||
-                        providedFingerprint == null ||
-                        (! Arrays.equals(publicKeyFingerprint,  providedFingerprint))) {
-                    throw new TelehashException("seed pubkey does not match fingerprint");
+                    // confirm fingerprint
+                    byte[] publicKeyFingerprint = publicKey.getFingerprint();
+                    byte[] providedFingerprint = fingerprints.get(csid);
+                    if (publicKeyFingerprint == null ||
+                            providedFingerprint == null ||
+                            (! Arrays.equals(publicKeyFingerprint,  providedFingerprint))) {
+                        throw new TelehashException("seed pubkey does not match fingerprint");
+                    }
+                    publicKeys.put(csid, publicKey);
                 }
             }
+
+            SeedNode node = new SeedNode(fingerprints, publicKeys, paths);
             nodes.add(node);
         }
         return nodes;

@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.telehash.core.Node;
+import org.telehash.core.PeerNode;
 import org.telehash.network.InetPath;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
@@ -106,10 +106,10 @@ public class StorageTest {
         fos.write(SEEDS_JSON.getBytes("UTF-8"));
         fos.close();
 
-        Set<Node> seeds = mStorage.readSeeds(temp.getAbsolutePath());
+        Set<PeerNode> seeds = mStorage.readSeeds(temp.getAbsolutePath());
         assertNotNull(seeds);
         assertEquals(seeds.size(), NUM_SEEDS);
-        for (Node seed : seeds) {
+        for (PeerNode seed : seeds) {
             int port = ((InetPath)seed.getPath()).getPort();
             int lowerOctet = ((InetPath)seed.getPath()).getAddress().getAddress()[3]&0xFF;
             assertEquals(lowerOctet, port-9000);
