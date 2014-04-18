@@ -21,11 +21,22 @@ public class SeeNode extends Node {
         super(hashName);
         mCipherSetIdentifier = cipherSetIdentifier;
         mHolePunchPath = holePunchPath;
-        // TODO: referring node should NEVER be null!
         mReferringNode = null;
     }
 
-    public static SeeNode parse(Node referringNode, String seeLine) throws TelehashException {
+    private SeeNode(
+            HashName hashName,
+            CipherSetIdentifier cipherSetIdentifier,
+            Path holePunchPath,
+            PeerNode referringNode
+    ) {
+        super(hashName);
+        mCipherSetIdentifier = cipherSetIdentifier;
+        mHolePunchPath = holePunchPath;
+        mReferringNode = referringNode;
+    }
+
+    public static SeeNode parse(PeerNode referringNode, String seeLine) throws TelehashException {
         String[] parts  = seeLine.split(",");
         if (parts.length != 2 && parts.length != 4) {
             throw new TelehashException("invalid see line: "+seeLine);
@@ -44,7 +55,7 @@ public class SeeNode extends Node {
         } else {
             holePunchPath = null;
         }
-        return new SeeNode(hashName, cipherSetIdentifier, holePunchPath);
+        return new SeeNode(hashName, cipherSetIdentifier, holePunchPath, referringNode);
     }
 
     public String render() {

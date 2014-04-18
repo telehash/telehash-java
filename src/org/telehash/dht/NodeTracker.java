@@ -199,7 +199,8 @@ public class NodeTracker {
 
                         long now = System.nanoTime();
                         for (int i=neighborDistance; i<BUCKET_COUNT; i++) {
-                            Log.i("considering bucket: "+mBuckets[i]);
+                            Log.i("considering bucket["+i+"] of size="+mBuckets[i].size()
+                                    +": "+mBuckets[i]);
                             if (mBuckets[i].mLastNodeLookupTime == -1 ||
                                     ((now - mBuckets[i].mLastNodeLookupTime) >
                                     BUCKET_REFRESH_TIME_NS)) {

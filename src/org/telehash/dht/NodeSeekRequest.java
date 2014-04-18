@@ -9,6 +9,7 @@ import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
+import org.telehash.core.PeerNode;
 import org.telehash.core.SeeNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -50,6 +51,7 @@ public class NodeSeekRequest {
         mQueryNode = queryNode;
         mTargetHashName = targetHashName;
         mHandler = handler;
+        Log.i("NodeSeekRequest="+this+" mQueryNode="+mQueryNode+" mTargetHashName="+mTargetHashName);
     }
 
     public Set<SeeNode> getResultNodes() {
@@ -118,7 +120,16 @@ public class NodeSeekRequest {
                 return;
             }
             try {
-                mResultNodes.add(SeeNode.parse(mQueryNode,seeString));
+                PeerNode peerNode;
+                mResultNodes.add(SeeNode.parse(channelPacket.getSourceNode(), seeString));
+                /*
+                if (mQueryNode instanceof PeerNode) {
+                    mResultNodes.add(SeeNode.parse((PeerNode)mQueryNode,seeString));
+                } else {
+                    fail(new TelehashException("NodeSeekRequest="+this+": query node is not a peer node: "+mQueryNode));
+                    return;
+                }
+                */
             } catch (TelehashException e) {
                 fail(e);
                 return;

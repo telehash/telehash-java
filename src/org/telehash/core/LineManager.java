@@ -33,7 +33,7 @@ public class LineManager {
                     Log.i("XXX cannot find "+
                             lineIdentifier+" ; candidates include:");
                     for (LineIdentifier id : mIncomingLineIdentifierToLineMap.keySet()) {
-                        Log.i("XXX     "+id+" "+id.hashCode());
+                        Log.i("XXX     "+id+" "+(id != null ? id.hashCode() : "null"));
                     }
                 }
             }
@@ -232,6 +232,11 @@ public class LineManager {
         final Line line = new Line(mTelehash, csid);
         line.setRemoteNode(destination);
         line.addOpenCompletionHandler(handler, attachment);
+
+        // generate a random line identifier
+        // (it's an *incoming* line identifier, but will be provided in the *outgoing* open.)
+        line.setIncomingLineIdentifier(LineIdentifier.generate());
+
         // create an open packet, if we have cs/pubkey for the remote
         // (i.e. destination is a PeerNode.)
         // TODO: move this to a point after which we *certainly* have a PeerNode.
@@ -239,12 +244,11 @@ public class LineManager {
             OpenPacket openPacket = new OpenPacket(
                     mTelehash.getLocalNode(),
                     (PeerNode)destination,
-                    csid
+                    csid,
+                    line.getIncomingLineIdentifier()
             );
             // note: this open packet is *outgoing* but its embedded line identifier
             // is to be used for *incoming* line packets.
-            Log.i("openPacket.lineid="+openPacket.getLineIdentifier());
-            line.setIncomingLineIdentifier(openPacket.getLineIdentifier());
             line.setLocalOpenPacket(openPacket);
         }
         mLineTracker.add(line);
@@ -334,7 +338,7 @@ public class LineManager {
         Line referringLine = getLineByNode(referringNode);
         if (referringLine == null) {
             mLineTracker.remove(line);
-            line.fail(new TelehashException("no line to referring node"));
+            line.fail(new TelehashException("no line to referring node: "+referringNode));
             return;
         }
 
@@ -398,18 +402,33 @@ public class LineManager {
             // for an introduction via peer/connect.)  Prepare a response open packet.
             OpenPacket replyOpenPacket;
             if (line != null && line.getState() == Line.State.REVERSE_OPEN_PENDING) {
-                // a reverse-open is pending; use the open packet we've generated for it.
-                replyOpenPacket = line.getLocalOpenPacket();
-                Log.i("new line established for remote initiator (reverse)");
-            } else {
-                // create a new open package and line.
+                // a reverse-open is pending; create an open packet for it.
                 replyOpenPacket = new OpenPacket(
                         mTelehash.getLocalNode(),
                         incomingOpenPacket.getSourceNode(),
-                        incomingOpenPacket.getCipherSet().getCipherSetId()
+                        incomingOpenPacket.getCipherSet().getCipherSetId(),
+                        line.getIncomingLineIdentifier()
+                );
+                // note: this open packet is *outgoing* but its embedded line identifier
+                // is to be used for *incoming* line packets.
+                Log.i("openPacket.lineid="+replyOpenPacket.getLineIdentifier());
+                line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
+                line.setLocalOpenPacket(replyOpenPacket);
+                Log.i("line remote node was: "+line.getRemoteNode());
+                line.setRemoteNode(incomingOpenPacket.getSourceNode());
+                Log.i("line remote node now: "+line.getRemoteNode());
+                Log.i("new line established for remote initiator (reverse)");
+            } else {
+                // create a new open package and line.
+                LineIdentifier incomingLineIdentifier = LineIdentifier.generate();
+                replyOpenPacket = new OpenPacket(
+                        mTelehash.getLocalNode(),
+                        incomingOpenPacket.getSourceNode(),
+                        incomingOpenPacket.getCipherSet().getCipherSetId(),
+                        incomingLineIdentifier
                 );
                 line = new Line(mTelehash, incomingOpenPacket.getCipherSet().getCipherSetId());
-                line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
+                line.setIncomingLineIdentifier(incomingLineIdentifier);
                 line.setLocalOpenPacket(replyOpenPacket);
                 line.setRemoteNode(incomingOpenPacket.getSourceNode());
                 mLineTracker.add(line);

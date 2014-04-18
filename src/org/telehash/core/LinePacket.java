@@ -128,6 +128,7 @@ public class LinePacket extends Packet {
 
         // parse the embedded channel packet
         ChannelPacket channelPacket = ChannelPacket.parse(telehash, channelPlaintext, path);
+        channelPacket.setSourceNode(line.getRemotePeerNode());
 
         return new LinePacket(line, channelPacket);
     }

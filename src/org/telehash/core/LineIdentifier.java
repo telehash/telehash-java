@@ -18,6 +18,12 @@ public class LineIdentifier {
         mBuffer = buffer;
     }
 
+    public static LineIdentifier generate() {
+        return new LineIdentifier(
+                Telehash.get().getCrypto().getRandomBytes(SIZE)
+        );
+    }
+
     public byte[] getBytes() {
         return mBuffer;
     }

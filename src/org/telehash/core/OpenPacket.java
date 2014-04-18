@@ -150,7 +150,14 @@ public class OpenPacket extends Packet {
         }
     }
 
-    public OpenPacket(LocalNode localNode, PeerNode destinationNode, CipherSetIdentifier csid) {
+    /**
+     * Create an open packet for an outgoing open.
+     *
+     * @param localNode
+     * @param destinationNode
+     * @param csid
+     */
+    public OpenPacket(LocalNode localNode, PeerNode destinationNode, CipherSetIdentifier csid, LineIdentifier lineIdentifier) {
         mLocalNode = localNode;
         mDestinationNode = destinationNode;
         mSenderHashNamePublicKey = localNode.getPublicKey(csid);
@@ -170,12 +177,16 @@ public class OpenPacket extends Packet {
             );
         }
 
-        // generate a random line identifier
-        mLineIdentifier = new LineIdentifier(
-                Telehash.get().getCrypto().getRandomBytes(LINE_IDENTIFIER_SIZE)
-        );
+        mLineIdentifier = lineIdentifier;
     }
 
+    /**
+     * Create an open packet for an incoming open.
+     *
+     * @param localNode
+     * @param destinationNode
+     * @param csid
+     */
     public OpenPacket(
             CipherSetIdentifier cipherSetIdentifier,
             PeerNode sourceNode,

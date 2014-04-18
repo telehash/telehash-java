@@ -214,7 +214,12 @@ public class PacketTest {
                 Collections.singleton(Path.parsePath(SAMPLE_PATH))
         );
 
-        OpenPacket openPacket = new OpenPacket(mLocalNode1, remoteNode, csid);
+        OpenPacket openPacket = new OpenPacket(
+                mLocalNode1,
+                remoteNode,
+                csid,
+                LineIdentifier.generate()
+        );
         openPacket.setLinePublicKey(mECKeyPair.getPublicKey());
         openPacket.setLinePrivateKey(mECKeyPair.getPrivateKey());
         openPacket.setOpenTime(TEST_OPEN_TIME);
@@ -235,7 +240,12 @@ public class PacketTest {
         Path localPath = Path.parsePath(SAMPLE_PATH);
         Path remotePath = Path.parsePath(SAMPLE_PATH);
         mLocalNode2.setPaths(Collections.singleton(remotePath));
-        OpenPacket openPacket = new OpenPacket(mLocalNode1, mLocalNode2, NODE2_CIPHER_SET_ID);
+        OpenPacket openPacket = new OpenPacket(
+                mLocalNode1,
+                mLocalNode2,
+                NODE2_CIPHER_SET_ID,
+                LineIdentifier.generate()
+        );
         byte[] openPacketBuffer = openPacket.render();
         assertNotNull(openPacketBuffer);
 
