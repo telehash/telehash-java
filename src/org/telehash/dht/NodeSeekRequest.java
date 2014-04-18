@@ -9,7 +9,7 @@ import org.telehash.core.HashName;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
-import org.telehash.core.See;
+import org.telehash.core.SeeNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -38,7 +38,7 @@ public class NodeSeekRequest {
     private HashName mTargetHashName;
     private Handler mHandler;
     private Line mLine;
-    private Set<See> mResultNodes;
+    private Set<SeeNode> mResultNodes;
 
     public NodeSeekRequest(
             Telehash telehash,
@@ -52,7 +52,7 @@ public class NodeSeekRequest {
         mHandler = handler;
     }
 
-    public Set<See> getResultNodes() {
+    public Set<SeeNode> getResultNodes() {
         return mResultNodes;
     }
 
@@ -108,7 +108,7 @@ public class NodeSeekRequest {
         }
         JSONArray seeNodes = (JSONArray)seeObject;
 
-        mResultNodes = new HashSet<See>();
+        mResultNodes = new HashSet<SeeNode>();
         for (int i=0; i<seeNodes.length(); i++) {
             String seeString;
             try {
@@ -118,7 +118,7 @@ public class NodeSeekRequest {
                 return;
             }
             try {
-                mResultNodes.add(See.parse(mQueryNode,seeString));
+                mResultNodes.add(SeeNode.parse(mQueryNode,seeString));
             } catch (TelehashException e) {
                 fail(e);
                 return;

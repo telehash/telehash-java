@@ -13,7 +13,7 @@ import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.PeerNode;
-import org.telehash.core.See;
+import org.telehash.core.SeeNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -231,7 +231,7 @@ public class DHT {
         // TODO: handle the "seed" boolean
         channelPacket.get(SEED_KEY);
 
-        Set<See> seeNodes;
+        Set<SeeNode> seeNodes;
         try {
             seeNodes = parseSee(channelPacket.get(SEE_KEY), mLocalNode);
         } catch (TelehashException e) {
@@ -240,7 +240,7 @@ public class DHT {
         }
 
         // submit seeNodes to DHT for possible inclusion in buckets.
-        for (See node : seeNodes) {
+        for (SeeNode node : seeNodes) {
             submitNode(node);
         }
 
@@ -355,7 +355,7 @@ public class DHT {
         mTelehash.getSwitch().getLineManager().openLine(node, false, null, null);
     }
 
-    private static Set<See> parseSee(
+    private static Set<SeeNode> parseSee(
             Object seeObject,
             PeerNode referringNode
     ) throws TelehashException {
@@ -364,7 +364,7 @@ public class DHT {
         }
         JSONArray seeNodes = (JSONArray)seeObject;
 
-        Set<See> sees = new HashSet<See>(seeNodes.length());
+        Set<SeeNode> sees = new HashSet<SeeNode>(seeNodes.length());
         for (int i=0; i<seeNodes.length(); i++) {
             String seeString;
             try {
@@ -372,7 +372,7 @@ public class DHT {
             } catch (JSONException e) {
                 throw new TelehashException(e);
             }
-            sees.add(See.parse(referringNode, seeString));
+            sees.add(SeeNode.parse(referringNode, seeString));
         }
         return sees;
     }

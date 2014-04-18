@@ -5,7 +5,7 @@ import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.OnTimeoutListener;
 import org.telehash.core.PeerNode;
-import org.telehash.core.See;
+import org.telehash.core.SeeNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Timeout;
@@ -224,9 +224,9 @@ public class NodeLookupTask implements OnTimeoutListener {
 
                             // remove ourselves from the returned list of nodes, unless
                             // this is a self-seek.
-                            Set<See> nodes = seek.getResultNodes();
+                            Set<SeeNode> nodes = seek.getResultNodes();
                             if (mSelfSeek) {
-                                for (See node : nodes) {
+                                for (SeeNode node : nodes) {
                                     if (mTargetHashName.equals(node.getHashName())) {
                                         complete(node);
                                         return;

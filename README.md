@@ -102,25 +102,26 @@ TODO
 * Recent protocol changes
     * Cipher sets
         * ~~General support for cipher sets.~~
-        * Hashname generation based on cipher set parts.
-        * Peer/connect support for cipher sets and relay.
-        * Support for cipher sets in seeds.json parsing.  (i.e.
-          keys and parts arrays.)
+        * ~~Hashname generation based on cipher set parts.~~
+        * ~~Peer/connect support for cipher sets and relay.~~
+        * ~~Support for cipher sets in seeds.json parsing.  (i.e.
+          keys and parts arrays.)~~
         * Cipher set specifics
             * CS1a: ECC SECP160r1 and AES-128
             * ~~CS2a: RSA-2048, ECC P-256, AES-256 (The "Telehash 2013"
               cipher set.)~~
             * CS3a: NaCl
         * Update unit tests for checking crypto cipher set functions.
-    * Non-JSON headers
-        * length=0; no header.
-        * length=1; single byte header.
+    * ~~Non-JSON headers~~
+        * ~~length=0; no header.~~
+        * ~~length=1; single byte header.~~
     * Line
         * ~~Binary open packet format.~~
         * ~~Binary line packet format.~~
-        * Use the open packet's single byte header to associate a
-          line with a cipher set.
-        * Cipher set parts encoded in the open packet's "from" field.
+        * ~~Use the open packet's single byte header to associate a
+          line with a cipher set.~~
+        * ~~Cipher set parts encoded in the open packet's "from"
+          field.~~
         * When an open packet is received from a hashname for which a
           line is already established:
             * Same line id; recalculate keys.
@@ -147,7 +148,7 @@ TODO
 
 * Other required changes
     * Paths
-        * Support multiple paths via path arrays.
+        * ~~Support multiple paths via path arrays.~~
     * Channels
         * Reliable channels
             * Seq/ack sequencing.
@@ -173,14 +174,14 @@ TODO
       self-seek.
     * A switch initiating contact with a new node via peer/connect
       should also send a hole-punching open packet.
-* The API currently requires the caller to successively open a line
+* ~~The API currently requires the caller to successively open a line
   (Switch.openLine()) and a channel (Line.openChannel()) before communicating
   with a remote node (Channel.send()).  The Telehash protocol specification
   states that "an open is always triggered by the creation of a channel to a
-  hashname, such that when a channel generates it's first packet the switch
+  hashname, such that when a channel generates its first packet the switch
   recognizes that a line doesn't exist yet and attempts to create one."
   Therefore, we should invert the initiation flow: Channel.send() should open a
-  line and a channel the first time it is run.
+  line and a channel the first time it is run.~~
 * Line and Channel objects returned by the switch should have their references
   managed in such a way that they can be GC'ed and finalized if dereferenced
   from the application.

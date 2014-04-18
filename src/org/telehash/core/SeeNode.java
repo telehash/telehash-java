@@ -6,13 +6,17 @@ import org.telehash.network.Path;
  * This class represents a Telehash "see" field, containing a hashname,
  * a cipher set identifier, and optionally a path for hole punching.
  */
-public class See extends Node {
+public class SeeNode extends Node {
 
     private final CipherSetIdentifier mCipherSetIdentifier;
     private final Path mHolePunchPath;
     private final PeerNode mReferringNode;
 
-    private See(HashName hashName, CipherSetIdentifier cipherSetIdentifier, Path holePunchPath) {
+    private SeeNode(
+            HashName hashName,
+            CipherSetIdentifier cipherSetIdentifier,
+            Path holePunchPath
+    ) {
         super(hashName);
         mCipherSetIdentifier = cipherSetIdentifier;
         mHolePunchPath = holePunchPath;
@@ -20,7 +24,7 @@ public class See extends Node {
         mReferringNode = null;
     }
 
-    public static See parse(Node referringNode, String seeLine) throws TelehashException {
+    public static SeeNode parse(Node referringNode, String seeLine) throws TelehashException {
         String[] parts  = seeLine.split(",");
         if (parts.length != 2 && parts.length != 4) {
             throw new TelehashException("invalid see line");
@@ -39,7 +43,7 @@ public class See extends Node {
         } else {
             holePunchPath = null;
         }
-        return new See(hashName, cipherSetIdentifier, holePunchPath);
+        return new SeeNode(hashName, cipherSetIdentifier, holePunchPath);
     }
 
     public CipherSetIdentifier getCipherSetIdentifier() {
@@ -57,6 +61,6 @@ public class See extends Node {
     @Override
     public String toString() {
         String hashName = mHashName.toString().substring(0, 8);
-        return "See["+hashName+"/"+mCipherSetIdentifier+"]";
+        return "SeeNode["+hashName+"/"+mCipherSetIdentifier+"]";
     }
 }

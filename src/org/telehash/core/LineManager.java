@@ -217,8 +217,8 @@ public class LineManager {
         CipherSetIdentifier csid;
         if (destination instanceof PeerNode) {
             csid = ((PeerNode)destination).getActiveCipherSetIdentifier();
-        } else if (destination instanceof See) {
-            csid = ((See)destination).getCipherSetIdentifier();
+        } else if (destination instanceof SeeNode) {
+            csid = ((SeeNode)destination).getCipherSetIdentifier();
         } else {
             // TODO: support PlaceholderNode
             throw new RuntimeException("node inheritance hierarchy changed - unknown type");
@@ -260,8 +260,8 @@ public class LineManager {
                 throw new RuntimeException("peer node has no path!");
             }
             openLineDirect(line);
-        } else if (destination instanceof See) {
-            See see = (See)destination;
+        } else if (destination instanceof SeeNode) {
+            SeeNode see = (SeeNode)destination;
             PeerNode referringNode = see.getReferringNode();
             openLineReverse(line, referringNode);
         } else if (destination instanceof PlaceholderNode) {
@@ -312,8 +312,8 @@ public class LineManager {
 
                         // the result of a node lookup should be either a SeeNode
                         // or a PeerNode.
-                        if (resultNode instanceof See) {
-                            See see = (See)resultNode;
+                        if (resultNode instanceof SeeNode) {
+                            SeeNode see = (SeeNode)resultNode;
                             openLineReverse(line, see.getReferringNode());
                         } else if (resultNode instanceof PeerNode) {
                             openLineDirect(line);
