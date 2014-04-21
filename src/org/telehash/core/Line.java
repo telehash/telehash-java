@@ -163,6 +163,9 @@ public class Line implements OnTimeoutListener {
             CompletionHandler<Line> openCompletionHandler,
             Object openCompletionAttachment
     ) {
+        if (openCompletionHandler == null) {
+            return;
+        }
         if (mState == State.ESTABLISHED) {
             // line is already established, so complete immediately.
             openCompletionHandler.completed(this, openCompletionAttachment);
@@ -294,7 +297,8 @@ public class Line implements OnTimeoutListener {
 
     @Override
     public String toString() {
-        return "Line["+mIncomingLineIdentifier+"->"+mOutgoingLineIdentifier+"@"+getOpenTime()+"]";
+        return "Line["+mIncomingLineIdentifier+"->"+mOutgoingLineIdentifier+"@"+getOpenTime()+"]" +
+                "("+mRemoteNode+")";
     }
 
     @Override
@@ -311,7 +315,7 @@ public class Line implements OnTimeoutListener {
             exception = new TelehashException("line receive timeout");
             break;
         default:
-            exception = new TelehashException("unknown line timeout");
+            exception = new TelehashException("unknown line timeout; state="+mState);
             break;
         }
 

@@ -204,7 +204,8 @@ public class DHT {
         HashName target = new HashName(Util.hexToBytes(seekString));
         Set<PeerNode> nodes = mNodeTracker.getClosestNodes(target, MAX_SEEK_NODES_RETURNED);
 
-        Log.i("processing: seek "+target);
+        StringBuilder log = new StringBuilder();
+        log.append("processing: seek "+target+"\n");
 
         JSONArray seeArray = new JSONArray();
         for (PeerNode node : nodes) {
@@ -218,10 +219,11 @@ public class DHT {
                 }
                 SeeNode see = new SeeNode(node.getHashName(), node.getActiveCipherSetIdentifier(), node.getPath());
                 seeArray.put(see.render());
-                Log.i("\tsee: " + see.render());
+                log.append("\tsee: " + see.render()+"  node="+node+"\n");
 
             }
         }
+        Log.i(log.toString());
         Map<String,Object> fields = new HashMap<String,Object>();
         fields.put(SEE_KEY, seeArray);
         try {
@@ -264,6 +266,11 @@ public class DHT {
         if (line == null) {
             // no line to the target
             return;
+        }
+        if (line.getRemotePeerNode() == null) {
+            Log.e("Line "+line+" has no PeerNode.  has: "+line.getRemoteNode());
+            Log.e("node tracker has: "+mNodeTracker.getClosestNodes(target, 1));
+            mTelehash.getSwitch().getLineManager().dump();
         }
 
         PeerNode originatingNode = channel.getRemoteNode();

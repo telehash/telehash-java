@@ -62,8 +62,10 @@ public abstract class Node {
     @Override
     public boolean equals(Object other) {
         if (    other != null &&
-                other instanceof Node &&
-                ((Node)other).getHashName().equals(mHashName)) {
+                (other instanceof Node && ((Node)other).getHashName().equals(mHashName)) ||
+                (other instanceof HashName && ((HashName)other).equals(mHashName))
+        )
+        {
             return true;
         } else {
             return false;

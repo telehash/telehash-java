@@ -79,6 +79,12 @@ public class LinePacket extends Packet {
         byte[] channelPlaintext = mChannelPacket.render();
 
         // regard the line id
+        if (mLine == null) {
+            throw new TelehashException("null line");
+        }
+        if (mLine.getOutgoingLineIdentifier() == null) {
+            throw new TelehashException("null line id");
+        }
         byte[] lineBytes = mLine.getOutgoingLineIdentifier().getBytes();
         if (lineBytes.length != LineIdentifier.SIZE) {
             throw new TelehashException("line id must be exactly 16 bytes");

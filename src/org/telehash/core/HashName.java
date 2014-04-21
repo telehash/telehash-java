@@ -104,8 +104,9 @@ public class HashName {
     @Override
     public boolean equals(Object other) {
         if (other != null &&
-            other instanceof HashName &&
-            Arrays.equals(((HashName)other).mBuffer, mBuffer)) {
+            (other instanceof HashName && Arrays.equals(((HashName)other).mBuffer, mBuffer)) ||
+            (other instanceof Node && Arrays.equals(((Node)other).getHashName().mBuffer, mBuffer))
+        ) {
             return true;
         } else {
             return false;

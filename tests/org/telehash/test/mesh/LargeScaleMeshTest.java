@@ -15,8 +15,10 @@ import java.util.Set;
 
 public class LargeScaleMeshTest {
 
-    private static final int NODE_SEED = 0;
-    private static final int TREE_DEPTH = 3;
+    // depth 4 = 15 nodes
+    // depth 5 = 31 nodes
+    // depth 6 = 63 nodes
+    private static final int TREE_DEPTH = 5;
     private static final int NUM_NODES = (1<<TREE_DEPTH)-1;
     private static final int NODE_A = NUM_NODES-(1<<(TREE_DEPTH-1));
     private static final int NODE_B = NUM_NODES-1;

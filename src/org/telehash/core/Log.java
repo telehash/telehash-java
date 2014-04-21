@@ -1,25 +1,57 @@
 package org.telehash.core;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class Log {
 
     private static final boolean ENABLE_COLOR = true;
-    private static final String COLOR_RESET =
-            new String(new char[] {0x1B, '[', '3', '9', ';', '4', '9', 'm'});
-    private static final String COLOR_RED = new String(new char[] {0x1B, '[', '3', '1', 'm'});
-    private static final String COLOR_GREEN = new String(new char[] {0x1B, '[', '3', '2', 'm'});
-    private static final String COLOR_BLUE = new String(new char[] {0x1B, '[', '3', '4', 'm'});
-    private static final String COLOR_MAGENTA = new String(new char[] {0x1B, '[', '5', '1', 'm'});
-    private static final String COLOR_CYAN = new String(new char[] {0x1B, '[', '3', '6', 'm'});
-    private static final String COLOR_YELLOW = new String(new char[] {0x1B, '[', '3', '3', 'm'});
+    private static final String ESCAPE = new String(new char[] {0x1B});
+    private static final String COLOR_RESET = ESCAPE + "[39;49m";
+    private static final String COLOR_RED = ESCAPE + "[31m";
+    private static final String COLOR_GREEN = ESCAPE + "[32m";
+    private static final String COLOR_BLUE = ESCAPE + "[34m";
+    private static final String COLOR_MAGENTA = ESCAPE + "[35m";
+    private static final String COLOR_CYAN = ESCAPE + "[36m";
+    private static final String COLOR_YELLOW = ESCAPE + "[33m";
+    private static final String COLOR_RED_BOLD = ESCAPE + "[31;1m";
+    private static final String COLOR_GREEN_BOLD = ESCAPE + "[32;1m";
+    private static final String COLOR_BLUE_BOLD = ESCAPE + "[34;1m";
+    private static final String COLOR_MAGENTA_BOLD = ESCAPE + "[35;1m";
+    private static final String COLOR_CYAN_BOLD = ESCAPE + "[36;1m";
+    private static final String COLOR_YELLOW_BOLD = ESCAPE + "[33;1m";
     private static final String COLORS[] = new String[] {
-        COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_MAGENTA, COLOR_CYAN
+        COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_MAGENTA, COLOR_CYAN, COLOR_YELLOW,
+        COLOR_RED_BOLD, COLOR_GREEN_BOLD, COLOR_BLUE_BOLD, COLOR_MAGENTA_BOLD, COLOR_CYAN_BOLD,
+        COLOR_YELLOW_BOLD
     };
     private static final Map<HashName,String> sColorMap = new HashMap<HashName,String>();
+
+    private static Object sLock = new Object();
+
+    private static final String TMP_DIRECTORY = "/tmp";
+    private static final String LOG_PATH = "/tmp/telehash.log";
+    private static long sStartTime = System.nanoTime();
+    private static Set<PrintStream> sLogStreams = new HashSet<PrintStream>();
+    static {
+        sLogStreams.add(System.out);
+        // on systems with a /tmp, store a copy of the log in /tmp/telehash.log
+        // TODO: this is temporary, for early-stage development.
+        if (new File(TMP_DIRECTORY).exists()) {
+            try {
+                sLogStreams.add(new PrintStream(LOG_PATH));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public static void d(String msg, Object... args) {
         println(msg, args);
@@ -38,9 +70,13 @@ public class Log {
     }
 
     public static void println(String msg, Object... args) {
-        String tag;
+        if (msg == null || msg.isEmpty()) {
+            return;
+        }
+
         LocalNode localNode = Telehash.get().getLocalNode();
 
+        String tag;
         if (localNode == null) {
             tag = "[        ] ";
         } else {
@@ -52,24 +88,32 @@ public class Log {
             tag = String.format("[%02x%02x%02x%02x] ", a,b,c,d);
         }
 
-        if (ENABLE_COLOR) {
-            if (localNode != null) {
-                HashName hashName = localNode.getHashName();
-                String color = sColorMap.get(hashName);
-                if (color == null) {
-                    int size = sColorMap.size();
-                    if (size >= COLORS.length) {
-                        color = COLOR_YELLOW;
-                    } else {
-                        color = COLORS[size];
-                    }
-                    sColorMap.put(hashName, color);
-                }
-                System.out.print(color);
+        long ts = System.nanoTime() - sStartTime;
+        String timestamp = String.format("%07.3f", (ts/1000000000.0f));
+        tag = timestamp + " " + tag;
+
+        StringBuilder logEntry = new StringBuilder();
+        String color;
+        String endColor;
+        if (ENABLE_COLOR && localNode != null) {
+            HashName hashName = localNode.getHashName();
+            color = sColorMap.get(hashName);
+            if (color == null) {
+                color = COLORS[Math.abs(hashName.hashCode()) % COLORS.length];
+                sColorMap.put(hashName, color);
             }
+            endColor = COLOR_RESET;
+        } else {
+            color = "";
+            endColor = "";
         }
 
-        System.out.println(tag+String.format(msg, args));
+        String text = String.format(msg, args);
+        for (String line : text.split("\n")) {
+            if (! line.isEmpty()) {
+                logEntry.append(color+tag+line+endColor+"\n");
+            }
+        }
 
         if (args.length > 0 && (args[args.length-1] instanceof Throwable)) {
             Throwable throwable = (Throwable)args[args.length - 1];
@@ -78,12 +122,14 @@ public class Log {
             throwable.printStackTrace(new PrintWriter(errors));
             for (String line : errors.toString().split("\n")) {
                 line.trim();
-                System.out.println(tag+line);
+                logEntry.append(color+tag+line+endColor+"\n");
             }
         }
 
-        if (ENABLE_COLOR && localNode != null) {
-            System.out.print(COLOR_RESET);
+        synchronized (sLock) {
+            for (PrintStream stream : sLogStreams) {
+                stream.print(logEntry);
+            }
         }
 
     }

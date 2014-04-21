@@ -36,7 +36,9 @@ public class FakeReactorImpl implements Reactor {
     }
 
     void handleDatagram(Datagram datagram) {
-        mReadQueue.offer(datagram);
+        synchronized (mLock) {
+            mReadQueue.offer(datagram);
+        }
         wakeup();
     }
 

@@ -109,6 +109,9 @@ public class PeerNode extends Node {
     }
 
     public static CipherSetIdentifier bestCipherSet(PeerNode a, PeerNode b) {
+        if (a == null || b == null) {
+            throw new IllegalArgumentException("null peernode provided");
+        }
         return FingerprintSet.bestCipherSet(a.mFingerprints, b.mFingerprints);
     }
 

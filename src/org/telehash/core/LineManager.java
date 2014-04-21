@@ -26,21 +26,24 @@ public class LineManager {
         public Line getByIncomingLineIdentifier(LineIdentifier lineIdentifier) {
 
             // TODO: remove this debugging block
+            StringBuilder sb = new StringBuilder();
             if (mIncomingLineIdentifierToLineMap.get(lineIdentifier) == null) {
                 if (mIncomingLineIdentifierToLineMap.containsKey(lineIdentifier)) {
-                    Log.i("XXX has key, but value is null");
+                    sb.append("XXX has key, but value is null\n");
                 } else {
-                    Log.i("XXX cannot find "+
-                            lineIdentifier+" ; candidates include:");
+                    sb.append("XXX cannot find "+
+                            lineIdentifier+" ; candidates include:\n");
                     for (LineIdentifier id : mIncomingLineIdentifierToLineMap.keySet()) {
-                        Log.i("XXX     "+id+" "+(id != null ? id.hashCode() : "null"));
+                        sb.append("XXX     "+id+" "+(id != null ? id.hashCode() : "null")+"\n");
                     }
                 }
             }
+            Log.i(sb.toString());
 
             return mIncomingLineIdentifierToLineMap.get(lineIdentifier);
         }
         public void add(Line line) {
+            Log.i("tracking line: "+line);
             if (mNodeToLineMap.containsKey(line.getRemoteNode())) {
                 // put() would overwrite, but we must make sure to
                 // remove the entry from both maps.
@@ -52,11 +55,14 @@ public class LineManager {
             mHashNameToLineMap.put(line.getRemoteNode().getHashName(), line);
             mNodeToLineMap.put(line.getRemoteNode(), line);
             mIncomingLineIdentifierToLineMap.put(line.getIncomingLineIdentifier(), line);
+            Log.i(toString());
         }
         public void remove(Line line) {
+            Log.i("removing line: "+line+" // inc="+line.getIncomingLineIdentifier()+" out="+line.getOutgoingLineIdentifier()+" node="+line.getRemoteNode());
             mHashNameToLineMap.remove(line.getRemoteNode().getHashName());
             mNodeToLineMap.remove(line.getRemoteNode());
             mIncomingLineIdentifierToLineMap.remove(line.getIncomingLineIdentifier());
+            Log.i(toString());
         }
         public Collection<Line> getLines() {
             return mNodeToLineMap.values();
@@ -67,7 +73,9 @@ public class LineManager {
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append(""+mNodeToLineMap.size()+" nodes in line tracker:\n");
+            int i=0;
             for (Map.Entry<Node, Line> entry : mNodeToLineMap.entrySet()) {
+                sb.append("\t"+String.format("%02d",i++)+">> ");
                 Node node = entry.getKey();
                 Line line = entry.getValue();
                 sb.append(node.getHashName().asHex()+" ");
@@ -83,6 +91,7 @@ public class LineManager {
                 }
                 sb.append(line.getState().name()+" ");
                 //sb.append(node.getPath()+"\n");
+                sb.append("\n");
             }
             return sb.toString();
         }
@@ -97,6 +106,10 @@ public class LineManager {
 
     public void init() {
 
+    }
+
+    public void dump() {
+        Log.i(mLineTracker.toString());
     }
 
     public void openChannel(
@@ -197,15 +210,21 @@ public class LineManager {
             CompletionHandler<Line> handler,
             Object attachment
     ) {
+        Log.i("openLine destination="+destination+" reopen="+reopen);
+
         // NOTE: if this is called twice, the latter call supersedes the
         // previous line entry.  Perhaps instead we should throw an exception,
         // or simply return the current line.
 
         // if a line is already open to this node, re-use the same line by
         // simply adding the provided completion handler.
-        if (destination instanceof PeerNode) {
-            Line existingLine = mLineTracker.getByNode(destination);
-            if ((! reopen) && existingLine != null) {
+        Line existingLine = mLineTracker.getByNode(destination);
+        if (existingLine != null) {
+            if (reopen) {
+                // if we are superseding an existing line, fail the existing line to
+                // notify interested parties, cancel timeouts, etc.
+                existingLine.fail(new TelehashException("line reset"));
+            } else if (! reopen) {
                 // if the line is PENDING, the handler will be called with the line is ESTABLISHED.
                 // if the line is ESTABLISHED, the handler will be called immediately.
                 existingLine.addOpenCompletionHandler(handler, null);
@@ -222,6 +241,7 @@ public class LineManager {
         // (it's an *incoming* line identifier, but will be provided in the *outgoing* open.)
         line.setIncomingLineIdentifier(LineIdentifier.generate());
 
+        Log.i("tracking line "+line+" due to openLine()");
         mLineTracker.add(line);
 
         // Determine if this is a direct line open, or a reverse line open.
@@ -417,13 +437,15 @@ public class LineManager {
                 );
                 // note: this open packet is *outgoing* but its embedded line identifier
                 // is to be used for *incoming* line packets.
-                Log.i("openPacket.lineid="+replyOpenPacket.getLineIdentifier());
+                Log.i("\tmatches existing line: "+line);
+                Log.i("\topenPacket.lineid="+replyOpenPacket.getLineIdentifier());
                 line.setIncomingLineIdentifier(replyOpenPacket.getLineIdentifier());
                 line.setLocalOpenPacket(replyOpenPacket);
-                Log.i("line remote node was: "+line.getRemoteNode());
+                Log.i("\tline remote node was: "+line.getRemoteNode());
                 line.setRemoteNode(incomingOpenPacket.getSourceNode());
-                Log.i("line remote node now: "+line.getRemoteNode());
-                Log.i("new line established for remote initiator (reverse)");
+                Log.i("\tline remote node now: "+line.getRemoteNode());
+                Log.i("\tnew line established for remote initiator (reverse)");
+                dump();
             } else {
                 // create a new open package and line.
                 LineIdentifier incomingLineIdentifier = LineIdentifier.generate();

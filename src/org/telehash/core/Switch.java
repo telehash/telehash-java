@@ -216,8 +216,9 @@ public class Switch implements DatagramHandler, MessageHandler {
                 }
             }
         } catch (IOException e) {
-            Log.i("switch loop ending abnormaly");
-            e.printStackTrace();
+            Log.e("switch loop ending abnormaly", e);
+        } catch (Exception e) {
+            Log.e("switch loop ending abnormaly", e);
         } finally {
             try {
                 mReactor.close();
@@ -245,10 +246,10 @@ public class Switch implements DatagramHandler, MessageHandler {
         try {
             packet = Packet.parse(mTelehash, buffer, source);
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            Log.w("switch datagram handling failed",  e);
             return;
         } catch (TelehashException e) {
-            e.printStackTrace();
+            Log.w("switch datagram handling failed",  e);
             return;
         }
         if (packet == null) {
