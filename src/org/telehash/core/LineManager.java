@@ -213,23 +213,8 @@ public class LineManager {
             }
         }
 
-        // determine the best cipher set which is common between our two nodes
-        CipherSetIdentifier csid;
-        if (destination instanceof PeerNode) {
-            csid = ((PeerNode)destination).getActiveCipherSetIdentifier();
-        } else if (destination instanceof SeeNode) {
-            csid = ((SeeNode)destination).getCipherSetIdentifier();
-        } else {
-            // TODO: support PlaceholderNode
-            throw new RuntimeException("node inheritance hierarchy changed - unknown type");
-        }
-        if (csid == null) {
-            // TODO: TelehashException!
-            throw new RuntimeException("no common cipher set with the remote node");
-        }
-
         // create a line, an outgoing open packet, and record these in the line tracker
-        final Line line = new Line(mTelehash, csid);
+        final Line line = new Line(mTelehash);
         line.setRemoteNode(destination);
         line.addOpenCompletionHandler(handler, attachment);
 
@@ -237,20 +222,6 @@ public class LineManager {
         // (it's an *incoming* line identifier, but will be provided in the *outgoing* open.)
         line.setIncomingLineIdentifier(LineIdentifier.generate());
 
-        // create an open packet, if we have cs/pubkey for the remote
-        // (i.e. destination is a PeerNode.)
-        // TODO: move this to a point after which we *certainly* have a PeerNode.
-        if (destination instanceof PeerNode) {
-            OpenPacket openPacket = new OpenPacket(
-                    mTelehash.getLocalNode(),
-                    (PeerNode)destination,
-                    csid,
-                    line.getIncomingLineIdentifier()
-            );
-            // note: this open packet is *outgoing* but its embedded line identifier
-            // is to be used for *incoming* line packets.
-            line.setLocalOpenPacket(openPacket);
-        }
         mLineTracker.add(line);
 
         // Determine if this is a direct line open, or a reverse line open.
@@ -261,7 +232,8 @@ public class LineManager {
         // introduce us via peer/connect.
         if (destination instanceof PeerNode) {
             if (((PeerNode) destination).getPath() == null) {
-                throw new RuntimeException("peer node has no path!");
+                line.fail(new TelehashException("peer node has no path!"));
+                return;
             }
             openLineDirect(line);
         } else if (destination instanceof SeeNode) {
@@ -271,11 +243,34 @@ public class LineManager {
         } else if (destination instanceof PlaceholderNode) {
             openLineReverseWithNodeLookup(line);
         } else {
-            throw new RuntimeException("node inheritance hierarchy changed - unknown type");
+            line.fail(new TelehashException("unknown node type"));
+            return;
         }
     }
 
     public void openLineDirect(Line line) {
+        // The destination is always a PeerNode if this method is called.
+        PeerNode destination = (PeerNode)line.getRemoteNode();
+
+        // determine the best cipher set which is common between our two nodes
+        CipherSetIdentifier csid = destination.getActiveCipherSetIdentifier();
+        if (csid == null) {
+            line.fail(new TelehashException("no common cipher set with the remote node"));
+            return;
+        }
+        line.setCipherSetIdentifier(csid);
+
+        // formulate the outgoing open packet
+        OpenPacket openPacket = new OpenPacket(
+                mTelehash.getLocalNode(),
+                destination,
+                line.getCipherSet().getCipherSetId(),
+                line.getIncomingLineIdentifier()
+        );
+        // note: this open packet is *outgoing* but its embedded line identifier
+        // is to be used for *incoming* line packets.
+        line.setLocalOpenPacket(openPacket);
+
         line.setState(Line.State.DIRECT_OPEN_PENDING);
         line.startOpenTimer();
 
@@ -289,6 +284,58 @@ public class LineManager {
             mLineTracker.remove(line);
             line.fail(new TelehashException(e));
         }
+    }
+
+    private void openLineReverse(
+            final Line line,
+            final PeerNode referringNode
+    ) {
+        // The destination is always a SeeNode if this method is called.
+        SeeNode destination = (SeeNode)line.getRemoteNode();
+
+        // determine the best cipher set which is common between our two nodes
+        CipherSetIdentifier csid = destination.getCipherSetIdentifier();
+        if (csid == null) {
+            line.fail(new TelehashException("no common cipher set with the remote node"));
+            return;
+        }
+        line.setCipherSetIdentifier(csid);
+
+        Line referringLine = getLineByNode(referringNode);
+        if (referringLine == null) {
+            mLineTracker.remove(line);
+            line.fail(new TelehashException("no line to referring node: "+referringNode));
+            return;
+        }
+
+        line.setState(Line.State.REVERSE_OPEN_PENDING);
+        line.startOpenTimer();
+
+        referringLine.openChannel(DHT.PEER_TYPE, new ChannelHandler() {
+            @Override
+            public void handleError(Channel channel, Throwable error) {
+                mLineTracker.remove(line);
+                line.fail(error);
+            }
+            @Override
+            public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
+                // do nothing -- there is no response expected
+            }
+            @Override
+            public void handleOpen(Channel channel) {
+                Map<String,Object> fields = new HashMap<String,Object>();
+                fields.put(DHT.PEER_KEY, line.getRemoteNode().getHashName().asHex());
+                // TODO: if we have multiple public (non-site-local) paths, they
+                // should be indicated in a "paths" key.
+                try {
+                    channel.send(null, fields, true);
+                } catch (TelehashException e) {
+                    mLineTracker.remove(line);
+                    line.fail(e);
+                    return;
+                }
+            }
+        });
     }
 
     private void openLineReverseWithNodeLookup(final Line line) {
@@ -329,47 +376,6 @@ public class LineManager {
                     }
                 }
         );
-    }
-
-    private void openLineReverse(
-            final Line line,
-            final PeerNode referringNode
-    ) {
-        Line referringLine = getLineByNode(referringNode);
-        if (referringLine == null) {
-            mLineTracker.remove(line);
-            line.fail(new TelehashException("no line to referring node: "+referringNode));
-            return;
-        }
-
-        line.setState(Line.State.REVERSE_OPEN_PENDING);
-        line.startOpenTimer();
-
-        referringLine.openChannel(DHT.PEER_TYPE, new ChannelHandler() {
-            @Override
-            public void handleError(Channel channel, Throwable error) {
-                mLineTracker.remove(line);
-                line.fail(error);
-            }
-            @Override
-            public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
-                // do nothing -- there is no response expected
-            }
-            @Override
-            public void handleOpen(Channel channel) {
-                Map<String,Object> fields = new HashMap<String,Object>();
-                fields.put(DHT.PEER_KEY, line.getRemoteNode().getHashName().asHex());
-                // TODO: if we have multiple public (non-site-local) paths, they
-                // should be indicated in a "paths" key.
-                try {
-                    channel.send(null, fields, true);
-                } catch (TelehashException e) {
-                    mLineTracker.remove(line);
-                    line.fail(e);
-                    return;
-                }
-            }
-        });
     }
 
     /** intentionally package-private */
@@ -427,7 +433,8 @@ public class LineManager {
                         incomingOpenPacket.getCipherSet().getCipherSetId(),
                         incomingLineIdentifier
                 );
-                line = new Line(mTelehash, incomingOpenPacket.getCipherSet().getCipherSetId());
+                line = new Line(mTelehash);
+                line.setCipherSetIdentifier(incomingOpenPacket.getCipherSet().getCipherSetId());
                 line.setIncomingLineIdentifier(incomingLineIdentifier);
                 line.setLocalOpenPacket(replyOpenPacket);
                 line.setRemoteNode(incomingOpenPacket.getSourceNode());

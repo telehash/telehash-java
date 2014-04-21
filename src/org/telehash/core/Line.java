@@ -54,12 +54,8 @@ public class Line implements OnTimeoutListener {
     private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
     private boolean mFinished = false;
 
-    public Line(Telehash telehash, CipherSetIdentifier cipherSetIdentifier) {
+    public Line(Telehash telehash) {
         mTelehash = telehash;
-        mCipherSet = telehash.getCrypto().getCipherSet(cipherSetIdentifier);
-        if (mCipherSet == null) {
-            throw new IllegalArgumentException("line requested with invalid cipherset id");
-        }
         mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
 
@@ -68,6 +64,13 @@ public class Line implements OnTimeoutListener {
     }
     public State getState() {
         return mState;
+    }
+
+    public void setCipherSetIdentifier(CipherSetIdentifier cipherSetIdentifier) {
+        mCipherSet = mTelehash.getCrypto().getCipherSet(cipherSetIdentifier);
+        if (mCipherSet == null) {
+            throw new IllegalArgumentException("line requested with invalid cipherset id");
+        }
     }
 
     public CipherSet getCipherSet() {
