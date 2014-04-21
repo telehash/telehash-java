@@ -6,23 +6,16 @@ import static org.junit.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.telehash.core.Channel;
-import org.telehash.core.ChannelHandler;
-import org.telehash.core.ChannelPacket;
 import org.telehash.core.CompletionHandler;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
-import org.telehash.core.TelehashException;
-import org.telehash.dht.DHT;
+import org.telehash.core.PlaceholderNode;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class ThreeLevelMeshTest {
 
-    private static final int NODE_SEED = 0;
     private static final int NUM_NODES = 5;
     private static final int NODE_A = 3;
     private static final int NODE_B = 4;
@@ -46,9 +39,10 @@ public class ThreeLevelMeshTest {
     public void testOpenLine() throws Exception {
         TelehashTestInstance src = mNodes.get(NODE_A);
         TelehashTestInstance dst = mNodes.get(NODE_B);
+        PlaceholderNode dstNode = new PlaceholderNode(dst.getNode().getHashName());
 
         src.getSwitch().getLineManager().openLine(
-                dst.getNode(),
+                dstNode,
                 false,
                 new CompletionHandler<Line>() {
                     @Override
@@ -58,69 +52,6 @@ public class ThreeLevelMeshTest {
                     @Override
                     public void completed(Line result, Object attachment) {
                         Log.i("line open success");
-                    }
-                },
-                null
-        );
-
-        // TODO: signal failure/success/timeout via Object.notify().
-        Thread.sleep(1000);
-
-        // assure src has a line open to dst.
-        assertLineOpen(src, dst);
-        assertLineOpen(dst, src);
-    }
-
-    @Test
-    public void testPeerConnect() throws Exception {
-        final TelehashTestInstance seed = mNodes.get(NODE_SEED);
-        final TelehashTestInstance src = mNodes.get(NODE_A);
-        final TelehashTestInstance dst = mNodes.get(NODE_B);
-        Log.i("OPEN "+src.getNode()+" -> "+dst.getNode());
-
-        // src opens a line to the seed
-        src.getSwitch().getLineManager().openLine(
-                seed.getNode(),
-                false,
-                new CompletionHandler<Line>() {
-                    @Override
-                    public void failed(Throwable exc, Object attachment) {
-                        Log.i("line open failed");
-                    }
-                    @Override
-                    public void completed(Line line, Object attachment) {
-                        Log.i("line open success");
-
-                        // src seeks the dst
-                        Channel channel = line.openChannel(DHT.PEER_TYPE, new ChannelHandler() {
-                            @Override
-                            public void handleError(Channel channel, Throwable error) {
-                                Log.i("peer failed");
-                            }
-                            @Override
-                            public void handleIncoming(
-                                    Channel channel,
-                                    ChannelPacket channelPacket
-                            ) {
-                            }
-                            @Override
-                            public void handleOpen(Channel channel) {
-                                // nothing to do, since line.openChannel()
-                                // always opens channel immediately.
-                            }
-                        });
-
-                        Log.i("peer channel open success");
-
-                        Map<String,Object> fields = new HashMap<String,Object>();
-                        fields.put(DHT.PEER_KEY, dst.getNode().getHashName().asHex());
-                        try {
-                            channel.send(null, fields, false);
-                        } catch (TelehashException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-
                     }
                 },
                 null
