@@ -242,16 +242,17 @@ public class NodeTracker {
     }
 
     public void dump() {
-        Log.d("tracking "+size()+" nodes:");
+        StringBuilder sb = new StringBuilder();
+        sb.append("DHT tracking "+size()+" nodes:\n");
         for (int i=0; i<BUCKET_COUNT; i++) {
             if (mBuckets[i].size() > 0) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("["+i+"] ");
+                sb.append("    ["+i+"] ");
                 for (TrackedNode trackedNode : mBuckets[i].mTrackedNodes) {
                     sb.append(trackedNode.node+" ");
                 }
-                Log.d(sb.toString());
+                sb.append("\n");
             }
         }
+        Log.d(sb.toString());
     }
 }

@@ -6,9 +6,13 @@ import static org.junit.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.telehash.core.CompletionHandler;
+import org.telehash.core.Channel;
+import org.telehash.core.ChannelHandler;
+import org.telehash.core.ChannelPacket;
 import org.telehash.core.Line;
 import org.telehash.core.Log;
+import org.telehash.core.Node;
+import org.telehash.core.PlaceholderNode;
 
 import java.util.List;
 import java.util.Set;
@@ -42,27 +46,30 @@ public class LargeScaleMeshTest {
     public void testOpenLine() throws Exception {
         TelehashTestInstance src = mNodes.get(NODE_A);
         TelehashTestInstance dst = mNodes.get(NODE_B);
+        Node destinationNode = new PlaceholderNode(dst.getNode().getHashName());
 
-        src.getSwitch().getLineManager().openLine(
-                dst.getNode(),
-                false,
-                new CompletionHandler<Line>() {
-                    @Override
-                    public void failed(Throwable exc, Object attachment) {
-                        Log.i("line open failed");
-                    }
-                    @Override
-                    public void completed(Line result, Object attachment) {
-                        Log.i("line open success");
-                    }
-                },
-                null
-        );
+        Log.i("TEST: request channel open from "+src.getNode()+" to "+destinationNode);
+        src.getSwitch().openChannel(destinationNode, "test", new ChannelHandler() {
+            @Override
+            public void handleError(Channel channel, Throwable error) {
+                Log.e("channel open error:",error);
+            }
+            @Override
+            public void handleIncoming(Channel channel,
+                    ChannelPacket channelPacket) {
+                Log.i("incoming channel data: "+channelPacket);
+            }
+            @Override
+            public void handleOpen(Channel channel) {
+                Log.i("channel open success: "+channel);
+            }
+        });
 
         // TODO: signal failure/success/timeout via Object.notify().
         Thread.sleep(1000);
 
         // assure src has a line open to dst.
+        Log.i("TEST: assert line open from "+src.getNode()+" to "+dst.getNode());
         assertLineOpen(src, dst);
         assertLineOpen(dst, src);
     }

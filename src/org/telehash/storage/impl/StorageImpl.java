@@ -9,7 +9,6 @@ import org.telehash.core.FingerprintSet;
 import org.telehash.core.HashName;
 import org.telehash.core.LocalNode;
 import org.telehash.core.Log;
-import org.telehash.core.PeerNode;
 import org.telehash.core.SeedNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -167,8 +166,8 @@ public class StorageImpl implements Storage {
      *             If a problem happened while reading and parsing the seeds.
      */
     @Override
-    public Set<PeerNode> readSeeds(String seedsFilename) throws TelehashException {
-        Set<PeerNode> nodes = new HashSet<PeerNode>();
+    public Set<SeedNode> readSeeds(String seedsFilename) throws TelehashException {
+        Set<SeedNode> nodes = new HashSet<SeedNode>();
 
         JSONTokener tokener;
         try {
@@ -193,9 +192,6 @@ public class StorageImpl implements Storage {
             JSONObject seed = toplevel.getJSONObject(keyString);
 
             FingerprintSet fingerprints = new FingerprintSet(seed.getJSONObject(FINGERPRINTS_KEY));
-            if (fingerprints == null) {
-                throw new TelehashException("cannot parse fingerprints from seeds json");
-            }
             if (! fingerprints.getHashName().equals(hashName)) {
                 throw new TelehashException("seed fingerprints do not match hashname");
             }

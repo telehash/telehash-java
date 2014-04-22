@@ -25,7 +25,7 @@ public class Switch implements DatagramHandler, MessageHandler {
     private static final int DEFAULT_PORT = 42424;
 
     private Telehash mTelehash;
-    private Set<PeerNode> mSeeds;
+    private Set<SeedNode> mSeeds;
     private int mPort;
     private Reactor mReactor;
     private Thread mThread;
@@ -40,6 +40,8 @@ public class Switch implements DatagramHandler, MessageHandler {
     private DHT mDHT;
     private LineManager mLineManager;
 
+    private int mIterations = 0;
+
     private static class OpenChannelMessage extends Message {
         final Node destination;
         final String type;
@@ -51,13 +53,13 @@ public class Switch implements DatagramHandler, MessageHandler {
         }
     }
 
-    public Switch(Telehash telehash, Set<PeerNode> seeds) {
+    public Switch(Telehash telehash, Set<SeedNode> seeds) {
         mTelehash = telehash;
         mSeeds = seeds;
         mPort = DEFAULT_PORT;
     }
 
-    public Switch(Telehash telehash, Set<PeerNode> seeds, int port) {
+    public Switch(Telehash telehash, Set<SeedNode> seeds, int port) {
         mTelehash = telehash;
         mSeeds = seeds;
         mPort = port;
@@ -209,6 +211,19 @@ public class Switch implements DatagramHandler, MessageHandler {
 
                 // run any timed tasks
                 mScheduler.runTasks();
+
+                Log.buffer();
+                try {
+                    Log.i(String.format("---- state after iteration %04d ----",
+                            mIterations));
+                    mLineManager.dump();
+                    mDHT.dump();
+                } finally {
+                    Log.i(String.format("---- end of iteration: %04d ----",
+                            mIterations));
+                    mIterations++;
+                    Log.flush();
+                }
 
                 if (mStopRequested) {
                     Log.i("switch stop requested");

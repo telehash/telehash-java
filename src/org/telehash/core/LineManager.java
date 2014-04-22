@@ -55,14 +55,14 @@ public class LineManager {
             mHashNameToLineMap.put(line.getRemoteNode().getHashName(), line);
             mNodeToLineMap.put(line.getRemoteNode(), line);
             mIncomingLineIdentifierToLineMap.put(line.getIncomingLineIdentifier(), line);
-            Log.i(toString());
+            //Log.i(toString());
         }
         public void remove(Line line) {
             Log.i("removing line: "+line+" // inc="+line.getIncomingLineIdentifier()+" out="+line.getOutgoingLineIdentifier()+" node="+line.getRemoteNode());
             mHashNameToLineMap.remove(line.getRemoteNode().getHashName());
             mNodeToLineMap.remove(line.getRemoteNode());
             mIncomingLineIdentifierToLineMap.remove(line.getIncomingLineIdentifier());
-            Log.i(toString());
+            //Log.i(toString());
         }
         public Collection<Line> getLines() {
             return mNodeToLineMap.values();
@@ -78,20 +78,26 @@ public class LineManager {
                 sb.append("\t"+String.format("%02d",i++)+">> ");
                 Node node = entry.getKey();
                 Line line = entry.getValue();
-                sb.append(node.getHashName().asHex()+" ");
+
+                String hashName, incoming, outgoing;
+                hashName = node.getHashName().asHex();
                 if (line.getIncomingLineIdentifier() == null) {
-                    sb.append("null ");
+                    incoming = "null";
                 } else {
-                    sb.append(line.getIncomingLineIdentifier()+" ");
+                    incoming = line.getIncomingLineIdentifier().toString();
                 }
                 if (line.getOutgoingLineIdentifier() == null) {
-                    sb.append("null ");
+                    outgoing = "null";
                 } else {
-                    sb.append(line.getOutgoingLineIdentifier()+" ");
+                    outgoing = line.getOutgoingLineIdentifier().toString();
                 }
-                sb.append(line.getState().name()+" ");
-                //sb.append(node.getPath()+"\n");
-                sb.append("\n");
+
+                sb.append(String.format(
+                        "%-64s %-32s %-32s %-20s %s\n",
+                        hashName, incoming, outgoing,
+                        line.getState().name(),
+                        line.getRemoteNode().getClass().getSimpleName()
+                ));
             }
             return sb.toString();
         }
@@ -445,7 +451,6 @@ public class LineManager {
                 line.setRemoteNode(incomingOpenPacket.getSourceNode());
                 Log.i("\tline remote node now: "+line.getRemoteNode());
                 Log.i("\tnew line established for remote initiator (reverse)");
-                dump();
             } else {
                 // create a new open package and line.
                 LineIdentifier incomingLineIdentifier = LineIdentifier.generate();

@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -69,7 +70,7 @@ public class Log {
         println(msg, args);
     }
 
-    public static void println(String msg, Object... args) {
+    private static void println(String msg, Object... args) {
         if (msg == null || msg.isEmpty()) {
             return;
         }
@@ -127,10 +128,45 @@ public class Log {
         }
 
         synchronized (sLock) {
-            for (PrintStream stream : sLogStreams) {
-                stream.print(logEntry);
+            LinkedList<String> buffer = sBuffer.get();
+            if (buffer != null) {
+                buffer.add(logEntry.toString());
+            } else {
+                print(logEntry.toString());
             }
         }
+    }
 
+    private static void print(String s) {
+        synchronized (sLock) {
+            for (PrintStream stream : sLogStreams) {
+                stream.print(s);
+            }
+        }
+    }
+
+    private static ThreadLocal<LinkedList<String>> sBuffer = new ThreadLocal<LinkedList<String>>();
+
+    public static void buffer() {
+        synchronized (sLock) {
+            LinkedList<String> buffer = sBuffer.get();
+            if (buffer != null) {
+                throw new IllegalStateException("buffer() called twice without flush().");
+            }
+            sBuffer.set(new LinkedList<String>());
+        }
+    }
+
+    public static void flush() {
+        synchronized (sLock) {
+            LinkedList<String> buffer = sBuffer.get();
+            if (buffer == null) {
+                throw new IllegalStateException("flush() called without buffer().");
+            }
+            for (String s : buffer) {
+                print(s);
+            }
+            sBuffer.remove();
+        }
     }
 }

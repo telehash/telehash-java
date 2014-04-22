@@ -3,7 +3,7 @@ package org.telehash.test.mesh;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.LocalNode;
 import org.telehash.core.Log;
-import org.telehash.core.PeerNode;
+import org.telehash.core.SeedNode;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -40,36 +40,58 @@ public class TelehashTestInstance {
     private File mConfigDirectory;
     private int mPort;
     private LocalNode mLocalNode;
-    private Set<PeerNode> mSeeds;
+    private Set<SeedNode> mSeeds;
     private Telehash mTelehash;
     private Crypto mCrypto = new CryptoImpl();
     private Network mNetwork = new NetworkImpl();
     private Storage mStorage = new StorageImpl();
 
-    private static void dumpNode(TelehashTestInstance node) {
+    private static void dumpNode(StringBuilder sb, TelehashTestInstance node) {
         String path;
         try {
             path = node.mNetwork.getPreferredLocalPath().toString();
         } catch (TelehashException e) {
             path = "?";
         }
-        Log.i("  ["+node.mIndex+"] "+node.mLocalNode.getHashName()+" "+path);
+        sb.append("  ["+node.mIndex+"] "+node.mLocalNode.getHashName()+" "+path+"\n");
     }
 
-    private static void dumpNodeList(List<TelehashTestInstance> list) {
+    private static String dumpNodeList(List<TelehashTestInstance> list) {
+        StringBuilder sb = new StringBuilder();
         for (TelehashTestInstance i : list) {
-            dumpNode(i);
+            dumpNode(sb, i);
         }
+        return sb.toString();
+    }
+
+    private static SeedNode localNodeToSeedNode(LocalNode localNode) {
+        SeedNode seedNode = new SeedNode(
+                localNode.getFingerprints(),
+                localNode.getPublicKeys(),
+                localNode.getPaths()
+        );
+        return seedNode;
     }
 
     private static TelehashTestInstance createInstance(
             NetworkSimulator networkSimulator,
             int index,
-            PeerNode seed
+            SeedNode seedNode
     ) {
-        Set<PeerNode> seeds = null;
+        SeedNode seed;
+        if (seedNode == null) {
+            seed = null;
+        } else {
+            seed = new SeedNode(
+                    seedNode.getFingerprints(),
+                    seedNode.getPublicKeys(),
+                    seedNode.getPaths()
+            );
+        }
+
+        Set<SeedNode> seeds = null;
         if (seed != null) {
-            seeds = new HashSet<PeerNode>();
+            seeds = new HashSet<SeedNode>();
             seeds.add(seed);
         }
         TelehashTestInstance node = new TelehashTestInstance(index, PORT, seeds);
@@ -87,20 +109,19 @@ public class TelehashTestInstance {
     }
 
     public static List<TelehashTestInstance> createStarTopology(int numNodes) {
-        PeerNode seed = null;
+        SeedNode seed = null;
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(numNodes);
         NetworkSimulator networkSimulator = new NetworkSimulator();
 
         for (int i=0; i<numNodes; i++) {
             TelehashTestInstance instance = createInstance(networkSimulator, i, seed);
             if (seed == null) {
-                seed = instance.getNode();
+                seed = localNodeToSeedNode(instance.getNode());
             }
             list.add(instance);
         }
 
-        Log.i("Telehash star topology created: ");
-        dumpNodeList(list);
+        Log.i("Telehash star topology created:\n"+dumpNodeList(list));
 
         return list;
     }
@@ -109,17 +130,16 @@ public class TelehashTestInstance {
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>(5);
         NetworkSimulator networkSimulator = new NetworkSimulator();
         TelehashTestInstance i0 = createInstance(networkSimulator, 0, null);
-        TelehashTestInstance i1 = createInstance(networkSimulator, 1, i0.getNode());
-        TelehashTestInstance i2 = createInstance(networkSimulator, 2, i0.getNode());
-        TelehashTestInstance i3 = createInstance(networkSimulator, 3, i1.getNode());
-        TelehashTestInstance i4 = createInstance(networkSimulator, 4, i2.getNode());
+        TelehashTestInstance i1 = createInstance(networkSimulator, 1, i0.getNodeAsSeed());
+        TelehashTestInstance i2 = createInstance(networkSimulator, 2, i0.getNodeAsSeed());
+        TelehashTestInstance i3 = createInstance(networkSimulator, 3, i1.getNodeAsSeed());
+        TelehashTestInstance i4 = createInstance(networkSimulator, 4, i2.getNodeAsSeed());
         list.add(i0);
         list.add(i1);
         list.add(i2);
         list.add(i3);
         list.add(i4);
-        Log.i("Telehash three-level topology created: ");
-        dumpNodeList(list);
+        Log.i("Telehash three-level topology created: \n"+dumpNodeList(list));
         return list;
     }
 
@@ -145,9 +165,9 @@ public class TelehashTestInstance {
 
             for (TelehashTestInstance tti : oldLeafNodes) {
                 TelehashTestInstance tti0 =
-                        createInstance(networkSimulator, index++, tti.getNode());
+                        createInstance(networkSimulator, index++, tti.getNodeAsSeed());
                 TelehashTestInstance tti1 =
-                        createInstance(networkSimulator, index++, tti.getNode());
+                        createInstance(networkSimulator, index++, tti.getNodeAsSeed());
                 leafNodes.add(tti0);
                 leafNodes.add(tti1);
                 list.add(tti0);
@@ -155,12 +175,11 @@ public class TelehashTestInstance {
             }
         }
 
-        Log.i("Telehash large scale topology created: ("+index+" nodes)");
-        dumpNodeList(list);
+        Log.i("Telehash large scale topology created: ("+index+" nodes)\n"+dumpNodeList(list));
         return list;
     }
 
-    public TelehashTestInstance(int index, int port, Set<PeerNode> seeds) {
+    public TelehashTestInstance(int index, int port, Set<SeedNode> seeds) {
         File configDirectory = new File(
                 String.format("%s%s%03d", BASE_DIRECTORY, File.separator, index)
         );
@@ -235,7 +254,7 @@ public class TelehashTestInstance {
         mTelehash.getSwitch().stop();
     }
 
-    public PeerNode getNode() {
+    public LocalNode getNode() {
         try {
             InetPath path =
                     new InetPath(((InetPath)mNetwork.getPreferredLocalPath()).getAddress(), mPort);
@@ -246,6 +265,10 @@ public class TelehashTestInstance {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public SeedNode getNodeAsSeed() {
+        return localNodeToSeedNode(getNode());
     }
 
     public Switch getSwitch() {

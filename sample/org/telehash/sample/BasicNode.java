@@ -1,7 +1,7 @@
 package org.telehash.sample;
 
 import org.telehash.core.LocalNode;
-import org.telehash.core.PeerNode;
+import org.telehash.core.SeedNode;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
@@ -42,7 +42,7 @@ public class BasicNode {
 
         System.out.println("my hash name: "+localNode.getHashName());
 
-        Set<PeerNode> seeds = null;
+        Set<SeedNode> seeds = null;
         try {
             seeds = storage.readSeeds("seeds.json");
         } catch (TelehashException e2) {

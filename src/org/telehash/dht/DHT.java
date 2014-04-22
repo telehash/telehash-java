@@ -14,6 +14,7 @@ import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.PeerNode;
 import org.telehash.core.SeeNode;
+import org.telehash.core.SeedNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
@@ -49,7 +50,7 @@ public class DHT {
 
     private NodeTracker mNodeTracker;
 
-    public DHT(Telehash telehash, PeerNode localNode, Set<PeerNode> seeds) {
+    public DHT(Telehash telehash, PeerNode localNode, Set<SeedNode> seeds) {
         mTelehash = telehash;
         mLocalNode = localNode;
         mNodeTracker = new NodeTracker(localNode);
@@ -103,6 +104,10 @@ public class DHT {
         lookup.start();
         */
         mNodeTracker.refreshBuckets();
+    }
+
+    public void dump() {
+        mNodeTracker.dump();
     }
 
     public void close() {
@@ -270,7 +275,6 @@ public class DHT {
         if (line.getRemotePeerNode() == null) {
             Log.e("Line "+line+" has no PeerNode.  has: "+line.getRemoteNode());
             Log.e("node tracker has: "+mNodeTracker.getClosestNodes(target, 1));
-            mTelehash.getSwitch().getLineManager().dump();
         }
 
         PeerNode originatingNode = channel.getRemoteNode();

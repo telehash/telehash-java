@@ -1,7 +1,7 @@
 package org.telehash.storage;
 
 import org.telehash.core.LocalNode;
-import org.telehash.core.PeerNode;
+import org.telehash.core.SeedNode;
 import org.telehash.core.TelehashException;
 
 import java.util.Set;
@@ -70,5 +70,5 @@ public interface Storage {
      * @throws TelehashException
      *             If a problem happened while reading and parsing the seeds.
      */
-    public Set<PeerNode> readSeeds(String seedsFilename) throws TelehashException;
+    public Set<SeedNode> readSeeds(String seedsFilename) throws TelehashException;
 }
