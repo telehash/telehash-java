@@ -47,8 +47,9 @@ public class DHT {
 
     private Telehash mTelehash;
     private PeerNode mLocalNode;
-
     private NodeTracker mNodeTracker;
+    private Object mInitFinishedLock = new Object();
+    private boolean mInitFinished = false;
 
     public DHT(Telehash telehash, PeerNode localNode, Set<SeedNode> seeds) {
         mTelehash = telehash;
@@ -70,40 +71,28 @@ public class DHT {
         mTelehash.getSwitch().registerChannelHandler(PEER_TYPE, mChannelHandler);
         mTelehash.getSwitch().registerChannelHandler(CONNECT_TYPE, mChannelHandler);
 
-        // TODO: implement bucket refresh
-
-        // TODO: implement bootstrap (refresh all buckets)
-
-        /*
-        Set<Node> closestNodes = mNodeTracker.getClosestNodes(xSeed.getHashName(), 12);
-        Log.i("closest nodes in tracker:");
-        for (Node node : closestNodes) {
-            Log.i(node);
-        }
-
-        NodeSeekRequest nodeSeeker = new NodeSeekRequest(mTelehash, xSeed, mLocalNode.getHashName(), new NodeSeekRequest.Handler() {
+        mNodeTracker.refreshBuckets(new Runnable() {
             @Override
-            public void handleError(NodeSeekRequest seek, Throwable e) {
-                Log.i("cannot seek node: "+e);
-            }
-            @Override
-            public void handleCompletion(NodeSeekRequest seek) {
-                Log.i("found nodes: ");
-                for (Node node : seek.getResultNodes()) {
-                    Log.i(node);
+            public void run() {
+                Log.i("DHT init finished");
+                synchronized (mInitFinishedLock) {
+                    mInitFinished = true;
+                    mInitFinishedLock.notifyAll();
                 }
             }
         });
-        nodeSeeker.start();
-        */
+    }
 
-        // TODO: remove this hard-coded seed lookup.
-        /*
-        HashName seedName = new HashName(Util.hexToBytes("484aa23a17d259906144d36d7ccddbb583a63702a9253c29d41cff13a07954a6"));
-        NodeLookupTask lookup = new NodeLookupTask(mTelehash, mNodeTracker, seedName, null);
-        lookup.start();
-        */
-        mNodeTracker.refreshBuckets();
+    public void waitForInit() {
+        synchronized (mInitFinishedLock) {
+            while (! mInitFinished) {
+                try {
+                    mInitFinishedLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public void dump() {

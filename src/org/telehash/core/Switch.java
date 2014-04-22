@@ -129,6 +129,10 @@ public class Switch implements DatagramHandler, MessageHandler {
         return mLineManager;
     }
 
+    public void waitForInit() {
+        mDHT.waitForInit();
+    }
+
     public void openChannel(
             Node destination,
             final String type,

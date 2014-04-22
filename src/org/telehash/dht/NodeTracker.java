@@ -1,5 +1,6 @@
 package org.telehash.dht;
 
+import org.telehash.core.CounterAlarm;
 import org.telehash.core.HashName;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
@@ -167,7 +168,7 @@ public class NodeTracker {
      * hashname within buckets that haven't had a node lookup in the
      * past hour.
      */
-    public void refreshBuckets() {
+    public void refreshBuckets(final Runnable completionHandler) {
         Log.i("perform self-seek");
         NodeLookupTask lookup = new NodeLookupTask(
                 Telehash.get(),
@@ -177,6 +178,7 @@ public class NodeTracker {
                     @Override
                     public void handleError(NodeLookupTask task, Throwable e) {
                         Log.e("error performing self-seek", e);
+                        completionHandler.run();
                     }
 
                     @Override
@@ -184,6 +186,7 @@ public class NodeTracker {
                         Log.i("self-seek finished: "+self);
                         if (self == null) {
                             Log.e("could not seek self!  aborting refresh");
+                            completionHandler.run();
                             return;
                         }
                         int neighborDistance = 0;
@@ -197,6 +200,13 @@ public class NodeTracker {
                             Log.i("no nearest neighbor");
                         }
 
+                        // prepare to refresh individual buckets.
+
+                        // use a CounterAlarm to signal completion when all of the
+                        // individual bucket refreshes have completed.
+                        CounterAlarm alarm = new CounterAlarm(completionHandler);
+
+                        int bucketRefreshCount = 0;
                         long now = System.nanoTime();
                         for (int i=neighborDistance; i<BUCKET_COUNT; i++) {
                             Log.i("considering bucket["+i+"] of size="+mBuckets[i].size()
@@ -204,9 +214,11 @@ public class NodeTracker {
                             if (mBuckets[i].mLastNodeLookupTime == -1 ||
                                     ((now - mBuckets[i].mLastNodeLookupTime) >
                                     BUCKET_REFRESH_TIME_NS)) {
-                                refreshBucket(i);
+                                refreshBucket(alarm, i);
+                                bucketRefreshCount++;
                             }
                         }
+                        alarm.setLimit(bucketRefreshCount);
                     }
                 }
         );
@@ -219,7 +231,7 @@ public class NodeTracker {
      *
      * @param bucket The index of the bucket to refresh.
      */
-    private void refreshBucket(final int bucket) {
+    private void refreshBucket(final CounterAlarm alarm, final int bucket) {
         Log.i("bucket[%d] start refresh", bucket);
         HashName hashName = DHT.getRandomHashName(mLocalNode.getHashName(), bucket);
         NodeLookupTask lookup = new NodeLookupTask(
@@ -230,11 +242,13 @@ public class NodeTracker {
                     @Override
                     public void handleError(NodeLookupTask task, Throwable e) {
                         Log.e("error refreshing bucket %d: ", bucket, e);
+                        alarm.signal();
                     }
 
                     @Override
                     public void handleCompletion(NodeLookupTask task, Node result) {
                         Log.i("bucket[%d] refreshed.", bucket);
+                        alarm.signal();
                     }
                 }
         );

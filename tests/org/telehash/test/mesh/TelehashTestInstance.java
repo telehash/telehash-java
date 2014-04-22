@@ -98,13 +98,6 @@ public class TelehashTestInstance {
         node.setNetwork(networkSimulator.createNode("10.0.0."+index, PORT));
         node.start();
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
         return node;
     }
 
@@ -248,6 +241,8 @@ public class TelehashTestInstance {
             return;
         }
 
+        // wait for the switch (and its DHT) to initialize
+        telehashSwitch.waitForInit();
     }
 
     public void stop() {
