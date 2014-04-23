@@ -82,10 +82,14 @@ public class NodeTracker {
                 nodes.add(trackedNode.node);
             }
         }
+
+        public void removeNode(PeerNode node) {
+            TrackedNode trackedNode = new TrackedNode(node);
+            mTrackedNodes.remove(trackedNode);
+        }
     }
 
     private Bucket[] mBuckets = new Bucket[BUCKET_COUNT];
-
     private PeerNode mLocalNode;
 
     public NodeTracker(PeerNode localNode) {
@@ -112,6 +116,16 @@ public class NodeTracker {
         }
         Bucket bucket = mBuckets[distance];
         bucket.submitNode(node);
+    }
+
+    public void removeNode(PeerNode node) {
+        int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());
+        if (distance == -1) {
+            // the referenced node is us.
+            return;
+        }
+        Bucket bucket = mBuckets[distance];
+        bucket.removeNode(node);
     }
 
     /**

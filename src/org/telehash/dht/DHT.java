@@ -36,10 +36,10 @@ import java.util.Set;
 public class DHT {
 
     private static final String SEEK_TYPE = "seek";
-    private static final String LINK_TYPE = "link";
+    public static final String LINK_TYPE = "link";
     private static final String CONNECT_TYPE = "connect";
     private static final String SEEK_KEY = "seek";
-    private static final String SEED_KEY = "seed";
+    public static final String SEED_KEY = "seed";
     private static final String SEE_KEY = "see";
 
     public static final String PEER_TYPE = "peer";
@@ -47,21 +47,22 @@ public class DHT {
 
     private Telehash mTelehash;
     private PeerNode mLocalNode;
+    private Set<SeedNode> mInitialSeeds;
     private NodeTracker mNodeTracker;
     private Object mInitFinishedLock = new Object();
     private boolean mInitFinished = false;
+    private Set<Link> mLinks = new HashSet<Link>();
 
     public DHT(Telehash telehash, PeerNode localNode, Set<SeedNode> seeds) {
         mTelehash = telehash;
         mLocalNode = localNode;
         mNodeTracker = new NodeTracker(localNode);
+        mInitialSeeds = seeds;
+    }
 
-        // install seeds in k-buckets.
-        if (seeds != null && (! seeds.isEmpty())) {
-            for (PeerNode node : seeds) {
-                mNodeTracker.submitNode(node);
-            }
-        }
+    /** intentionally package-private */
+    NodeTracker getNodeTracker() {
+        return mNodeTracker;
     }
 
     public void init() {
@@ -70,6 +71,13 @@ public class DHT {
         mTelehash.getSwitch().registerChannelHandler(LINK_TYPE, mChannelHandler);
         mTelehash.getSwitch().registerChannelHandler(PEER_TYPE, mChannelHandler);
         mTelehash.getSwitch().registerChannelHandler(CONNECT_TYPE, mChannelHandler);
+
+        // open link channels to all seeds
+        if (mInitialSeeds != null && (! mInitialSeeds.isEmpty())) {
+            for (SeedNode node : mInitialSeeds) {
+                linkToSeed(node);
+            }
+        }
 
         mNodeTracker.refreshBuckets(new Runnable() {
             @Override
@@ -104,11 +112,13 @@ public class DHT {
     }
 
     public void handleNewLine(Line line) {
+        // TODO: only track a node if we have a link channel open.
         mNodeTracker.submitNode(line.getRemotePeerNode());
         // TODO: relay to refresher?
     }
 
     public void submitNode(Node node) {
+        Log.i("submitNode "+node);
         // TODO
         // 1. is a line already open for this node?
         // 2. open line
@@ -154,6 +164,7 @@ public class DHT {
         };
         @Override
         public void handleIncoming(Channel channel, ChannelPacket channelPacket) {
+            Log.i("DHT incoming: "+channelPacket);
             String type = channelPacket.getType();
             if (type == null) {
                 return;
@@ -227,26 +238,56 @@ public class DHT {
         }
     }
 
+    private void linkToSeed(final PeerNode node) {
+        Link link = new Link(this, node);
+        link.init();
+        mLinks.add(link);
+    }
+
+    /** intentionally package-private */
+    void delinkSeed(Link link) {
+        mLinks.remove(link);
+    }
+
     private void handleLink(Channel channel, ChannelPacket channelPacket) {
+        Log.i("DHT XXX: handleLink() channel: "+channel);
         // TODO: handle the "seed" boolean
         channelPacket.get(SEED_KEY);
 
-        Set<SeeNode> seeNodes;
-        try {
-            seeNodes = parseSee(channelPacket.get(SEE_KEY), mLocalNode);
-        } catch (TelehashException e) {
-            Log.e("bad see object in link channel");
-            return;
+        // parse any provided see nodes, and submit them to the DHT.
+        Object seeArray = channelPacket.get(SEE_KEY);
+        if (seeArray != null) {
+            Set<SeeNode> seeNodes;
+            try {
+                seeNodes = parseSee(seeArray, mLocalNode);
+            } catch (TelehashException e) {
+                Log.e("bad see object in link channel");
+                return;
+            }
+            // submit seeNodes to DHT for possible inclusion in buckets.
+            for (SeeNode node : seeNodes) {
+                // TODO: submitNode() is not currently implemented!
+                submitNode(node);
+            }
         }
 
-        // submit seeNodes to DHT for possible inclusion in buckets.
-        for (SeeNode node : seeNodes) {
-            submitNode(node);
+        // TODO: honor the "seed" boolean
+        // TODO: regard "end" and "err".
+
+        // submit the link peer to the node tracker
+        mNodeTracker.submitNode(channel.getRemoteNode());
+
+        // respond in kind
+        Log.i("DHT: sending link response: "+channel);
+        Map<String,Object> linkMsg = new HashMap<String,Object>();
+        linkMsg.put(SEED_KEY, true);
+        try {
+            channel.send(null, linkMsg, false);
+        } catch (TelehashException e) {
+            Log.e("DHT: problem sending initial link message: ", e);
         }
 
         // TODO: if this is a keepalive, then respond in kind.
-        // TODO: (even if it's not a keepalive!)
-
         // TODO: complete!
     }
 

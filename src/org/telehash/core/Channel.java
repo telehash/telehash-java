@@ -117,4 +117,9 @@ public class Channel implements OnTimeoutListener {
         mTimeout.cancel();
         // TODO: close channel / dereference from switch
     }
+
+    @Override
+    public String toString() {
+        return mLine.getRemoteNode().getHashName().getShortHash()+":"+mChannelIdentifier;
+    }
 }
