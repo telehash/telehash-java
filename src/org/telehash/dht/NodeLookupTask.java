@@ -118,11 +118,17 @@ public class NodeLookupTask implements OnTimeoutListener {
     }
 
     private void iterate() {
-        Log.d("node lookup iteration");
-        Log.d("  querynodes="+mQueryNodes);
-        Log.d("  visitednodes="+mVisitedNodes);
-        // remove already visited nodes from our set of queryable nodes
-        mQueryNodes.removeAll(mVisitedNodes);
+        Log.buffer();
+        try {
+            Log.d("node lookup "+mTargetHashName.getShortHash()+" iteration "+mIterations+" "+hashCode());
+            Log.d("  querynodes="+mQueryNodes);
+            Log.d("  visitednodes="+mVisitedNodes);
+            // remove already visited nodes from our set of queryable nodes
+            mQueryNodes.removeAll(mVisitedNodes);
+            Log.d("  querynodes="+mQueryNodes);
+        } finally {
+            Log.flush();
+        }
 
         // if there are no queryable nodes, signal completion
         if (mQueryNodes.isEmpty()) {
@@ -202,12 +208,18 @@ public class NodeLookupTask implements OnTimeoutListener {
                         //       among all seeks, instead of a separate Handler for each.
                         @Override
                         public void handleError(NodeSeekRequest seek, Throwable e) {
+                            if (mFinished) {
+                                return;
+                            }
                             Log.i("error during seek: "+e.getMessage(), e);
                             mOutstandingSeeks.remove(seek);
                             iterate();
                         }
                         @Override
                         public void handleCompletion(NodeSeekRequest seek) {
+                            if (mFinished) {
+                                return;
+                            }
                             Log.i("seek complete");
                             mOutstandingSeeks.remove(seek);
 
@@ -250,13 +262,16 @@ public class NodeLookupTask implements OnTimeoutListener {
 
     private void fail(Throwable e) {
         if (mFinished) {
-            Log.e("node lookup task fail after finished!");
+            Log.w("node lookup FAIL-AFTER-FINISH: " + mTargetHashName.getShortHash()
+                    + " iteration " + mIterations + " " + hashCode(),
+                    new TelehashException("here"));
             return;
         }
         mFinished = true;
         mTimeout.cancel();
 
-        Log.i("node lookup failure: "+e);
+        Log.w("node lookup FAILURE: " + mTargetHashName.getShortHash()
+                + " iteration " + mIterations + " " + hashCode());
         if (mHandler != null) {
             mHandler.handleError(this, e);
         }
@@ -264,12 +279,16 @@ public class NodeLookupTask implements OnTimeoutListener {
 
     private void complete(Node node) {
         if (mFinished) {
-            Log.e("node lookup task fail after finished!");
+            Log.w("node lookup COMPLETE-AFTER-FINISH: " + mTargetHashName.getShortHash()
+                    + " iteration " + mIterations + " " + hashCode(),
+                    new TelehashException("here"));
             return;
         }
         mFinished = true;
         mTimeout.cancel();
 
+        Log.w("node lookup COMPLETE: " + mTargetHashName.getShortHash()
+                + " iteration " + mIterations + " " + hashCode());
         if (mHandler != null) {
             mHandler.handleCompletion(this, node);
         }
@@ -277,6 +296,6 @@ public class NodeLookupTask implements OnTimeoutListener {
 
     @Override
     public void handleTimeout() {
-        fail(new TelehashException("node lookup timeout"));
+        fail(new TelehashException("node lookup timeout for "+mTargetHashName.getShortHash()));
     }
 }
