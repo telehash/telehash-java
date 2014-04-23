@@ -6,7 +6,6 @@ import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;
 import org.telehash.core.HashName;
-import org.telehash.core.Line;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.PeerNode;
@@ -38,7 +37,6 @@ public class NodeSeekRequest {
     private Node mQueryNode;
     private HashName mTargetHashName;
     private Handler mHandler;
-    private Line mLine;
     private Set<SeeNode> mResultNodes;
 
     public NodeSeekRequest(
@@ -142,5 +140,10 @@ public class NodeSeekRequest {
 
     private void fail(Throwable e) {
         mHandler.handleError(this, e);
+    }
+
+    @Override
+    public String toString() {
+        return "seek<"+mQueryNode.getHashName().getShortHash()+">";
     }
 }

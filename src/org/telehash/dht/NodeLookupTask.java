@@ -117,15 +117,25 @@ public class NodeLookupTask implements OnTimeoutListener {
         iterate();
     }
 
+    private String dumpNodes(SortedSet<Node> nodes) {
+        StringBuilder sb = new StringBuilder();
+        for (Node node : nodes) {
+            int distance = node.getHashName().distanceMagnitude(mTargetHashName);
+            sb.append(node.getHashName().getShortHash()+";"+distance+" ");
+        }
+        return sb.toString();
+    }
+
     private void iterate() {
         Log.buffer();
         try {
             Log.d("node lookup "+mTargetHashName.getShortHash()+" iteration "+mIterations+" "+hashCode());
-            Log.d("  querynodes="+mQueryNodes);
-            Log.d("  visitednodes="+mVisitedNodes);
+            Log.d("  querynodes="+dumpNodes(mQueryNodes));
+            Log.d("  visitednodes="+dumpNodes(mVisitedNodes));
             // remove already visited nodes from our set of queryable nodes
             mQueryNodes.removeAll(mVisitedNodes);
-            Log.d("  querynodes="+mQueryNodes);
+            Log.d("  querynodes="+dumpNodes(mQueryNodes));
+            Log.d("  outstandingSeeks="+mOutstandingSeeks);
         } finally {
             Log.flush();
         }
