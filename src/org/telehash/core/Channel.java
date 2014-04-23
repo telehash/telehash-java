@@ -15,10 +15,8 @@ public class Channel implements OnTimeoutListener {
     public Channel(Telehash telehash, Line line, String type) {
         mTelehash = telehash;
         mLine = line;
-        mChannelIdentifier = new ChannelIdentifier(
-                telehash.getCrypto().getRandomBytes(ChannelIdentifier.CHANNEL_IDENTIFIER_SIZE)
-        );
         mType = type;
+        mChannelIdentifier = line.getNextChannelId();
         mTimeout = telehash.getSwitch().getTimeout(this, 0);
     }
 

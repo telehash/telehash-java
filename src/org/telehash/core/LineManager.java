@@ -239,8 +239,7 @@ public class LineManager {
         }
 
         // create a line, an outgoing open packet, and record these in the line tracker
-        final Line line = new Line(mTelehash);
-        line.setRemoteNode(destination);
+        final Line line = new Line(mTelehash, destination);
         line.addOpenCompletionHandler(handler, attachment);
 
         // generate a random line identifier
@@ -460,11 +459,10 @@ public class LineManager {
                         incomingOpenPacket.getCipherSet().getCipherSetId(),
                         incomingLineIdentifier
                 );
-                line = new Line(mTelehash);
+                line = new Line(mTelehash, incomingOpenPacket.getSourceNode());
                 line.setCipherSetIdentifier(incomingOpenPacket.getCipherSet().getCipherSetId());
                 line.setIncomingLineIdentifier(incomingLineIdentifier);
                 line.setLocalOpenPacket(replyOpenPacket);
-                line.setRemoteNode(incomingOpenPacket.getSourceNode());
                 mLineTracker.add(line);
                 Log.i("new line established for remote initiator");
             }

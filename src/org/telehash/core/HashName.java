@@ -12,7 +12,7 @@ import java.util.TreeMap;
  * Wrap a hash name. This is needed so we can establish a sensible
  * Java object identity and use a hash name as a key in HashMap.
  */
-public class HashName {
+public class HashName implements Comparable<HashName> {
     public static final int SIZE = 32;
 
     private byte[] mBuffer;
@@ -118,4 +118,10 @@ public class HashName {
         return Arrays.hashCode(mBuffer);
     }
 
+    @Override
+    public int compareTo(HashName other) {
+        BigInteger a = new BigInteger(1, mBuffer);
+        BigInteger b = new BigInteger(1, other.mBuffer);
+        return a.compareTo(b);
+    }
 }

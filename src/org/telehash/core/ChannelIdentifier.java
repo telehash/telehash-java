@@ -1,6 +1,5 @@
 package org.telehash.core;
 
-import java.util.Arrays;
 
 /**
  * Wrap a binary channel identifier. This is needed so we can establish a
@@ -8,45 +7,50 @@ import java.util.Arrays;
  * HashMap.
  */
 public class ChannelIdentifier {
-    public static final int CHANNEL_IDENTIFIER_SIZE = 16;
+    public static final long MAX_CHANNEL_ID = (1L<<32)-1;
 
-    private byte[] mBuffer;
+    private long mId;
 
-    public ChannelIdentifier(byte[] buffer) {
-        if (buffer == null || buffer.length != CHANNEL_IDENTIFIER_SIZE) {
+    public ChannelIdentifier(long id) {
+        if (id <= 0 || id > MAX_CHANNEL_ID) {
             throw new IllegalArgumentException("invalid line id");
         }
-        mBuffer = buffer;
+        mId = id;
     }
 
-    public byte[] getBytes() {
-        return mBuffer;
-    }
-
-    public String asHex() {
-        return Util.bytesToHex(mBuffer);
+    public ChannelIdentifier(String s) {
+        mId = Long.parseLong(s);
+        if (mId <= 0 || mId > MAX_CHANNEL_ID) {
+            throw new IllegalArgumentException("invalid line id");
+        }
     }
 
     @Override
     public String toString() {
-        return asHex();
+        return Long.toString(mId);
     }
 
     // Java identity
 
     @Override
-    public boolean equals(Object other) {
-        if (other != null &&
-            other instanceof ChannelIdentifier &&
-            Arrays.equals(((ChannelIdentifier)other).mBuffer, mBuffer)) {
-            return true;
-        } else {
-            return false;
-        }
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (mId ^ (mId >>> 32));
+        return result;
     }
 
     @Override
-    public int hashCode() {
-        return Arrays.hashCode(mBuffer);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ChannelIdentifier other = (ChannelIdentifier) obj;
+        if (mId != other.mId)
+            return false;
+        return true;
     }
 }

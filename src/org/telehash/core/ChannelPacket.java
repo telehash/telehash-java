@@ -17,8 +17,6 @@ public class ChannelPacket extends Packet {
     private static final String ERROR_KEY = "err";
     private static final String CUSTOM_FIELDS_KEY = "_";
 
-    private static final int CHANNEL_IDENTIFIER_SIZE = 16;
-
     private ChannelIdentifier mChannelIdentifier;
     private String mType;
     private boolean mEnd = false;
@@ -110,7 +108,7 @@ public class ChannelPacket extends Packet {
         byte[] packet;
         try {
             JSONWriter json = new JSONStringer().object();
-            json = json.key(CHANNEL_IDENTIFIER_KEY).value(mChannelIdentifier.asHex());
+            json = json.key(CHANNEL_IDENTIFIER_KEY).value(mChannelIdentifier.toString());
             if (mType != null) {
                 json = json.key(TYPE_KEY).value(mType);
             }
@@ -164,9 +162,7 @@ public class ChannelPacket extends Packet {
         // extract required JSON values
         String channelIdentifierString = json.getString(CHANNEL_IDENTIFIER_KEY);
         assertNotNull(channelIdentifierString);
-        byte[] channelIdentifierBytes = Util.hexToBytes(channelIdentifierString);
-        assertBufferSize(channelIdentifierBytes, CHANNEL_IDENTIFIER_SIZE);
-        ChannelIdentifier channelIdentifier = new ChannelIdentifier(channelIdentifierBytes);
+        ChannelIdentifier channelIdentifier = new ChannelIdentifier(channelIdentifierString);
 
         String type = null;
         if (json.has(TYPE_KEY)) {
@@ -215,7 +211,7 @@ public class ChannelPacket extends Packet {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("channelpacket[id="+mChannelIdentifier+"/");
+        sb.append("channelpacket[c="+mChannelIdentifier+"/");
         if (mType != null) {
             sb.append("type="+mType+"/");
         }

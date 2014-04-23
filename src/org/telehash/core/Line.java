@@ -16,6 +16,8 @@ public class Line implements OnTimeoutListener {
     private static final int SHA256_DIGEST_SIZE = 32;
     private static final int LINE_OPEN_TIMEOUT = 15000;
     private static final int LINE_RECEIVE_TIMEOUT = 60000;
+    private static final long FIRST_ODD_CHANNEL_ID = 1;
+    private static final long FIRST_EVEN_CHANNEL_ID = 2;
 
     public enum State {
         INITIAL,
@@ -53,10 +55,20 @@ public class Line implements OnTimeoutListener {
     private Telehash mTelehash;
     private Map<ChannelIdentifier,Channel> mChannels = new HashMap<ChannelIdentifier,Channel>();
     private boolean mFinished = false;
+    private long mNextChannelId;
 
-    public Line(Telehash telehash) {
+    public Line(Telehash telehash, Node remoteNode) {
         mTelehash = telehash;
         mTimeout = telehash.getSwitch().getTimeout(this, 0);
+        mRemoteNode = remoteNode;
+
+        if (remoteNode.getHashName().compareTo(telehash.getLocalNode().getHashName()) > 0) {
+            // use even-numbered channels
+            mNextChannelId = FIRST_EVEN_CHANNEL_ID;
+        } else {
+            // use odd-numbered channels
+            mNextChannelId = FIRST_ODD_CHANNEL_ID;
+        }
     }
 
     public void setState(State state) {
@@ -94,6 +106,10 @@ public class Line implements OnTimeoutListener {
     }
 
     public void setRemoteNode(Node remoteNode) {
+        if (! remoteNode.equals(mRemoteNode)) {
+            throw new IllegalArgumentException(
+                    "attempt to replace line node with non-equivalent node.");
+        }
         mRemoteNode = remoteNode;
     }
 
@@ -157,6 +173,12 @@ public class Line implements OnTimeoutListener {
 
     public byte[] getDecryptionKey() {
         return mDecryptionKey;
+    }
+
+    public ChannelIdentifier getNextChannelId() {
+        long next = mNextChannelId;
+        mNextChannelId += 2;
+        return new ChannelIdentifier(mNextChannelId);
     }
 
     public void addOpenCompletionHandler(
