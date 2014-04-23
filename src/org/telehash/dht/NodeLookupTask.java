@@ -39,7 +39,7 @@ public class NodeLookupTask implements OnTimeoutListener {
     /**
      * By default, node lookup operations will timeout after this many milliseconds.
      */
-    private static final int DEFAULT_NODE_LOOKUP_TIMEOUT = 15000;
+    private static final int DEFAULT_NODE_LOOKUP_TIMEOUT = 30000;
 
     private Telehash mTelehash;
     private NodeTracker mNodeTracker;
