@@ -32,8 +32,8 @@ Warnings
 Code conventions
 --------------------
 
-For lack of any better idea at the moment, I'm using the Android coding
-conventions as described here:
+For lack of any better idea at the moment, I'm (more or less) using the
+Android coding conventions as described here:
 
 http://source.android.com/source/code-style.html
 
@@ -99,29 +99,13 @@ as arguments.
 TODO
 --------------------
 
-* Recent protocol changes
+* Telehash core
     * Cipher sets
-        * ~~General support for cipher sets.~~
-        * ~~Hashname generation based on cipher set parts.~~
-        * ~~Peer/connect support for cipher sets and relay.~~
-        * ~~Support for cipher sets in seeds.json parsing.  (i.e.
-          keys and parts arrays.)~~
         * Cipher set specifics
             * CS1a: ECC SECP160r1 and AES-128
-            * ~~CS2a: RSA-2048, ECC P-256, AES-256 (The "Telehash 2013"
-              cipher set.)~~
             * CS3a: NaCl
         * Update unit tests for checking crypto cipher set functions.
-    * ~~Non-JSON headers~~
-        * ~~length=0; no header.~~
-        * ~~length=1; single byte header.~~
     * Line
-        * ~~Binary open packet format.~~
-        * ~~Binary line packet format.~~
-        * ~~Use the open packet's single byte header to associate a
-          line with a cipher set.~~
-        * ~~Cipher set parts encoded in the open packet's "from"
-          field.~~
         * When an open packet is received from a hashname for which a
           line is already established:
             * Same line id; recalculate keys.
@@ -130,33 +114,6 @@ TODO
         * Channel id generation
             * Even/odd determination.
             * Ever-incrementing (within the scope of a particular line).
-    * LAN multicast discovery
-    * Cryptography
-        * AES now uses GCM mode.
-    * Seed hints
-        * Persist a local seed hints list, so the switch doesn't need
-          to rely on the master seed list.
-        * DHT seed hints.
-        * Local seed hints.
-    * DHT
-        * Limited prefix seeks.
-        * Link channel keepalives.
-    * Switch
-        * Bridge support: bridge channel, advertisement.
-        * Persistent peer channels for relay (auto-bridge).
-        * Path channel for network path negotiation.
-
-* Opportunities to reduce redundancy
-    * Consider not tracking the remote node in a Line object.
-    * There's no need having a separate SeedNode object, if we don't
-      track the full set of public keys for seeds.  When parsing the
-      seeds.json, only extract the best csid/PK for our switch into
-      PeerNode objects.
-
-* Other required changes
-    * Paths
-        * ~~Support multiple paths via path arrays.~~
-    * Channels
         * Reliable channels
             * Seq/ack sequencing.
             * Fixed window size of 100 packets (for now).
@@ -164,47 +121,22 @@ TODO
             * Packet retransmission via "miss".
             * Per-packet retransmission throttle of 1 second.
             * Half-closed channels (wait for ack after end).
-    * API polish.
-    * Local path distinction and limit leaking local host address
-      information.
-
-* ~~Move "path" concerns (type, map generation, encode/decode) to Endpoint
-  and rename Endpoint to Path.~~
-* ~~Factor network concerns out of the core and into a Reactor class.~~
-* ~~Use the "Telehash" object as context for accessing the crypto/storage/network
-  implementations, and remove the Util.get*Instance() methods.~~
-* ~~Open lines for DHT-tracked nodes~~
-* ~~Use the new "bucket channel" (type: "link") DHT maintenance scheme~~
-* ~~Improve the DHT to support node discovery based on hashname.~~
+    * Paths
+        * Local path distinction and limit leaking local host address
+          information.
+    * DHT
+        * Limited prefix seeks.
+    * Switch
+        * Bridge support: bridge channel, advertisement.
+        * Persistent peer channels for relay (auto-bridge).
+        * Path channel for network path negotiation.
 * NAT considerations
     * The switch should learn its public IP address by performing a
       self-seek.
     * A switch initiating contact with a new node via peer/connect
       should also send a hole-punching open packet.
-* ~~The API currently requires the caller to successively open a line
-  (Switch.openLine()) and a channel (Line.openChannel()) before communicating
-  with a remote node (Channel.send()).  The Telehash protocol specification
-  states that "an open is always triggered by the creation of a channel to a
-  hashname, such that when a channel generates its first packet the switch
-  recognizes that a line doesn't exist yet and attempts to create one."
-  Therefore, we should invert the initiation flow: Channel.send() should open a
-  line and a channel the first time it is run.~~
-* Line and Channel objects returned by the switch should have their references
-  managed in such a way that they can be GC'ed and finalized if dereferenced
-  from the application.
-* The code needs some serious cleaning and refactoring at this point.
-* Search for TODO items in the code, and do them.
-* Implement timeouts and limits for bounded resource usage.
-* Develop a fake network implementation that doesn't actually use the
-  network.
-    * ~~Basic passing of packets.~~
-    * Programmable parameters to allow for testing of NATs, lossy
-      connections, congested links, etc.
-* Support IPv6
-* Specialized exception classes.
-* The early exploratory code has many needless buffer copies for
-  simplicity.  We need a new approach to minimize copies for greater
-  performance.
+* Cleanup
+    * Search for TODO items in the code, and do them.
 * Android
     * Decide on a minimum supported version of Android.
     * Evaluate Android's built-in Bouncy Castle.  (The built-in version
@@ -216,6 +148,32 @@ TODO
       suggest using "old IO" (OIO) when using Netty on Android.  However, I
       haven't yet stumbled on a concrete description of this hypothetical
       trouble.
+* Eventually...
+    * Line and Channel objects returned by the switch should have their references
+      managed in such a way that they can be GC'ed and finalized if dereferenced
+      from the application.
+    * Test/solidify timeouts and limits.
+    * The early exploratory code has many needless buffer copies for
+      simplicity.  We need a new approach to minimize copies for greater
+      performance.
+    * Support IPv6
+    * Specialized exception classes.
+    * Opportunities to reduce redundancy
+        * Consider not tracking the remote node in a Line object.
+        * There's no need having a separate SeedNode object, if we don't
+          track the full set of public keys for seeds.  When parsing the
+          seeds.json, only extract the best csid/PK for our switch into
+          PeerNode objects.
+    * LAN multicast discovery
+    * Seed hints
+        * Persist a local seed hints list, so the switch doesn't need
+          to rely on the master seed list.
+        * DHT seed hints.
+        * Local seed hints.
+    * Testing
+        * Add support to the network simulator for programmable parameters
+          to allow for testing of NATs, lossy connections, congested links,
+          etc.
 
 
 Acknowledgements
