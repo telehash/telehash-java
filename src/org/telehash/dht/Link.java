@@ -9,10 +9,12 @@ import org.telehash.core.CounterTrigger;
 import org.telehash.core.HashName;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
+import org.telehash.core.OnTimeoutListener;
 import org.telehash.core.PeerNode;
 import org.telehash.core.SeeNode;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
+import org.telehash.core.Timeout;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +40,27 @@ public class Link {
     private long mLastSend = 0L;
     private long mLastReceive = 0L;
     private CounterTrigger mTrigger = null;
+
+    private class Keepalive implements OnTimeoutListener {
+        @Override
+        public void handleTimeout() {
+            if (Link.this.mState == State.ACTIVE) {
+                Log.i("LINK KEEPALIVE HANDLE"+Link.this);
+                mKeepaliveTimeout.cancel();
+                mKeepaliveTimeout.reset();
+                Log.i("LINK KEEPALIVE HANDLE/RESET: "+Link.this.mKeepaliveTimeout);
+                Link.this.send();
+            }
+        }
+    }
+    private Keepalive mKeepalive = new Keepalive();
+    private Timeout mKeepaliveTimeout =
+            Telehash.get().getSwitch().getTimeout(mKeepalive, 0);
+
+    @Override
+    protected void finalize() throws Throwable {
+        Link.this.mKeepaliveTimeout.cancel();
+    }
 
     /**
      * Open a new link to the specified peer.
@@ -100,7 +123,8 @@ public class Link {
     }
 
     private void handleIncoming(ChannelPacket channelPacket) {
-        Log.i("DHT: incoming link packet: "+channelPacket);
+        Log.i(String.format("LINK[%08x] IN line=%s channel=%s",
+                super.hashCode(), mChannel.getLine(), channelPacket.getChannelIdentifier()));
         mLastReceive = System.nanoTime();
 
         if (channelPacket.isEnd()) {
@@ -117,6 +141,10 @@ public class Link {
             if (mTrigger != null) {
                 mTrigger.signal();
             }
+
+            // establish a keepalive timer
+            mKeepaliveTimeout.setDelay(MAXIMUM_SEND_TIME/1000000);
+            Log.i("KEEPALIVE: "+this+" setting to "+MAXIMUM_SEND_TIME/1000000000.0+" sec  timeout="+mKeepaliveTimeout);
         }
 
         // parse any provided see nodes, and submit them to the DHT.
@@ -150,7 +178,10 @@ public class Link {
     }
 
     private void send() {
+        Log.i(String.format("LINK[%08x] OUT line=%s channel=%s",
+                super.hashCode(), mChannel.getLine(), mChannel.getChannelIdentifier()));
         if ((System.nanoTime()-mLastSend) < MINIMUM_SEND_TIME) {
+            Log.i(String.format("LINK[%08x] OUT -- TOO SOON",super.hashCode()));
             // too soon
             return;
         }
@@ -159,6 +190,9 @@ public class Link {
         try {
             mChannel.send(null, linkMsg, false);
             mLastSend = System.nanoTime();
+            mKeepaliveTimeout.cancel();
+            mKeepaliveTimeout.reset();
+            Log.i("LINK KEEPALIVE SEND/RESET: "+Link.this.mKeepaliveTimeout);
         } catch (TelehashException e) {
             Log.e("DHT: problem sending link message: ", e);
         }
@@ -166,7 +200,13 @@ public class Link {
 
     public void close() {
         mState = State.CLOSED;
+        try {
+            mChannel.close();
+        } catch (TelehashException e) {
+            Log.e("problem closing link channel: ",e);
+        }
         mNodeTracker.onLinkClose(this);
+        mKeepaliveTimeout.cancel();
     }
 
     private static Set<SeeNode> parseSee(

@@ -222,6 +222,7 @@ public class Switch implements DatagramHandler, MessageHandler {
                             mIterations));
                     mLineManager.dump();
                     mDHT.dump();
+                    mScheduler.dump();
                 } finally {
                     Log.i(String.format("---- end of iteration: %04d ----",
                             mIterations));

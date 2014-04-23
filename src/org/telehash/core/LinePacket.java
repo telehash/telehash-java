@@ -141,12 +141,12 @@ public class LinePacket extends Packet {
 
     @Override
     public String toString() {
-        String s = "LINE["+mLine+"]";
+        String s = mLine.toString();
         if (mSourceNode != null) {
             s += " <"+mSourceNode;
         }
         if (mDestinationNode != null) {
-            s += " <"+mDestinationNode;
+            s += " >"+mDestinationNode;
         }
         return s;
     }

@@ -12,7 +12,8 @@ import org.telehash.core.Node;
 import org.telehash.core.PeerNode;
 import org.telehash.core.Telehash;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -25,31 +26,33 @@ public class NodeTracker {
     private static final long BUCKET_REFRESH_TIME_NS = 1 * NANOSECONDS_PER_HOUR;
 
     private static class Bucket {
-        Set<Link> mLinks = new HashSet<Link>();
+        Map<HashName,Link> mLinks = new HashMap<HashName,Link>();
         long mLastNodeLookupTime = -1;
 
         // TODO: get count of nodes in each state
 
         // TODO:
         // "Each k-bucket is kept sorted by time last seen -- least-recently
-        // seen
-        // node at the head, most-recently seen at the tail."
+        // seen node at the head, most-recently seen at the tail."
 
         public int size() {
             return mLinks.size();
         }
 
         public void addLink(Link link) {
-            if (mLinks.contains(link)) {
+            if (mLinks.containsKey(link.getNode().getHashName())) {
                 // already present in bucket
+                Log.w("BUCKET: "+link+" already present.");
                 return;
             }
             if (mLinks.size() == MAX_BUCKET_SIZE) {
                 // TODO: take action to possibly prune the bucket
 
+                link.close();
+                Log.w("BUCKET: "+link+" not added -- max size reached.");
                 return;
             }
-            mLinks.add(link);
+            mLinks.put(link.getNode().getHashName(), link);
             mLastNodeLookupTime = System.nanoTime();
         }
 
@@ -58,7 +61,7 @@ public class NodeTracker {
         }
 
         public void accumulateActiveNodes(Set<PeerNode> nodes) {
-            for (Link link : mLinks) {
+            for (Link link : mLinks.values()) {
                 if (link.getState() == Link.State.ACTIVE) {
                     nodes.add(link.getNode());
                 }
@@ -93,6 +96,14 @@ public class NodeTracker {
      * @param node
      */
     void openLink(final PeerNode node, CounterTrigger trigger) {
+        Log.i("DHT: open new link to node "+node);
+        if (linkExists(node)) {
+            Log.w("DHT: link exists");
+            if (trigger != null) {
+                trigger.signal();
+            }
+            return;
+        }
         Link link = new Link(this, node);
         link.setTrigger(trigger);
         getBucket(node).addLink(link);
@@ -120,6 +131,10 @@ public class NodeTracker {
     /** intentionally package-private */
     void onLinkClose(Link link) {
         getBucket(link.getNode()).removeLink(link);
+    }
+
+    private boolean linkExists(Node node) {
+        return getBucket(node).mLinks.containsKey(node.getHashName());
     }
 
     private Bucket getBucket(Node node) {
@@ -316,7 +331,7 @@ public class NodeTracker {
         for (int i=0; i<BUCKET_COUNT; i++) {
             if (mBuckets[i].size() > 0) {
                 sb.append("    ["+i+"] ");
-                for (Link link : mBuckets[i].mLinks) {
+                for (Link link : mBuckets[i].mLinks.values()) {
                     sb.append(link+" ");
                 }
                 sb.append("\n");

@@ -197,6 +197,7 @@ public class Line implements OnTimeoutListener {
     }
 
     public void completeOpen() {
+        Log.i(toString()+" open completed.");
         if (mFinished) {
             Log.e("line "+this+" complete after finish!");
             return;
@@ -208,6 +209,7 @@ public class Line implements OnTimeoutListener {
         mTimeout.setDelay(LINE_RECEIVE_TIMEOUT);
 
         // signal open completion
+        Log.i(toString()+" calling open completion handlers: "+mOpenCompletionHandlers);
         for (Completion<Line> completion : mOpenCompletionHandlers) {
             if (completion.mHandler != null) {
                 completion.mHandler.completed(this, completion.mAttachment);
@@ -247,8 +249,12 @@ public class Line implements OnTimeoutListener {
     }
 
     public void handleIncoming(LinePacket linePacket) {
+        // reset the line timeout
+        mTimeout.reset();
+        Log.i(toString()+" TO-RESET to "+mTimeout.getDelay());
+
         ChannelPacket channelPacket = linePacket.getChannelPacket();
-        Log.i("incoming: "+channelPacket);
+        Log.i("incoming: "+this+" "+channelPacket);
         Channel channel = mChannels.get(channelPacket.getChannelIdentifier());
         if (channel == null) {
             // is this the first communication of a new channel?
@@ -297,8 +303,17 @@ public class Line implements OnTimeoutListener {
 
     @Override
     public String toString() {
-        return "Line["+mIncomingLineIdentifier+"->"+mOutgoingLineIdentifier+"@"+getOpenTime()+"]" +
-                "("+mRemoteNode+")";
+        StringBuilder sb = new StringBuilder();
+        sb.append("Line["+mRemoteNode.getHashName().getShortHash()+"#");
+        if (mIncomingLineIdentifier != null) {
+            sb.append(mIncomingLineIdentifier.asHex().substring(0, 8));
+        }
+        sb.append("-");
+        if (mOutgoingLineIdentifier != null) {
+            sb.append(mOutgoingLineIdentifier.asHex().substring(0, 8));
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     @Override

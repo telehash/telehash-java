@@ -17,6 +17,11 @@ public class Timeout implements Runnable {
         setDelay(delay);
     }
 
+    @Override
+    public String toString() {
+        return "Timeout[delay="+mDelay+"/task="+mTask+"]{"+hashCode()+"}";
+    }
+
     public void setDelay(long delay) {
         if (delay > 0) {
             if (mTask != null) {
@@ -63,7 +68,7 @@ public class Timeout implements Runnable {
         if (listener != null) {
             listener.handleTimeout();
         } else {
-            Log.e("timeout lost reference to listener");
+            Log.e("timeout lost reference to listener // "+this);
         }
     }
 }

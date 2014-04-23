@@ -97,7 +97,7 @@ public class TelehashTestInstance {
         TelehashTestInstance node = new TelehashTestInstance(index, PORT, seeds);
         node.setNetwork(networkSimulator.createNode("10.0.0."+index, PORT));
         node.start();
-        networkSimulator.waitForQuiescence(1000);
+        networkSimulator.waitForQuiescence(100);
 
         return node;
     }

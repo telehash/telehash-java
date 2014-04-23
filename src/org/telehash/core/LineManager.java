@@ -79,22 +79,22 @@ public class LineManager {
                 Node node = entry.getKey();
                 Line line = entry.getValue();
 
-                String hashName, incoming, outgoing;
-                hashName = node.getHashName().asHex();
+                String incoming, outgoing;
                 if (line.getIncomingLineIdentifier() == null) {
-                    incoming = "null";
+                    incoming = "";
                 } else {
-                    incoming = line.getIncomingLineIdentifier().toString();
+                    incoming = line.getIncomingLineIdentifier().toString().substring(0,8);
                 }
                 if (line.getOutgoingLineIdentifier() == null) {
-                    outgoing = "null";
+                    outgoing = "";
                 } else {
-                    outgoing = line.getOutgoingLineIdentifier().toString();
+                    outgoing = line.getOutgoingLineIdentifier().toString().substring(0,8);
                 }
 
                 sb.append(String.format(
-                        "%-64s %-32s %-32s %-20s %s\n",
-                        hashName, incoming, outgoing,
+                        "%-8s %-8s-%-8s %-20s %s\n",
+                        node.getHashName().getShortHash(),
+                        incoming, outgoing,
                         line.getState().name(),
                         line.getRemoteNode().getClass().getSimpleName()
                 ));

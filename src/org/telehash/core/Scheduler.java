@@ -20,6 +20,11 @@ public class Scheduler {
         }
 
         @Override
+        public String toString() {
+            return "Task["+mRunnable.hashCode()+"/"+mTime+"]";
+        }
+
+        @Override
         public int hashCode() {
             final int prime = 31;
             int result = 1;
@@ -148,6 +153,13 @@ public class Scheduler {
             return -1;
         } else {
             return nextTaskTime;
+        }
+    }
+
+    public void dump() {
+        Log.i("SCHEDULER TASKS:");
+        for (Task task : mTasks) {
+            Log.i("    "+task);
         }
     }
 }
