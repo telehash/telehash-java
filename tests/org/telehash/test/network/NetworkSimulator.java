@@ -9,4 +9,8 @@ public class NetworkSimulator {
     public Network createNode(String addressString, int port) {
         return new FakeNetworkImpl(mRouter, addressString);
     }
+
+    public void waitForQuiescence(long time) {
+        mRouter.waitForQuiescence(time);
+    }
 }

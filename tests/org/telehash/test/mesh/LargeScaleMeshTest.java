@@ -27,11 +27,13 @@ public class LargeScaleMeshTest {
     private static final int NODE_A = NUM_NODES-(1<<(TREE_DEPTH-1));
     private static final int NODE_B = NUM_NODES-1;
 
+    private Mesh mMesh;
     private List<TelehashTestInstance> mNodes;
 
     @Before
     public void setUp() throws Exception {
-        mNodes = TelehashTestInstance.createLargeScaleTopology(TREE_DEPTH);
+        mMesh = TelehashTestInstance.createLargeScaleTopology(TREE_DEPTH);
+        mNodes = mMesh.getInstances();
         assertEquals(mNodes.size(), NUM_NODES);
     }
 

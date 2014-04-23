@@ -97,6 +97,7 @@ public class TelehashTestInstance {
         TelehashTestInstance node = new TelehashTestInstance(index, PORT, seeds);
         node.setNetwork(networkSimulator.createNode("10.0.0."+index, PORT));
         node.start();
+        networkSimulator.waitForQuiescence(1000);
 
         return node;
     }
@@ -141,7 +142,7 @@ public class TelehashTestInstance {
      * @param depth The depth of the tree.  Number of nodes will be 2^depth-1.
      * @return The list of Telehash test instances.
      */
-    public static List<TelehashTestInstance> createLargeScaleTopology(int depth) {
+    public static Mesh createLargeScaleTopology(int depth) {
         // 63 nodes in a tree
 
         List<TelehashTestInstance> list = new ArrayList<TelehashTestInstance>();
@@ -169,7 +170,7 @@ public class TelehashTestInstance {
         }
 
         Log.i("Telehash large scale topology created: ("+index+" nodes)\n"+dumpNodeList(list));
-        return list;
+        return new Mesh(list, networkSimulator);
     }
 
     public TelehashTestInstance(int index, int port, Set<SeedNode> seeds) {
