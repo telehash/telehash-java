@@ -34,7 +34,7 @@ public class Switch implements DatagramHandler, MessageHandler {
     private Flag mStopFlag = new Flag();
     private boolean mStopRequested = false;
 
-    private PeerNode mLocalNode;
+    private LocalNode mLocalNode;
     private Scheduler mScheduler = new Scheduler();
 
     private DHT mDHT;

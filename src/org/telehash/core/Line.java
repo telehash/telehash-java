@@ -14,7 +14,7 @@ import java.util.TreeSet;
 public class Line implements OnTimeoutListener {
 
     private static final int SHA256_DIGEST_SIZE = 32;
-    private static final int LINE_OPEN_TIMEOUT = 5000;
+    private static final int LINE_OPEN_TIMEOUT = 15000;
     private static final int LINE_RECEIVE_TIMEOUT = 60000;
 
     public enum State {
@@ -248,7 +248,7 @@ public class Line implements OnTimeoutListener {
 
     public void handleIncoming(LinePacket linePacket) {
         ChannelPacket channelPacket = linePacket.getChannelPacket();
-        Log.i("decoded channel packet: "+channelPacket);
+        Log.i("incoming: "+channelPacket);
         Channel channel = mChannels.get(channelPacket.getChannelIdentifier());
         if (channel == null) {
             // is this the first communication of a new channel?
@@ -276,12 +276,12 @@ public class Line implements OnTimeoutListener {
             channelHandler.handleIncoming(channel, channelPacket);
             return;
         }
+        // dispatch to channel
+        channel.receive(channelPacket);
         // is this the end?
         if (channelPacket.isEnd()) {
             mChannels.remove(channel.getChannelIdentifier());
         }
-        // dispatch to channel
-        channel.receive(channelPacket);
     }
 
     public static Set<Line> sortByOpenTime(Collection<Line> lines) {
@@ -303,6 +303,7 @@ public class Line implements OnTimeoutListener {
 
     @Override
     public void handleTimeout() {
+        Log.e(""+this+" TIMEOUT");
         TelehashException exception;
         switch (mState) {
         case NODE_LOOKUP:
@@ -310,6 +311,9 @@ public class Line implements OnTimeoutListener {
             break;
         case DIRECT_OPEN_PENDING:
             exception = new TelehashException("line open timeout");
+            break;
+        case REVERSE_OPEN_PENDING:
+            exception = new TelehashException("line reverse open timeout");
             break;
         case ESTABLISHED:
             exception = new TelehashException("line receive timeout");

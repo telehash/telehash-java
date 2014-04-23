@@ -1,7 +1,12 @@
 package org.telehash.dht;
 
-import org.telehash.core.CounterAlarm;
+import org.telehash.core.Channel;
+import org.telehash.core.ChannelPacket;
+import org.telehash.core.CompletionHandler;
+import org.telehash.core.CounterTrigger;
 import org.telehash.core.HashName;
+import org.telehash.core.Line;
+import org.telehash.core.LocalNode;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.PeerNode;
@@ -19,36 +24,8 @@ public class NodeTracker {
     private static final long NANOSECONDS_PER_HOUR = 3600 * NANOSECONDS_PER_SECOND;
     private static final long BUCKET_REFRESH_TIME_NS = 1 * NANOSECONDS_PER_HOUR;
 
-    // TODO: synchronize access to NodeTracker
-
-    private static class TrackedNode {
-        public PeerNode node;
-
-        // TODO: lastValidTime, state = { GOOD, UNKNOWN, BAD }
-
-        public TrackedNode(PeerNode node) {
-            this.node = node;
-        }
-
-        // Java identity
-
-        @Override
-        public boolean equals(Object other) {
-            if (other instanceof TrackedNode && ((TrackedNode) other).node.equals(node)) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            return node.hashCode();
-        }
-    }
-
     private static class Bucket {
-        Set<TrackedNode> mTrackedNodes = new HashSet<TrackedNode>();
+        Set<Link> mLinks = new HashSet<Link>();
         long mLastNodeLookupTime = -1;
 
         // TODO: get count of nodes in each state
@@ -59,40 +36,40 @@ public class NodeTracker {
         // node at the head, most-recently seen at the tail."
 
         public int size() {
-            return mTrackedNodes.size();
+            return mLinks.size();
         }
 
-        public void submitNode(PeerNode node) {
-            TrackedNode trackedNode = new TrackedNode(node);
-            if (mTrackedNodes.contains(trackedNode)) {
+        public void addLink(Link link) {
+            if (mLinks.contains(link)) {
                 // already present in bucket
                 return;
             }
-            if (mTrackedNodes.size() == MAX_BUCKET_SIZE) {
+            if (mLinks.size() == MAX_BUCKET_SIZE) {
                 // TODO: take action to possibly prune the bucket
 
                 return;
             }
-            mTrackedNodes.add(trackedNode);
+            mLinks.add(link);
             mLastNodeLookupTime = System.nanoTime();
         }
 
-        public void accumulateNodes(Set<PeerNode> nodes) {
-            for (TrackedNode trackedNode : mTrackedNodes) {
-                nodes.add(trackedNode.node);
-            }
+        public void removeLink(Link link) {
+            mLinks.remove(link);
         }
 
-        public void removeNode(PeerNode node) {
-            TrackedNode trackedNode = new TrackedNode(node);
-            mTrackedNodes.remove(trackedNode);
+        public void accumulateActiveNodes(Set<PeerNode> nodes) {
+            for (Link link : mLinks) {
+                if (link.getState() == Link.State.ACTIVE) {
+                    nodes.add(link.getNode());
+                }
+            }
         }
     }
 
     private Bucket[] mBuckets = new Bucket[BUCKET_COUNT];
-    private PeerNode mLocalNode;
+    private LocalNode mLocalNode;
 
-    public NodeTracker(PeerNode localNode) {
+    public NodeTracker(LocalNode localNode) {
         mLocalNode = localNode;
 
         for (int i=0; i<BUCKET_COUNT; i++) {
@@ -108,6 +85,67 @@ public class NodeTracker {
         return size;
     }
 
+    /**
+     * Open a new link channel to a peer.
+     *
+     * This method is intentionally package-private.
+     *
+     * @param node
+     */
+    void openLink(final PeerNode node, CounterTrigger trigger) {
+        Link link = new Link(this, node);
+        link.setTrigger(trigger);
+        getBucket(node).addLink(link);
+    }
+
+    /**
+     * Handle a new link channel opened by a peer.
+     *
+     * This method is intentionally package-private.
+     *
+     * @param channel
+     * @param channelPacket
+     */
+    void acceptLink(Channel channel, ChannelPacket channelPacket) {
+        Log.i("DHT XXX: handleLink() channel: "+channel);
+        Link link = new Link(this, channel, channelPacket);
+        getBucket(channel.getRemoteNode()).addLink(link);
+    }
+
+    /** intentionally package-private */
+    void onLinkActive(Link link) {
+        getBucket(link.getNode()).addLink(link);
+    }
+
+    /** intentionally package-private */
+    void onLinkClose(Link link) {
+        getBucket(link.getNode()).removeLink(link);
+    }
+
+    private Bucket getBucket(Node node) {
+        int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());
+        if (distance == -1) {
+            // the referenced node is us.
+            return null;
+        }
+        return mBuckets[distance];
+    }
+
+    public void submitNode(final Node node) {
+        Telehash.get().getSwitch().getLineManager()
+                .openLine(node, false, new CompletionHandler<Line>() {
+                    @Override
+                    public void completed(Line result, Object attachment) {
+                        openLink(result.getRemotePeerNode(), null);
+                    }
+                    @Override
+                    public void failed(Throwable exc, Object attachment) {
+                        Log.w("cannot open link to node "+node+":", exc);
+                    }
+                }, null);
+    }
+
+    /*
     public void submitNode(PeerNode node) {
         int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());
         if (distance == -1) {
@@ -117,7 +155,9 @@ public class NodeTracker {
         Bucket bucket = mBuckets[distance];
         bucket.submitNode(node);
     }
+    */
 
+    /*
     public void removeNode(PeerNode node) {
         int distance = mLocalNode.getHashName().distanceMagnitude(node.getHashName());
         if (distance == -1) {
@@ -127,6 +167,7 @@ public class NodeTracker {
         Bucket bucket = mBuckets[distance];
         bucket.removeNode(node);
     }
+    */
 
     /**
      * Fetch a set of nodes closest to the target hashname.
@@ -147,25 +188,25 @@ public class NodeTracker {
         if (startingBucket == -1) {
             // the target node is ourself -- scan all buckets
             for (int i=0; i<BUCKET_COUNT && sortedNodes.size() < maxNodes; i++) {
-                mBuckets[i].accumulateNodes(sortedNodes);
+                mBuckets[i].accumulateActiveNodes(sortedNodes);
             }
         } else {
             // the target node is not ourself -- scan the target bucket
             // first, followed by closer buckets, followed by farther buckets.
 
             // scan the target bucket
-            mBuckets[startingBucket].accumulateNodes(sortedNodes);
+            mBuckets[startingBucket].accumulateActiveNodes(sortedNodes);
 
             // scan closer buckets
             for (int i = (startingBucket - 1); i >= 0 && sortedNodes.size() < maxNodes; i--) {
-                mBuckets[i].accumulateNodes(sortedNodes);
+                mBuckets[i].accumulateActiveNodes(sortedNodes);
             }
 
             // scan farther buckets
             for (int i = (startingBucket + 1);
                     i < BUCKET_COUNT && sortedNodes.size() < maxNodes;
                     i++) {
-                mBuckets[i].accumulateNodes(sortedNodes);
+                mBuckets[i].accumulateActiveNodes(sortedNodes);
             }
         }
 
@@ -218,7 +259,7 @@ public class NodeTracker {
 
                         // use a CounterAlarm to signal completion when all of the
                         // individual bucket refreshes have completed.
-                        CounterAlarm alarm = new CounterAlarm(completionHandler);
+                        CounterTrigger alarm = new CounterTrigger(completionHandler);
 
                         int bucketRefreshCount = 0;
                         long now = System.nanoTime();
@@ -245,7 +286,7 @@ public class NodeTracker {
      *
      * @param bucket The index of the bucket to refresh.
      */
-    private void refreshBucket(final CounterAlarm alarm, final int bucket) {
+    private void refreshBucket(final CounterTrigger alarm, final int bucket) {
         Log.i("bucket[%d] start refresh", bucket);
         HashName hashName = DHT.getRandomHashName(mLocalNode.getHashName(), bucket);
         NodeLookupTask lookup = new NodeLookupTask(
@@ -275,8 +316,8 @@ public class NodeTracker {
         for (int i=0; i<BUCKET_COUNT; i++) {
             if (mBuckets[i].size() > 0) {
                 sb.append("    ["+i+"] ");
-                for (TrackedNode trackedNode : mBuckets[i].mTrackedNodes) {
-                    sb.append(trackedNode.node+" ");
+                for (Link link : mBuckets[i].mLinks) {
+                    sb.append(link+" ");
                 }
                 sb.append("\n");
             }

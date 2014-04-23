@@ -3,13 +3,13 @@ package org.telehash.core;
 /**
  * Execute a runnable when a signal count reaches a specified limit.
  */
-public class CounterAlarm {
+public class CounterTrigger {
 
     private Runnable mRunnable;
     private int mCount = 0;
     private int mLimit = 0;
 
-    public CounterAlarm(Runnable runnable) {
+    public CounterTrigger(Runnable runnable) {
         mRunnable = runnable;
     }
 

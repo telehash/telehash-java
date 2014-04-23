@@ -101,6 +101,7 @@ public class Channel implements OnTimeoutListener {
             // TODO: remove from Line's channel tracking
         }
         channelPacket.setBody(body);
+        Log.i("outgoing: "+this+" "+channelPacket);
         mTelehash.getSwitch().getLineManager().sendLinePacket(
                 mLine,
                 channelPacket,
@@ -120,6 +121,6 @@ public class Channel implements OnTimeoutListener {
 
     @Override
     public String toString() {
-        return mLine.getRemoteNode().getHashName().getShortHash()+":"+mChannelIdentifier;
+        return mLine.getRemoteNode().getHashName().getShortHash()+":"+mChannelIdentifier+"/"+mType;
     }
 }

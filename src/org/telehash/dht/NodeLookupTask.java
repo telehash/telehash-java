@@ -210,14 +210,6 @@ public class NodeLookupTask implements OnTimeoutListener {
                         public void handleCompletion(NodeSeekRequest seek) {
                             Log.i("seek complete");
                             mOutstandingSeeks.remove(seek);
-                            // if we want to track nodes that we don't have a public key for yet,
-                            // uncomment this.
-                            /*
-                            for (Node node : seek.getResultNodes()) {
-                                // track this encountered node
-                                mNodeTracker.submitNode(node);
-                            }
-                            */
 
                             // in case our node is present in the list, remove it
                             // since there's no point opening a line to ourselves.
@@ -234,6 +226,13 @@ public class NodeLookupTask implements OnTimeoutListener {
                                 }
                             } else {
                                 nodes.remove(mSelfNode);
+                            }
+
+                            // have the DHT open links to these nodes
+                            // to enhance meshing.
+                            for (Node node : nodes) {
+                                // track this encountered node
+                                mNodeTracker.submitNode(node);
                             }
 
                             mQueryNodes.addAll(seek.getResultNodes());
