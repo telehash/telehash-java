@@ -1,6 +1,7 @@
 package org.telehash.core;
 
 import org.telehash.crypto.HashNamePublicKey;
+import org.telehash.network.InetPath;
 import org.telehash.network.Path;
 
 import java.util.Collection;
@@ -84,6 +85,19 @@ public class PeerNode extends Node {
 
     @Deprecated
     public Path getPath() {
+        // if there is only one path, return it.
+        if (mPaths.size() <= 1) {
+            return mPaths.first();
+        }
+        // return the first non-RFC1918 internet address, if available.
+        for (Path path : mPaths) {
+            if (path instanceof InetPath) {
+                if (! ((InetPath)path).getAddress().isSiteLocalAddress()) {
+                    return path;
+                }
+            }
+        }
+        // otherwise, return the first address.
         return mPaths.first();
     }
 

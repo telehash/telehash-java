@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
@@ -17,6 +18,7 @@ import org.telehash.core.PlaceholderNode;
 import java.util.List;
 import java.util.Set;
 
+@Ignore
 public class LargeScaleMeshTest {
 
     // depth 4 = 15 nodes
