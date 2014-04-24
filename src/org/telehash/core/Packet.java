@@ -6,10 +6,6 @@ import org.telehash.crypto.CipherSet;
 import org.telehash.network.Path;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class Packet {
 
@@ -19,12 +15,12 @@ public abstract class Packet {
     private static final int MAXIMUM_HEADER_LENGTH = 64*1024;
     private static final int OPEN_HEADER_LENGTH = 1;
     private static final int LINE_HEADER_LENGTH = 0;
-    private static final String PARSE_METHOD_NAME = "parse";
     public static final int LENGTH_PREFIX_SIZE = 2;
     public static final String TYPE_KEY = "type";
 
-    private static Map<String,Method> sTypeParseMap =
-            new HashMap<String,Method>();
+    private static enum OuterPacketType {
+        OPEN, LINE
+    }
 
     protected PeerNode mSourceNode;
     protected PeerNode mDestinationNode;
@@ -88,52 +84,34 @@ public abstract class Packet {
         }
 
         // determine the packet type
-        String type;
-        if (splitPacket.json == null) {
-            // TODO: remove all uses of OPEN_TYPE and LINE_TYPE, as these don't actually
-            // use a type field any more.
-            if (splitPacket.headerLength == OPEN_HEADER_LENGTH) {
-                CipherSet cipherSet = telehash.getCrypto().getCipherSet(
-                        new CipherSetIdentifier(splitPacket.singleByteHeader)
+        OuterPacketType type = null;
+        if (splitPacket.json != null) {
+            throw new TelehashException("JSON found in outer packet header");
+        }
+        if (splitPacket.headerLength == OPEN_HEADER_LENGTH) {
+            CipherSet cipherSet = telehash.getCrypto().getCipherSet(
+                    new CipherSetIdentifier(splitPacket.singleByteHeader)
+            );
+            if (cipherSet == null) {
+                throw new TelehashException(
+                        "unsupported open cipher set: "+splitPacket.singleByteHeader
                 );
-                if (cipherSet == null) {
-                    throw new TelehashException(
-                            "unsupported open cipher set: "+splitPacket.singleByteHeader
-                    );
-                }
-                type = OpenPacket.OPEN_TYPE;
-            } else if (splitPacket.headerLength == LINE_HEADER_LENGTH) {
-                type = LinePacket.LINE_TYPE;
-            } else {
-                throw new TelehashException("unknown packet configuration");
             }
+            type = OuterPacketType.OPEN;
+        } else if (splitPacket.headerLength == LINE_HEADER_LENGTH) {
+            type = OuterPacketType.LINE;
         } else {
-            // examine the "type" header
-            type = splitPacket.json.getString(TYPE_KEY);
-            if (type == null || type.isEmpty()) {
-                throw new TelehashException("invalid type string");
-            }
-            if (! sTypeParseMap.containsKey(type)) {
-                throw new TelehashException("unknown packet type: \""+type+"\"");
-            }
+            throw new TelehashException("unknown packet configuration");
         }
 
         // dispatch to the parse routine of the appropriate subclass.
-        try {
-            return (Packet) sTypeParseMap.get(type).invoke(
-                    null, telehash, splitPacket, sourcePath
-            );
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("cannot invoke parse method.", e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("cannot invoke parse method.", e);
-        } catch (InvocationTargetException e) {
-            Throwable cause = e.getCause();
-            if (cause != null && cause instanceof TelehashException) {
-                throw ((TelehashException)cause);
-            } else {
-                throw new RuntimeException("exception in parse method.", e);
-            }
+        switch (type) {
+        case OPEN:
+            return OpenPacket.parse(telehash, splitPacket, sourcePath);
+        case LINE:
+            return LinePacket.parse(telehash, splitPacket, sourcePath);
+        default:
+            throw new TelehashException("unknown outer packet type");
         }
     }
 
@@ -174,24 +152,6 @@ public abstract class Packet {
         System.arraycopy(buffer, HEADER_START_POSITION+headerLength, body, 0, bodyLength);
 
         return new SplitPacket(headerLength, singleByteHeader, json, body);
-    }
-
-    protected static void registerPacketType(
-            String typeName,
-            Class<? extends Packet> packetClass
-    ) {
-        Method method;
-        try {
-            method = packetClass.getMethod(
-                    PARSE_METHOD_NAME,
-                    Telehash.class,
-                    SplitPacket.class,
-                    Path.class
-            );
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException("cannot find parse method in class.", e);
-        }
-        sTypeParseMap.put(typeName, method);
     }
 
     protected static final void assertNotNull(Object o) throws TelehashException {

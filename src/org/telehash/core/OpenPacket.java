@@ -40,8 +40,6 @@ import java.util.TreeMap;
  */
 public class OpenPacket extends Packet {
 
-    public static final String OPEN_TYPE = "open";
-
     public static final String SIG_KEY = "sig";
     public static final String OPEN_KEY = "open";
     public static final String OPEN_TIME_KEY = "at";
@@ -51,10 +49,6 @@ public class OpenPacket extends Packet {
 
     public static final int IV_SIZE = 16;
     public static final int LINE_IDENTIFIER_SIZE = 16;
-
-    static {
-        Packet.registerPacketType(OPEN_TYPE, OpenPacket.class);
-    }
 
     private LocalNode mLocalNode;
     private HashNamePublicKey mSenderHashNamePublicKey;

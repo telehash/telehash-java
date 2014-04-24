@@ -25,11 +25,6 @@ public class LinePacket extends Packet {
     private static final String LINE_IDENTIFIER_KEY = "line";
     private static final String IV_KEY = "iv";
     private static final int IV_SIZE = 16;
-    public static final String LINE_TYPE = "line";
-
-    static {
-        Packet.registerPacketType(LINE_TYPE, LinePacket.class);
-    }
 
     private Line mLine;
     private ChannelPacket mChannelPacket;
