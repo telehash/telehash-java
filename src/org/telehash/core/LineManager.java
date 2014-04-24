@@ -2,6 +2,7 @@ package org.telehash.core;
 
 import org.telehash.dht.DHT;
 import org.telehash.dht.NodeLookupTask;
+import org.telehash.network.Path;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -335,6 +336,13 @@ public class LineManager {
 
         line.setState(Line.State.REVERSE_OPEN_PENDING);
         line.startOpenTimer();
+
+        // send a hole-punch packet for NAT traversal, if a hole-punch path
+        // was provided in the SeeNode.
+        Path holePunchPath = destination.getHolePunchPath();
+        if (holePunchPath != null) {
+            mTelehash.getSwitch().sendHolePunch(holePunchPath);
+        }
 
         referringLine.openChannel(DHT.PEER_TYPE, new ChannelHandler() {
             @Override

@@ -111,9 +111,6 @@ TODO
             * Same line id; recalculate keys.
             * Different line id; invalidate existing channels.
     * Channels
-        * Channel id generation
-            * Even/odd determination.
-            * Ever-incrementing (within the scope of a particular line).
         * Reliable channels
             * Seq/ack sequencing.
             * Fixed window size of 100 packets (for now).
@@ -130,11 +127,6 @@ TODO
         * Bridge support: bridge channel, advertisement.
         * Persistent peer channels for relay (auto-bridge).
         * Path channel for network path negotiation.
-* NAT considerations
-    * The switch should learn its public IP address by performing a
-      self-seek.
-    * A switch initiating contact with a new node via peer/connect
-      should also send a hole-punching open packet.
 * Cleanup
     * Search for TODO items in the code, and do them.
 * Android

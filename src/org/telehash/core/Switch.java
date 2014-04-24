@@ -177,13 +177,22 @@ public class Switch implements DatagramHandler, MessageHandler {
         if (packet == null) {
             return;
         }
-        PeerNode destination = packet.getDestinationNode();
         Log.i("outgoing packet: "+packet);
 
         Datagram datagram =
                 new Datagram(packet.render(), null, packet.getDestinationNode().getPath());
 
         if (mReactor != null) {
+            mReactor.sendDatagram(datagram);
+        }
+    }
+
+    public void sendHolePunch(Path destination) {
+        byte[] emptyBuffer = new byte[0];
+        Datagram datagram =
+                new Datagram(emptyBuffer, null, destination);
+        if (mReactor != null) {
+            Log.i("sending hole-punch packet to: "+destination);
             mReactor.sendDatagram(datagram);
         }
     }

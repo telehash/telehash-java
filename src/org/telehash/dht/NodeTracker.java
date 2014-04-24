@@ -10,7 +10,9 @@ import org.telehash.core.LocalNode;
 import org.telehash.core.Log;
 import org.telehash.core.Node;
 import org.telehash.core.PeerNode;
+import org.telehash.core.SeeNode;
 import org.telehash.core.Telehash;
+import org.telehash.network.Path;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -259,6 +261,29 @@ public class NodeTracker {
                             completionHandler.run();
                             return;
                         }
+
+                        if (self instanceof SeeNode) {
+                            SeeNode selfSee = (SeeNode)self;
+                            Path path = selfSee.getHolePunchPath();
+                            if (path != null) {
+                                Log.i("self-seek path: "+path);
+                                SortedSet<Path> paths  = mLocalNode.getPaths();
+
+                                // TODO: why doesn't paths.contains(path) work?
+                                boolean present = false;
+                                for (Path p : paths) {
+                                    if (p.equals(path)) {
+                                        present = true;
+                                        break;
+                                    }
+                                }
+                                if (! present) {
+                                    paths.add(path);
+                                    Log.i("local node paths now: "+paths);
+                                }
+                            }
+                        }
+
                         int neighborDistance = 0;
                         Node neighbor = task.getClosestVisitedNode();
                         if (neighbor != null) {
