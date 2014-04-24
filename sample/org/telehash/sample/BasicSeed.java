@@ -41,6 +41,7 @@ public class BasicSeed {
         // launch the switch
         Telehash telehash = new Telehash(localNode);
         Switch telehashSwitch = new Switch(telehash, null, PORT);
+        telehash.setSwitch(telehashSwitch);
         try {
             telehashSwitch.start();
         } catch (TelehashException e) {
@@ -48,9 +49,9 @@ public class BasicSeed {
             return;
         }
 
-        // allow the switch to run for 30 seconds
+        // allow the switch to run for one hour
         try {
-            Thread.sleep(30000);
+            Thread.sleep(3600 * 1000);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

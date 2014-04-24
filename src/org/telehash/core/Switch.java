@@ -1,5 +1,6 @@
 package org.telehash.core;
 
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.dht.DHT;
 import org.telehash.network.Datagram;
 import org.telehash.network.DatagramHandler;
@@ -199,6 +200,17 @@ public class Switch implements DatagramHandler, MessageHandler {
 
     private void loop() {
         Log.i("switch loop with localnode="+mTelehash.getLocalNode()+" and seeds="+mSeeds);
+        Log.i("hashname: "+mLocalNode.getHashName());
+        for (Map.Entry<CipherSetIdentifier, HashNamePublicKey> entry : mLocalNode.getPublicKeys().entrySet()) {
+            CipherSetIdentifier csid = entry.getKey();
+            HashNamePublicKey key = entry.getValue();
+            try {
+                Log.i("key "+csid+": "+Util.base64Encode(key.getEncoded()));
+            } catch (TelehashException e) {
+                e.printStackTrace();
+            }
+            Log.i("fingerprint "+csid+": "+Util.bytesToHex(key.getFingerprint()));
+        }
 
         mLineManager = new LineManager(mTelehash);
         mLineManager.init();
