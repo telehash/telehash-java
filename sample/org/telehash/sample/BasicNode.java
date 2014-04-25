@@ -1,14 +1,18 @@
 package org.telehash.sample;
 
+import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.LocalNode;
 import org.telehash.core.SeedNode;
 import org.telehash.core.Switch;
 import org.telehash.core.Telehash;
 import org.telehash.core.TelehashException;
+import org.telehash.core.Util;
+import org.telehash.crypto.HashNamePublicKey;
 import org.telehash.storage.Storage;
 import org.telehash.storage.impl.StorageImpl;
 
 import java.io.FileNotFoundException;
+import java.util.Map;
 import java.util.Set;
 
 public class BasicNode {
@@ -48,6 +52,34 @@ public class BasicNode {
         } catch (TelehashException e2) {
             // TODO Auto-generated catch block
             e2.printStackTrace();
+        }
+
+        // debug seeds
+        System.out.println("seeds:");
+        for (SeedNode seed : seeds) {
+            System.out.println("  hn " + seed.getHashName());
+            for (Map.Entry<CipherSetIdentifier, byte[]> entry : seed
+                    .getFingerprints().entrySet()) {
+                System.out.println("    cs" + entry.getKey() + " fingerprint: "
+                        + Util.bytesToHex(entry.getValue()));
+            }
+            for (CipherSetIdentifier csid : seed.getCipherSetIds()) {
+                System.out.println("    cs " + csid);
+                try {
+                    HashNamePublicKey publicKey = seed.getPublicKey(csid);
+                    if (publicKey != null) {
+                        System.out.println("      pub: "
+                                + Util.base64Encode(seed.getPublicKey(csid)
+                                        .getEncoded()));
+                        System.out.println("      fpr: "
+                                + Util.bytesToHex(seed.getPublicKey(csid)
+                                        .getFingerprint()));
+                    }
+                } catch (TelehashException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
         }
 
         // launch the switch
