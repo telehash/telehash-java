@@ -41,8 +41,8 @@ public abstract class FullNode extends PeerNode {
             Collection<Path> paths
     ) {
         super(
-                HashName.calculateHashName(publicKeys),
-                FingerprintSet.fromPublicKeys(publicKeys),
+                fingerprints.getHashName(),
+                fingerprints,
                 determineActiveCipherSetAndKey(publicKeys),
                 paths
         );
