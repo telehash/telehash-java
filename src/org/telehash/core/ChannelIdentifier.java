@@ -25,6 +25,10 @@ public class ChannelIdentifier {
         }
     }
 
+    public long toLong() {
+        return mId;
+    }
+
     @Override
     public String toString() {
         return Long.toString(mId);

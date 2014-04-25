@@ -108,7 +108,7 @@ public class ChannelPacket extends Packet {
         byte[] packet;
         try {
             JSONWriter json = new JSONStringer().object();
-            json = json.key(CHANNEL_IDENTIFIER_KEY).value(mChannelIdentifier.toString());
+            json = json.key(CHANNEL_IDENTIFIER_KEY).value(mChannelIdentifier.toLong());
             if (mType != null) {
                 json = json.key(TYPE_KEY).value(mType);
             }
@@ -160,9 +160,14 @@ public class ChannelPacket extends Packet {
             Path path
     ) throws TelehashException {
         // extract required JSON values
-        String channelIdentifierString = json.getString(CHANNEL_IDENTIFIER_KEY);
-        assertNotNull(channelIdentifierString);
-        ChannelIdentifier channelIdentifier = new ChannelIdentifier(channelIdentifierString);
+        Object channelIdentifierObject = json.get(CHANNEL_IDENTIFIER_KEY);
+        assertNotNull(channelIdentifierObject);
+        if (! (channelIdentifierObject instanceof Number)) {
+            throw new TelehashException("bad channel identifier");
+        }
+        ChannelIdentifier channelIdentifier = new ChannelIdentifier(
+                ((Number)channelIdentifierObject).longValue()
+        );
 
         String type = null;
         if (json.has(TYPE_KEY)) {
