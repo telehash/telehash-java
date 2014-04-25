@@ -3,11 +3,12 @@ package org.telehash.crypto.set2a;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
-import org.bouncycastle.util.io.pem.PemWriter;
 import org.telehash.core.TelehashException;
+import org.telehash.core.Util;
 import org.telehash.crypto.HashNamePrivateKey;
 import org.telehash.crypto.HashNamePublicKey;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class RSAUtils {
     }
 
     /**
-     * Read a PEM-formatted RSA public key from a file.
+     * Read an RSA public key from a file.
      *
      * @param filename The filename of the file containing the PEM-formatted key.
      * @return The key.
@@ -58,26 +59,17 @@ public class RSAUtils {
             String filename
     ) throws TelehashException {
         try {
-            PemReader pemReader = new PemReader(new FileReader(filename));
-            PemObject pemObject = pemReader.readPemObject();
-            pemReader.close();
-            if (pemObject == null) {
-                throw new TelehashException("cannot parse RSA public key PEM file.");
-            }
-            if (! pemObject.getType().equals(RSA_PUBLIC_KEY_PEM_TYPE)) {
-                throw new TelehashException(
-                        "RSA public key PEM file of incorrect type \"" +
-                        pemObject.getType() + "\""
-                );
-            }
-            return new HashNamePublicKeyImpl(PublicKeyFactory.createKey(pemObject.getContent()));
+            BufferedReader reader = new BufferedReader(new FileReader(filename));
+            String line = reader.readLine();
+            reader.close();
+            return new HashNamePublicKeyImpl(Util.base64Decode(line));
         } catch (IOException e) {
             throw new TelehashException(e);
         }
     }
 
     /**
-     * Read a PEM-formatted RSA private key from a file.
+     * Read an RSA private key from a file.
      *
      * @param filename The filename of the file containing the PEM-formatted key.
      * @return The key.
@@ -87,26 +79,17 @@ public class RSAUtils {
             String filename
     ) throws TelehashException {
         try {
-            PemReader pemReader = new PemReader(new FileReader(filename));
-            PemObject pemObject = pemReader.readPemObject();
-            pemReader.close();
-            if (pemObject == null) {
-                throw new TelehashException("cannot parse RSA private key PEM file.");
-            }
-            if (! pemObject.getType().equals(RSA_PRIVATE_KEY_PEM_TYPE)) {
-                throw new TelehashException(
-                        "RSA private key PEM file of incorrect type \"" +
-                        pemObject.getType() + "\""
-                );
-            }
-            return new HashNamePrivateKeyImpl(pemObject.getContent());
+            BufferedReader reader = new BufferedReader(new FileReader(filename));
+            String line = reader.readLine();
+            reader.close();
+            return new HashNamePrivateKeyImpl(Util.base64Decode(line));
         } catch (IOException e) {
             throw new TelehashException(e);
         }
     }
 
     /**
-     * Write a PEM-formatted RSA public key to a file.
+     * Write an RSA public key to a file.
      *
      * @param filename The filename of the file to write.
      * @param key The key to write.
@@ -117,20 +100,17 @@ public class RSAUtils {
             HashNamePublicKey key
     ) throws TelehashException {
         try {
-            PemWriter pemWriter = new PemWriter(new FileWriter(filename));
-            PemObject pemObject = new PemObject(
-                    RSA_PUBLIC_KEY_PEM_TYPE,
-                    key.getEncoded()
-            );
-            pemWriter.writeObject(pemObject);
-            pemWriter.close();
+            FileWriter fileWriter = new FileWriter(filename);
+            fileWriter.write(Util.base64Encode(key.getEncoded()));
+            fileWriter.write("\n");
+            fileWriter.close();
         } catch (IOException e) {
             throw new TelehashException(e);
         }
     }
 
     /**
-     * Write a PEM-formatted RSA private key to a file.
+     * Write an RSA private key to a file.
      *
      * @param filename The filename of the file to write.
      * @param key The key to write.
@@ -141,13 +121,10 @@ public class RSAUtils {
             HashNamePrivateKey key
     ) throws TelehashException {
         try {
-            PemWriter pemWriter = new PemWriter(new FileWriter(filename));
-            PemObject pemObject = new PemObject(
-                    RSA_PRIVATE_KEY_PEM_TYPE,
-                    key.getEncoded()
-            );
-            pemWriter.writeObject(pemObject);
-            pemWriter.close();
+            FileWriter fileWriter = new FileWriter(filename);
+            fileWriter.write(Util.base64Encode(key.getEncoded()));
+            fileWriter.write("\n");
+            fileWriter.close();
         } catch (IOException e) {
             throw new TelehashException(e);
         }
