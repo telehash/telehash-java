@@ -27,9 +27,9 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
     static private final int PKCS1V21_EXPONENT_INDEX = 1;
 
     /**
-     * When encoding, should we use PKCS#1 v2.1 or SPKI (PKCS#8)?
+     * When encoding, should we use PKCS#1 v2.1 or X.509 SPKI?
      */
-    static private final boolean USE_PKCS1V21 = true;
+    static private final boolean USE_PKCS1V21 = false;
 
     private AsymmetricKeyParameter mKey;
 
@@ -57,12 +57,12 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
                 }
             }
         } catch (ArrayIndexOutOfBoundsException e) {
-            // fallback to SPKI/PKCS#8 parsing
+            // fallback to SPKI parsing
         } catch (IOException e) {
-            // fallback to SPKI/PKCS#8 parsing
+            // fallback to SPKI parsing
         }
 
-        // parse the buffer, assuming a SubjectPublicKeyInfo (PKCS#8) ASN.1 structure
+        // parse the buffer, assuming an X.509 SubjectPublicKeyInfo ASN.1 structure
         try {
             mKey = PublicKeyFactory.createKey(derBuffer);
         } catch (IOException e) {
@@ -115,7 +115,7 @@ public class HashNamePublicKeyImpl implements HashNamePublicKey {
     }
 
     /**
-     * Render the public key in SPKI (PKCS#8) ASN.1 format.
+     * Render the public key in X.509 SPKI ASN.1 format.
      *
      * @throws TelehashException
      */
