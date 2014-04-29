@@ -149,6 +149,9 @@ public class NodeTracker {
     }
 
     public void submitNode(final Node node) {
+        if (node.equals(mLocalNode)) {
+            return;
+        }
         Telehash.get().getSwitch().getLineManager()
                 .openLine(node, false, new CompletionHandler<Line>() {
                     @Override
