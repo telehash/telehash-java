@@ -13,7 +13,6 @@ import java.util.Set;
 
 public class Log {
 
-    private static final boolean ENABLE_COLOR = true;
     private static final String ESCAPE = new String(new char[] {0x1B});
     private static final String COLOR_RESET = ESCAPE + "[39;49m";
     private static final String COLOR_RED = ESCAPE + "[31m";
@@ -35,6 +34,9 @@ public class Log {
     };
     private static final Map<HashName,String> sColorMap = new HashMap<HashName,String>();
 
+    private static final boolean DEFAULT_ENABLE_COLOR = false;
+    private static boolean sEnableColor = DEFAULT_ENABLE_COLOR;
+
     private static Object sLock = new Object();
 
     private static final String TMP_DIRECTORY = "/tmp";
@@ -52,6 +54,10 @@ public class Log {
                 e.printStackTrace();
             }
         }
+    }
+
+    public static void setEnableColor(boolean enableColor) {
+        sEnableColor = enableColor;
     }
 
     public static void d(String msg, Object... args) {
@@ -96,7 +102,7 @@ public class Log {
         StringBuilder logEntry = new StringBuilder();
         String color;
         String endColor;
-        if (ENABLE_COLOR && localNode != null) {
+        if (sEnableColor && localNode != null) {
             HashName hashName = localNode.getHashName();
             color = sColorMap.get(hashName);
             if (color == null) {
