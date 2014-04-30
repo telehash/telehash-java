@@ -1,7 +1,7 @@
 package org.telehash.core;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.telehash.json.JSONException;
+import org.telehash.json.JSONObject;
 import org.telehash.crypto.CipherSet;
 import org.telehash.network.Path;
 

@@ -1,6 +1,6 @@
 package org.telehash.network;
 
-import org.json.JSONObject;
+import org.telehash.json.JSONObject;
 import org.telehash.core.TelehashException;
 
 import java.net.Inet4Address;

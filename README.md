@@ -51,15 +51,6 @@ Spongy Castle is a repackaging of the Bouncy Castle cryptographic
 library which has been modified to not conflict with the older Bouncy
 Castle libraries that are frequently bundled with Android devices.
 
-org.json
-
-http://search.maven.org/remotecontent?filepath=org/codeartisans/org.json/20131017/org.json-20131017.jar
-
-The org.json library is a simple JSON parser.  It is not as feature-rich
-as other libaries such as Jackson or Gson, but it is bundled with Android
-and so may reduce the Telehash footprint on mobile devices if we can deal
-with its limitations.
-
 Indirection
 --------------------
 

@@ -1,9 +1,9 @@
 package org.telehash.storage.impl;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import org.telehash.json.JSONArray;
+import org.telehash.json.JSONException;
+import org.telehash.json.JSONObject;
+import org.telehash.json.JSONTokener;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.FingerprintSet;
 import org.telehash.core.HashName;

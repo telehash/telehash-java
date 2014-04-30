@@ -1,7 +1,7 @@
 package org.telehash.dht;
 
-import org.json.JSONArray;
-import org.json.JSONException;
+import org.telehash.json.JSONArray;
+import org.telehash.json.JSONException;
 import org.telehash.core.Channel;
 import org.telehash.core.ChannelHandler;
 import org.telehash.core.ChannelPacket;

@@ -1,8 +1,8 @@
 package org.telehash.network;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.telehash.json.JSONArray;
+import org.telehash.json.JSONException;
+import org.telehash.json.JSONObject;
 import org.telehash.core.TelehashException;
 
 import java.net.InetSocketAddress;

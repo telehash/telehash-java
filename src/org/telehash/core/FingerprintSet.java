@@ -1,6 +1,6 @@
 package org.telehash.core;
 
-import org.json.JSONObject;
+import org.telehash.json.JSONObject;
 import org.telehash.crypto.Crypto;
 import org.telehash.crypto.HashNamePublicKey;
 
