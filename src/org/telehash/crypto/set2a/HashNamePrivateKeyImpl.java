@@ -1,12 +1,12 @@
 package org.telehash.crypto.set2a;
 
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.RSAPrivateCrtKeyParameters;
+import org.spongycastle.asn1.ASN1Encodable;
+import org.spongycastle.asn1.ASN1InputStream;
+import org.spongycastle.asn1.ASN1Integer;
+import org.spongycastle.asn1.ASN1Primitive;
+import org.spongycastle.asn1.ASN1Sequence;
+import org.spongycastle.crypto.params.AsymmetricKeyParameter;
+import org.spongycastle.crypto.params.RSAPrivateCrtKeyParameters;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.HashNamePrivateKey;
@@ -63,9 +63,9 @@ public class HashNamePrivateKeyImpl implements HashNamePrivateKey {
 
     @Override
     public byte[] getEncoded() throws TelehashException {
-        org.bouncycastle.asn1.pkcs.RSAPrivateKey asn1Key;
+        org.spongycastle.asn1.pkcs.RSAPrivateKey asn1Key;
         asn1Key =
-                new org.bouncycastle.asn1.pkcs.RSAPrivateKey(
+                new org.spongycastle.asn1.pkcs.RSAPrivateKey(
                     mKey.getModulus(),
                     mKey.getPublicExponent(),
                     mKey.getExponent(),

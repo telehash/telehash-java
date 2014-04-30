@@ -1,8 +1,8 @@
 package org.telehash.crypto.set2a;
 
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemReader;
+import org.spongycastle.crypto.util.PublicKeyFactory;
+import org.spongycastle.util.io.pem.PemObject;
+import org.spongycastle.util.io.pem.PemReader;
 import org.telehash.core.TelehashException;
 import org.telehash.core.Util;
 import org.telehash.crypto.HashNamePrivateKey;

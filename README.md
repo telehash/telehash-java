@@ -40,15 +40,16 @@ http://source.android.com/source/code-style.html
 Dependencies
 --------------------
 
-Bouncy Castle
+Spongy Castle
 
-http://www.bouncycastle.org/download/bcprov-jdk15on-149.jar
+http://rtyley.github.io/spongycastle/
 
-Bouncy Castle provides the basic cryptographic primitives.  A version of
-Bouncy Castle is included within Android, which may reduce the Telehash
-footprint on mobile devices.  However, it has not yet been confirmed that
-Android's bundled Bouncy Castle library is suitable, robust, and available
-on relevant Android releases.  
+http://search.maven.org/remotecontent?filepath=com/madgag/spongycastle/core/1.50.0.0/core-1.50.0.0.jar
+http://search.maven.org/remotecontent?filepath=com/madgag/spongycastle/prov/1.50.0.0/prov-1.50.0.0.jar
+
+Spongy Castle is a repackaging of the Bouncy Castle cryptographic
+library which has been modified to not conflict with the older Bouncy
+Castle libraries that are frequently bundled with Android devices.
 
 org.json
 
@@ -131,10 +132,6 @@ TODO
     * Search for TODO items in the code, and do them.
 * Android
     * Decide on a minimum supported version of Android.
-    * Evaluate Android's built-in Bouncy Castle.  (The built-in version
-      is probably not full-featured enough on the versions of Android
-      we'd like to target, and the Bouncy Castle API sometimes changes,
-      so we'll probably end up bundling a specific version.)
     * What are the best practices for storing/managing private keys?
     * There's some talk of Android's NIO not being reliable.  Some people
       suggest using "old IO" (OIO) when using Netty on Android.  However, I

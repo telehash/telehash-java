@@ -1,9 +1,9 @@
 package org.telehash.crypto.set2a;
 
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.BigIntegers;
+import org.spongycastle.crypto.params.ECDomainParameters;
+import org.spongycastle.crypto.params.ECPublicKeyParameters;
+import org.spongycastle.math.ec.ECPoint;
+import org.spongycastle.util.BigIntegers;
 import org.telehash.core.CipherSetIdentifier;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.LinePublicKey;

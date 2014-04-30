@@ -1,7 +1,7 @@
 package org.telehash.crypto.set2a;
 
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.spongycastle.crypto.params.ECPrivateKeyParameters;
+import org.spongycastle.crypto.params.ECPublicKeyParameters;
 import org.telehash.core.TelehashException;
 import org.telehash.crypto.LineKeyPair;
 import org.telehash.crypto.LinePrivateKey;
