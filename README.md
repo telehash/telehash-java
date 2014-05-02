@@ -50,6 +50,23 @@ To generate a jar file, run:
 
     gradle jar
 
+Importing Telehash Java into Eclipse
+--------------------
+
+If you would like to use Eclipse to develop Telehash Java, run the
+following in the root of the source tree to generate the Eclipse project
+metadata:
+
+    gradle eclipse
+
+In Eclipse, open a new or existing workspace, and import the project as
+such:
+
+1. File -> Import
+2. General -> Existing Projects into Workspace
+3. Select the root of the source tree as the "root directory".
+4. Click "Finish".
+
 Dependencies
 --------------------
 
