@@ -67,6 +67,55 @@ such:
 3. Select the root of the source tree as the "root directory".
 4. Click "Finish".
 
+Building the Android demo app
+--------------------
+
+Edit the settings.gradle file, and uncomment the include line for
+android-demo as such:
+
+    // To enable building the Android demo app, uncomment the following line:
+    include 'android-demo'
+
+Make sure the ANDROID\_HOME environment variable is set to the location
+of your Android SDK.  For instance:
+
+    export ANDROID_HOME=/Users/simmons/android/adt-bundle-mac-x86_64-20131030/sdk
+
+The app will now be built when a "gradle build" is performed.
+
+Importing the Android demo app into Eclipse
+--------------------
+
+Set up an Eclipse workspace with the telehash-java project as outlined
+above in "Importing Telehash Java into Eclipse".  Then, import the
+Android demo project as follows:
+
+1. File -> Import
+2. Android -> Existing Android Code into Workspace
+3. Select the "android-demo" directory as the "root directory".
+4. Click "Finish".
+
+The name of the project will not be correct.  Right-click on the project
+name, select Refactor -> Rename..., and enter "android-demo".
+
+Go to the Build Path dialog by right-clicking the project name, select
+Build Path -> Configure Build Path... -> Projects.  Click "Add..." and
+select the telehash-java project.  Go to "Order and Export", and select
+telehash-java for export.
+
+Find the location of the two Spongy Castle libraries.  If using Gradle,
+they will be in the Gradle cache:
+
+    $ find .gradle -name '*0.jar' | grep spongycastle
+    .gradle/caches/modules-2/files-2.1/com.madgag.spongycastle/core/1.50.0.0/13e93b00ec9790315debd61fa25ab6a47d3a1c52/core-1.50.0.0.jar
+    .gradle/caches/modules-2/files-2.1/com.madgag.spongycastle/prov/1.50.0.0/14a6611c7a7c0f6ccc6bd6be4d4da5cfad1f9259/prov-1.50.0.0.jar
+
+Return to the "Configure Build Path..." dialog box for android-demo,
+select "Libraries" -> "Add External JARs...", and add these jar files.
+Go to "Order and Export", and select these two jars for export.
+
+"Project" -> "Clean...", then the project should be ready to run.
+
 Dependencies
 --------------------
 
