@@ -37,6 +37,19 @@ Android coding conventions as described here:
 
 http://source.android.com/source/code-style.html
 
+Building Telehash Java
+--------------------
+
+Telehash Java uses [Gradle](http://www.gradle.org/) for building.  After
+downloading and installing Gradle, run the following in the root of the
+source tree to to build the library and run the unit tests:
+
+    gradle build
+
+To generate a jar file, run:
+
+    gradle jar
+
 Dependencies
 --------------------
 
