@@ -1,3 +1,6 @@
 
 rootProject.name = 'telehash-java'
 
+// To enable building the Android demo app, uncomment the following line:
+//include 'android-demo'
+

@@ -1,0 +1,51 @@
+//////////////////////////////////////////////////////////////////////
+//
+// Telehash Android Demo
+//
+//////////////////////////////////////////////////////////////////////
+
+//
+// fetch and load the android gradle plugin.
+// the plugin is documented here:
+//     http://tools.android.com/tech-docs/new-build-system/user-guide
+//
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.10.0'
+    }
+}
+apply plugin: 'android'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'com.madgag.spongycastle', name: 'core', version: '1.50.0.0'
+    compile group: 'com.madgag.spongycastle', name: 'prov', version: '1.50.0.0'
+    compile project(':')
+}
+
+android {
+    // use old-style directory layout
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = ['src']
+            aidl.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+    }
+
+    compileSdkVersion 19
+    buildToolsVersion "19.0.0"
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+}
