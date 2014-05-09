@@ -5,13 +5,14 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ScrollView;
 
 import org.telehash.core.LogEntry;
 
 public class LogFragment extends Fragment {
 
-    private TextView mTextView;
+    private ScrollView mScrollView;
+    private LogView mLogView;
     private TelehashService mService = null;
 
     public void setService(TelehashService service) {
@@ -21,23 +22,25 @@ public class LogFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState){
-        mTextView = new TextView(this.getActivity());
+        mScrollView = new ScrollView(this.getActivity());
+        mLogView = new LogView(this.getActivity());
         if (mService != null) {
-            mTextView.setText(mService.getLogger().render());
+            mLogView.setText(mService.getLogger().render());
         }
-        return mTextView;
+        mScrollView.addView(mLogView);
+        return mScrollView;
     }
 
     @Override
     public void onResume() {
         super.onResume();
         if (mService != null) {
-            mTextView.setText(mService.getLogger().render());
+            mLogView.setText(mService.getLogger().render());
         }
     }
 
     public void showEntry(LogEntry entry) {
         String text = AndroidLogger.renderEntry(entry);
-        mTextView.append(text);
+        mLogView.append(text);
     }
 }

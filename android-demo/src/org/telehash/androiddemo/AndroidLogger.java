@@ -13,7 +13,7 @@ import java.util.LinkedList;
 
 public class AndroidLogger implements LogListener {
 
-    private static final int MAX_ENTRIES = 100;
+    private static final int MAX_ENTRIES = 1000;
 
     private LinkedList<LogEntry> mRingBuffer = new LinkedList<LogEntry>();
 
